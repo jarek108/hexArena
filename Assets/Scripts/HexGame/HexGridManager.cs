@@ -8,8 +8,8 @@ namespace HexGame
     public class HexGridManager : MonoBehaviour
     {
         [Header("Grid Settings")]
-        [SerializeField] private int gridWidth = 10;
-        [SerializeField] private int gridHeight = 10;
+        [SerializeField] public int gridWidth = 10;
+        [SerializeField] public int gridHeight = 10;
 
         [Header("Generation Settings")]
         [SerializeField] private float noiseScale = 0.1f;
@@ -23,8 +23,8 @@ namespace HexGame
         [SerializeField] private float forestScale = 5.0f;
 
         [Header("Visual Settings")]
-        [SerializeField] private Material hexSurfaceMaterial;
-        [SerializeField] private Material hexMaterialSides;
+        [SerializeField] public Material hexSurfaceMaterial;
+        [SerializeField] public Material hexMaterialSides;
         
         [System.Serializable]
         public struct RimSettings
@@ -105,11 +105,12 @@ namespace HexGame
         [SerializeField] private float hexSize = 1f;
         [SerializeField] private bool isPointyTop = true;
 
-        public HexGrid Grid { get; private set; }
+        public HexGrid Grid { get; set; } // Changed to public set
         public Hex SelectedHex { get; private set; }
         public Hex HighlightedHex { get; private set; }
 
         private Mesh hexMesh;
+        public Mesh GetHexMesh() { return hexMesh; } // Public accessor
 
         private void OnEnable()
         {
@@ -145,13 +146,8 @@ namespace HexGame
              }
         }
 
-        public void GenerateGrid()
+        public void InitializeVisuals()
         {
-            ClearGrid();
-
-            Grid = new HexGrid(gridWidth, gridHeight);
-            SelectedHex = null; // Reset selection on grid generation
-            
             // Always create a fresh mesh to ensure validity
             hexMesh = CreateHexMesh();
 
@@ -185,6 +181,16 @@ namespace HexGame
                      else hexMaterialSides.color = brown;
                  }
             }
+        }
+
+        public void GenerateGrid()
+        {
+            ClearGrid();
+
+            Grid = new HexGrid(gridWidth, gridHeight);
+            SelectedHex = null; // Reset selection on grid generation
+            
+            InitializeVisuals();
 
             for (int r = 0; r < gridHeight; r++)
             {

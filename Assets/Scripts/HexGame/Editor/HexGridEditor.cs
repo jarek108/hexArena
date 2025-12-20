@@ -22,6 +22,7 @@ namespace HexGame.Editor
             {
                 gridManager.GenerateGrid();
             }
+
             if (GUILayout.Button("Clear Grid"))
             {
                 gridManager.ClearGrid();

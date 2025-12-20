@@ -128,7 +128,6 @@ public class HighlightingTests
         Hex hexA = manager.GetHexView(dataA);
         Hex hexB = manager.GetHexView(dataB);
         manager.HighlightHex(hexA);
-        manager.ResetHex(hexA);
         manager.HighlightHex(hexB);
         MaterialPropertyBlock blockA = new MaterialPropertyBlock();
         hexA.GetComponent<Renderer>().GetPropertyBlock(blockA, 0);
@@ -147,7 +146,6 @@ public class HighlightingTests
         Hex hexA = manager.GetHexView(dataA);
         Hex hexB = manager.GetHexView(dataB);
         manager.SelectHex(hexA);
-        manager.ResetHex(hexA);
         manager.SelectHex(hexB);
         MaterialPropertyBlock blockA = new MaterialPropertyBlock();
         hexA.GetComponent<Renderer>().GetPropertyBlock(blockA, 0);

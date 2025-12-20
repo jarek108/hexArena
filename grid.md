@@ -268,44 +268,47 @@
     *   **Human Effort:** (Expertise: Low, Time: 5 minutes) Identified that setting the `_RimWidth` property directly on the `HexSurfaceMaterial` asset to 0 resolved the issue.
     *   **Solution:** Set the default `_RimWidth` property in the `HexSurfaceMaterial.mat` asset to `0`. This ensures that hexes display correctly (no red rim) even if `MaterialPropertyBlock` updates are delayed or overridden during Play Mode initialization.
 
-**End Time:** 2025-12-18 23:45
+## Session 8
+
+**Start Time:** 2025-12-19 00:00
+**End Time:** 2025-12-20 04:08
 **Token Usage:** [TBD]
 
 ### Features Implemented
 
-*   **Hex Selection with Mouse Cursor:** Implemented raycasting with layer masks to correctly detect and select hexes in the grid.
-*   **Data-Driven Map Architecture (Refactor):**
-    *   **Architecture Shift:** Migrated from a GameObject-centric model to a data-driven architecture. `HexGrid` now manages pure C# `HexData` objects (Logic Layer), while `Hex` MonoBehaviours (View Layer) act as visual puppets.
-    *   **`HexData.cs`:** Created to hold logic state (Coordinates, Elevation, TerrainType, Unit reference).
-    *   **`Hex.cs` Refactor:** Transformed into a View component. Properties now proxy to `HexData`. Added serialized backing fields (`viewQ`, `viewR`, etc.) to provide "memory" for domain reloads.
-    *   **`HexGridManager.cs` Update:** `GenerateGrid` now creates Data first, then View. Implemented `RebuildGridFromChildren` to reconstruct logic from serialized view state. Added `GetHexView(HexData)` to bridge logic back to visuals for Editor tools.
-    *   **Decoupling:** Logic, pathfinding, and unit occupancy can now theoretically run without Unity GameObjects.
-*   **Live Visual Updates & Selection Persistence:**
-    *   Implemented `OnValidate` hook and a global `RefreshVisuals()` method in `HexGridManager` to ensure Inspector changes to `RimSettings` are reflected across the entire grid instantly.
-    *   Refactored `ResetHex`, `SelectHex`, and introduced `DeselectHex` to create a clear and robust state machine for selection, deselection, and highlighting, preventing visual state corruption.
-*   **Editor Tools Update:** Refactored `HexGridEditor.cs` to perform logic calculations on `HexData` while delegating visual updates to the `Hex` view.
-*   **Unit Logic Restoration:** Restored bidirectional `Unit <-> Hex` reference, ensuring Units interact correctly with the new `HexData` layer.
+*   **Grid Persistence Refactor (TDD Approach):**
+    *   **Goal:** Decoupled grid saving and loading from `HexGridManager.cs` into a new, dedicated `GridPersistence.cs` component to adhere to the Single Responsibility Principle, improving modularity and maintainability.
+    *   **New Data Structures:** Introduced `GridSaveData.cs` and `HexSaveData.cs` as lightweight, serializable classes for storing only the essential grid information (coordinates, elevation, terrain type). This decouples the save format from runtime `HexData` object complexity.
+    *   **Test-Driven Development:** Followed a strict TDD approach:
+        1.  Modified `GridSaveLoadTests.cs` to anticipate the new `GridPersistence` component, adjusting `SetUp` and test calls to interact with `gridPersistence`.
+        2.  Created `GridPersistence.cs` with a `[RequireComponent(typeof(HexGridManager))]` attribute, implementing `SaveGrid(string path)` and `LoadGrid(string path)` methods. These methods now internally access `HexGridManager` for grid data and visual regeneration.
+        3.  Refactored `HexGridManager.cs`: Removed the `SaveGrid`, `LoadGrid`, `GenerateGridView` methods, and the `using System.IO;` directive. Added public accessors (`gridWidth`, `gridHeight`, `GetHexMesh()`, `hexSurfaceMaterial`, `hexMaterialSides`, `defaultRimSettings`, `HexToWorld`, `GetDefaultHexColor`) to allow `GridPersistence` controlled access to necessary properties and methods.
+        4.  Updated `HexGridEditor.cs`: Removed all persistence-related buttons and logic. `HexGridManager` is now completely unaware of the persistence system.
+        5.  Created `GridPersistenceEditor.cs`: A dedicated custom editor for the `GridPersistence` component that handles the "Save Grid" and "Load Grid" UI buttons. This ensures strict separation of concerns—the manager manages the grid, and the persistence component (and its editor) handles saving/loading.
+
+*   **Testing:**
+    *   **`GridSaveLoadTests.cs`:** New EditMode tests were introduced and successfully passed, verifying that:
+        *   `SaveAndLoad_GridDimensions_ArePreserved`: Grid width and height are correctly saved and loaded.
+        *   `SaveAndLoad_HexData_IsCorrectlyRestored`: Individual hex data (elevation, terrain type) is preserved across save/load cycles.
+        *   `Load_NonExistentFile_HandlesErrorGracefully`: The system handles attempts to load non-existent files without crashing.
+    *   All 35 EditMode tests passed, confirming the successful refactoring and functionality of the save/load system.
 
 ### Bugs encountered and fixed
 
-*   **Bug:** Mouse cursor not triggering selection.
-    *   **Solution:** Added a Layer Mask to the raycast and assigned a specific layer to Hex prefabs.
-*   **Bug:** Compilation errors during refactor (`CS1061`, `CS0029`).
-    *   **Solution:** Updated `Hex.cs` to expose necessary properties via `HexData`. Added `GetHexView` helper to resolve type mismatches in Editor scripts.
-*   **Bug:** "Material Instantiation" errors in tests.
-    *   **Solution:** Reverted to `MaterialPropertyBlock` for all runtime/editor visual updates.
-*   **Bug:** Grid resetting to flat `Hex(0,0)` instances after Play/Stop/Reload.
-    *   **Cause:** `HexData` was lost on reload; `Hex` view had no serialized state to rebuild it from.
-    *   **Solution:** Restored serialized backing fields to `Hex.cs` and updated `AssignData` to sync them.
-*   **Bug:** A selected hex would lose its "selected" visual when the mouse cursor moved off it.
-    *   **Cause:** `ResetHex` was incorrectly clearing the logical selection state.
-    *   **Solution:** Refactored `ResetHex` to only manage visual states. A dedicated `DeselectHex` method was introduced for deselection logic, which resolved the issue and a subsequent test regression.
-*   **Bug:** Default rim settings update was not propagating to neutral hexes.
-    *   **Solution:** Modified `RefreshVisuals` to loop through all `Hex` components, ensuring global updates.
-*   **Bug:** `UnitTests` and `HighlightingTests` failures due to outdated logic.
-    *   **Solution:** Updated all relevant test fixtures to use the new `HexData` architecture and `DeselectHex` method correctly.
+*   **Bug:** Initial `GridSaveLoadTests.cs` did not compile due to missing `SaveGrid` and `LoadGrid` methods in `HexGridManager`.
+    *   **Human Effort:** (Expertise: Low, Time: 1 minute) Expected as part of TDD.
+    *   **Solution:** Proceeded with implementing the methods as planned.
+*   **Bug:** `GridPersistence.cs` encountered compilation errors due to attempting to access private fields/methods of `HexGridManager.cs` (e.g., `gridWidth`, `hexMesh`, `HexToWorld`).
+    *   **Human Effort:** (Expertise: Medium, Time: 15 minutes) Identified the need for controlled access.
+    *   **Solution:** Added public accessors (properties and methods) in `HexGridManager.cs` for the required data, maintaining encapsulation.
+*   **Bug:** `HexGridEditor.cs` calls to `gridManager.SaveGrid()` and `gridManager.LoadGrid()` failed after refactoring.
+    *   **Human Effort:** (Expertise: Low, Time: 2 minutes) Expected due to method relocation.
+    *   **Solution:** Updated `HexGridEditor.cs` to correctly retrieve the `GridPersistence` component and call its `SaveGrid()` and `LoadGrid()` methods.
+*   **Bug:** `SaveAndLoad_HexData_IsCorrectlyRestored` test failed because `LoadGrid` was inadvertently regenerating the grid with procedural noise, overwriting the loaded data.
+    *   **Human Effort:** (Expertise: High, Time: 20 minutes) Diagnosed that `GenerateGridView` was calling `HexGridManager.GenerateGrid()`, which resets the grid.
+    *   **Solution:** Refactored `HexGridManager` to separate visual initialization (`InitializeVisuals`) from grid generation logic (`GenerateGrid`). Updated `GridPersistence` to call `InitializeVisuals` instead, preserving the loaded data while ensuring resources (mesh, materials) are ready.
 
 **Outcome:**
-All 32 tests (EditMode) passed. The project's core grid, interaction, and visual feedback systems are now robust, data-driven, and fully unit-tested. The architecture is resilient to domain reloads and supports live editing of visual styles.
-**Important:** You must click "Generate Grid" one last time in the Editor to populate the new serialized fields on existing GameObjects.
+The grid persistence system has been successfully refactored into a separate component, improving the overall architecture. All tests are passing, and the editor's save/load functionality is fully operational.
+
 
