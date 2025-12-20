@@ -21,8 +21,6 @@ namespace HexGame.Editor
             {
                 EditorGUI.indentLevel++;
                 EditorGUILayout.PropertyField(serializedObject.FindProperty("defaultRimSettings"));
-                EditorGUILayout.PropertyField(serializedObject.FindProperty("highlightRimSettings"));
-                EditorGUILayout.PropertyField(serializedObject.FindProperty("selectionRimSettings"));
                 EditorGUI.indentLevel--;
             }
 
