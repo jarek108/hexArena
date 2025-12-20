@@ -19,6 +19,7 @@ public class HexGridVisualTests
         managerGO = new GameObject("HexGridManager");
         manager = managerGO.AddComponent<HexGridManager>();
         creator = managerGO.AddComponent<GridCreator>();
+        creator.Initialize(manager);
         
         yield return null;
     }

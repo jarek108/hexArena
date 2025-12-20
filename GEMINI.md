@@ -22,15 +22,14 @@ The project follows a **data-driven architecture** that separates the grid's log
     -   This component is now a **pure visualizer and state holder**.
     -   It holds the primary instance of the logical `HexGrid`.
     -   It is responsible for **VisualizeGrid(HexGrid)**: clearing the scene and instantiating the visual `Hex` GameObjects based on provided data.
+    -   It provides a **Visual Marking API** (`SetHexRim`, `ResetHexToDefault`) for other tools to use.
     -   It manages shared visual resources (Meshes, Materials) and handles coordinate conversions (`HexToWorld`, `WorldToHex`).
-    -   It is completely unaware of *how* the grid is created (procedural vs. loaded).
+    -   It is completely unaware of *how* the grid is created or how it is being interacted with.
 
--   **Grid Creator & Persistence (`GridCreator.cs`):**
-    -   A dedicated component that handles the **creation and I/O** of the grid.
-    -   It contains all **Generation Settings** (Perlin noise, terrain thresholds, grid dimensions).
-    -   It provides the **GenerateGrid()** logic, constructing a `HexGrid` data object from scratch and passing it to the manager.
-    -   It handles **Save/Load** operations, converting between disk files and live `HexGrid` objects.
-    -   This separation ensures that the visualization logic is decoupled from the generation logic.
+-   **Interaction & Tools:**
+    -   **`SelectionTool.cs`**: A dedicated component that manages selection and highlighting state. It uses the `HexGridManager` API to apply visual markers (rims).
+    -   **`SelectionManager.cs`**: A controller that handles player input and drives the `SelectionTool`.
+    -   **`GridCreator.cs`**: A dedicated component that handles the **creation and I/O** of the grid (procedural generation and Save/Load).
 
 -   **Interaction (`SelectionManager.cs`, `HexGridEditor.cs`, `GridCreatorEditor.cs`):**
     -   `SelectionManager` is a focused controller that handles player input and calls public methods on `HexGridManager` to manage visual states like highlighting and selection.
@@ -64,7 +63,7 @@ The project follows a **data-driven architecture** that separates the grid's log
 2. **Waiting** - in interactions where you suspect some ongoing process needs to finish use `python tools/waitFewSeconds.py`. It accepts a single integer - the number of seconds to wait before returning. Useful in interactions where a delay is needed, for example, to allow Unity to recompile scripts or process asset changes.
 3. **Testing** Prefer `EditMode` over `PlayMode` testing. Always follow this testing sequence:
     *   **Initial Console Check** BEFORE ruining the tests always use unity-mcp's `read_console` (types: `['error', 'warning']`). In case of any console errors abandon testing till they are resolved.
-    *   **Test run** always use unity-mcp's `run_tests`. *Troubleshooting: If 'No Unity plugins connected' error occurs, try waiting for recompilation.*
+    *   **Test run** always use unity-mcp's `run_tests`. *Troubleshooting: If 'No Unity plugins connected' error occurs, try waiting 20s or more for recompilation.*
     *   **Post-test Console Check** BEFORE reporting test results further, check the console again. In Unity errors may indicate unreliable tests results
 4.  **Git Usage:** 
     *   You may propose commit msgs after a major feature/bug fix is verified and CONFIRMED BY THE USER. Never commit changes without user confirmation.

@@ -6,7 +6,7 @@ namespace HexGame
     public class SelectionManager : MonoBehaviour
     {
         private HexRaycaster hexRaycaster;
-        private HexGridManager gridManager;
+        private SelectionTool selectionTool;
 
         private Hex lastHoveredHex;
         private Hex selectedHex;
@@ -14,13 +14,24 @@ namespace HexGame
         private void Start()
         {
             hexRaycaster = FindFirstObjectByType<HexRaycaster>();
-            gridManager = FindFirstObjectByType<HexGridManager>();
-            selectedHex = null; // Ensure no hex is selected on start
+            selectionTool = FindFirstObjectByType<SelectionTool>();
+            
+            if (selectionTool == null)
+            {
+                // Auto-add if missing (though it should be set up in scene)
+                var gridManager = FindFirstObjectByType<HexGridManager>();
+                if (gridManager != null)
+                {
+                    selectionTool = gridManager.gameObject.AddComponent<SelectionTool>();
+                }
+            }
+            
+            selectedHex = null; 
         }
 
         private void Update()
         {
-            if (Mouse.current == null) return;
+            if (Mouse.current == null || selectionTool == null) return;
             
             HandleHighlighting();
             HandleSelection();
@@ -34,13 +45,13 @@ namespace HexGame
                 // Reset the hex we just left
                 if (lastHoveredHex != null)
                 {
-                    gridManager.ResetHex(lastHoveredHex);
+                    selectionTool.ResetHex(lastHoveredHex);
                 }
 
                 // Highlight the new hex
                 if (currentHoveredHex != null)
                 {
-                    gridManager.HighlightHex(currentHoveredHex);
+                    selectionTool.HighlightHex(currentHoveredHex);
                 }
 
                 lastHoveredHex = currentHoveredHex;
@@ -56,14 +67,17 @@ namespace HexGame
                 // Deselect if clicking the same hex or empty space
                 if (newSelectedHex == selectedHex)
                 {
-                    gridManager.DeselectHex(selectedHex);
+                    if (selectedHex != null)
+                    {
+                        selectionTool.DeselectHex(selectedHex);
+                    }
                     selectedHex = null;
                 }
                 // Select a new hex
                 else
                 {
                     selectedHex = newSelectedHex;
-                    gridManager.SelectHex(selectedHex);
+                    selectionTool.SelectHex(selectedHex);
                 }
             }
         }

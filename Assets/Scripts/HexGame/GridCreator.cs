@@ -33,6 +33,11 @@ namespace HexGame
         [SerializeField] private float forestLevel = 0.6f;
         [SerializeField] private float forestScale = 5.0f;
 
+        public void Initialize(HexGridManager manager)
+        {
+            _gridManager = manager;
+        }
+
         public void GenerateGrid()
         {
             if (gridManager == null)

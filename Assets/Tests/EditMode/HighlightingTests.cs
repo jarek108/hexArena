@@ -9,6 +9,7 @@ public class HighlightingTests
     private GameObject managerGO;
     private HexGridManager manager;
     private GridCreator creator;
+    private SelectionTool selectionTool;
     private Hex testHex;
 
     [UnitySetUp]
@@ -17,6 +18,11 @@ public class HighlightingTests
         managerGO = new GameObject("HexGridManager");
         manager = managerGO.AddComponent<HexGridManager>();
         creator = managerGO.AddComponent<GridCreator>();
+        selectionTool = managerGO.AddComponent<SelectionTool>();
+        
+        creator.Initialize(manager);
+        selectionTool.Initialize(manager);
+        
         yield return null;
         creator.GenerateGrid();
         yield return null;
@@ -36,28 +42,28 @@ public class HighlightingTests
     {
         Hex hexA = manager.GetHexView(manager.Grid.GetHexAt(1, 1));
         Hex hexB = manager.GetHexView(manager.Grid.GetHexAt(2, 2));
-        manager.SelectHex(hexA);
+        selectionTool.SelectHex(hexA);
         MaterialPropertyBlock blockA = new MaterialPropertyBlock();
         hexA.GetComponent<Renderer>().GetPropertyBlock(blockA, 0);
-        Assert.AreEqual(manager.selectionRimSettings.color, blockA.GetColor("_RimColor"), "Pre-condition: Hex A should be visually selected.");
-        manager.ResetHex(hexA);
-        manager.HighlightHex(hexB);
+        Assert.AreEqual(selectionTool.selectionRimSettings.color, blockA.GetColor("_RimColor"), "Pre-condition: Hex A should be visually selected.");
+        selectionTool.ResetHex(hexA);
+        selectionTool.HighlightHex(hexB);
         yield return null;
         hexA.GetComponent<Renderer>().GetPropertyBlock(blockA, 0);
-        Assert.AreEqual(manager.selectionRimSettings.color, blockA.GetColor("_RimColor"), "Hex A should remain visually selected after hovering off it.");
+        Assert.AreEqual(selectionTool.selectionRimSettings.color, blockA.GetColor("_RimColor"), "Hex A should remain visually selected after hovering off it.");
     }
     
     [UnityTest]
     public IEnumerator Transition_SelectToDeselect_UpdatesProperties()
     {
         // 1. Select
-        manager.SelectHex(testHex);
+        selectionTool.SelectHex(testHex);
         MaterialPropertyBlock block = new MaterialPropertyBlock();
         testHex.GetComponent<Renderer>().GetPropertyBlock(block, 0);
         Assert.Greater(block.GetFloat("_RimWidth"), 0f);
 
         // 2. Deselect
-        manager.DeselectHex(testHex);
+        selectionTool.DeselectHex(testHex);
         testHex.GetComponent<Renderer>().GetPropertyBlock(block, 0);
         Assert.Less(block.GetFloat("_RimWidth"), 0f);
 
@@ -67,13 +73,13 @@ public class HighlightingTests
     [UnityTest]
     public IEnumerator HighlightHex_ActivatesRim()
     {
-        manager.HighlightHex(testHex);
+        selectionTool.HighlightHex(testHex);
         MaterialPropertyBlock block = new MaterialPropertyBlock();
         testHex.GetComponent<Renderer>().GetPropertyBlock(block, 0);
         Color rimColor = block.GetColor("_RimColor");
         float rimWidth = block.GetFloat("_RimWidth");
         float rimPulsationSpeed = block.GetFloat("_RimPulsationSpeed");
-        Assert.AreEqual(manager.highlightRimSettings.color, rimColor, "Highlight should set RimColor to Yellow.");
+        Assert.AreEqual(selectionTool.highlightRimSettings.color, rimColor, "Highlight should set RimColor to Yellow.");
         Assert.Greater(rimWidth, 0f, "Highlight should set a positive RimWidth.");
         Assert.Greater(rimPulsationSpeed, 0f, "Highlight should set a positive RimPulsationSpeed.");
         yield return null;
@@ -82,23 +88,23 @@ public class HighlightingTests
     [UnityTest]
     public IEnumerator SelectHex_ActivatesRim_WithDifferentSettings()
     {
-        manager.SelectHex(testHex);
+        selectionTool.SelectHex(testHex);
         MaterialPropertyBlock block = new MaterialPropertyBlock();
         testHex.GetComponent<Renderer>().GetPropertyBlock(block, 0);
         Color rimColor = block.GetColor("_RimColor");
         float rimWidth = block.GetFloat("_RimWidth");
         float rimPulsationSpeed = block.GetFloat("_RimPulsationSpeed");
-        Assert.AreEqual(manager.selectionRimSettings.color, rimColor, "Selection should set RimColor to Red.");
+        Assert.AreEqual(selectionTool.selectionRimSettings.color, rimColor, "Selection should set RimColor to Red.");
         Assert.Greater(rimWidth, 0f, "Selection should set a positive RimWidth.");
-        Assert.AreEqual(manager.selectionRimSettings.pulsation, rimPulsationSpeed, "Selection should set RimPulsationSpeed to expected value.");
+        Assert.AreEqual(selectionTool.selectionRimSettings.pulsation, rimPulsationSpeed, "Selection should set RimPulsationSpeed to expected value.");
         yield return null;
     }
 
     [UnityTest]
     public IEnumerator ResetHex_DeactivatesRim()
     {
-        manager.HighlightHex(testHex);
-        manager.ResetHex(testHex);
+        selectionTool.HighlightHex(testHex);
+        selectionTool.ResetHex(testHex);
         MaterialPropertyBlock block = new MaterialPropertyBlock();
         testHex.GetComponent<Renderer>().GetPropertyBlock(block, 0);
         float rimWidth = block.GetFloat("_RimWidth");
@@ -111,13 +117,13 @@ public class HighlightingTests
     [UnityTest]
     public IEnumerator Transition_HighlightToSelect_UpdatesProperties()
     {
-        manager.HighlightHex(testHex);
+        selectionTool.HighlightHex(testHex);
         MaterialPropertyBlock block = new MaterialPropertyBlock();
         testHex.GetComponent<Renderer>().GetPropertyBlock(block, 0);
-        Assert.AreEqual(manager.highlightRimSettings.color, block.GetColor("_RimColor"));
-        manager.SelectHex(testHex);
+        Assert.AreEqual(selectionTool.highlightRimSettings.color, block.GetColor("_RimColor"));
+        selectionTool.SelectHex(testHex);
         testHex.GetComponent<Renderer>().GetPropertyBlock(block, 0);
-        Assert.AreEqual(manager.selectionRimSettings.color, block.GetColor("_RimColor"));
+        Assert.AreEqual(selectionTool.selectionRimSettings.color, block.GetColor("_RimColor"));
         yield return null;
     }
 
@@ -128,14 +134,14 @@ public class HighlightingTests
         HexData dataB = manager.Grid.GetHexAt(1, 0);
         Hex hexA = manager.GetHexView(dataA);
         Hex hexB = manager.GetHexView(dataB);
-        manager.HighlightHex(hexA);
-        manager.HighlightHex(hexB);
+        selectionTool.HighlightHex(hexA);
+        selectionTool.HighlightHex(hexB);
         MaterialPropertyBlock blockA = new MaterialPropertyBlock();
         hexA.GetComponent<Renderer>().GetPropertyBlock(blockA, 0);
         MaterialPropertyBlock blockB = new MaterialPropertyBlock();
         hexB.GetComponent<Renderer>().GetPropertyBlock(blockB, 0);
         Assert.Less(blockA.GetFloat("_RimWidth"), 0f, "Old Hex A should be reset.");
-        Assert.AreEqual(manager.highlightRimSettings.color, blockB.GetColor("_RimColor"), "New Hex B should be highlighted.");
+        Assert.AreEqual(selectionTool.highlightRimSettings.color, blockB.GetColor("_RimColor"), "New Hex B should be highlighted.");
         yield return null;
     }
 
@@ -146,55 +152,55 @@ public class HighlightingTests
         HexData dataB = manager.Grid.GetHexAt(1, 0);
         Hex hexA = manager.GetHexView(dataA);
         Hex hexB = manager.GetHexView(dataB);
-        manager.SelectHex(hexA);
-        manager.SelectHex(hexB);
+        selectionTool.SelectHex(hexA);
+        selectionTool.SelectHex(hexB);
         MaterialPropertyBlock blockA = new MaterialPropertyBlock();
         hexA.GetComponent<Renderer>().GetPropertyBlock(blockA, 0);
         MaterialPropertyBlock blockB = new MaterialPropertyBlock();
         hexB.GetComponent<Renderer>().GetPropertyBlock(blockB, 0);
         Assert.Less(blockA.GetFloat("_RimWidth"), 0f, "Old Hex A should be reset.");
-        Assert.AreEqual(manager.selectionRimSettings.color, blockB.GetColor("_RimColor"), "New Hex B should be selected.");
+        Assert.AreEqual(selectionTool.selectionRimSettings.color, blockB.GetColor("_RimColor"), "New Hex B should be selected.");
         yield return null;
     }
 
     [UnityTest]
     public IEnumerator Highlight_OnSelectedHex_Ignored()
     {
-        manager.SelectHex(testHex);
-        manager.HighlightHex(testHex);
+        selectionTool.SelectHex(testHex);
+        selectionTool.HighlightHex(testHex);
         MaterialPropertyBlock block = new MaterialPropertyBlock();
         testHex.GetComponent<Renderer>().GetPropertyBlock(block, 0);
-        Assert.AreEqual(manager.selectionRimSettings.color, block.GetColor("_RimColor"), "Highlighting a Selected hex should be ignored (remain Red).");
+        Assert.AreEqual(selectionTool.selectionRimSettings.color, block.GetColor("_RimColor"), "Highlighting a Selected hex should be ignored (remain Red).");
         yield return null;
     }
 
     [UnityTest]
     public IEnumerator HighlightHex_SetsPulsationSpeed()
     {
-        manager.HighlightHex(testHex);
+        selectionTool.HighlightHex(testHex);
         MaterialPropertyBlock block = new MaterialPropertyBlock();
         testHex.GetComponent<Renderer>().GetPropertyBlock(block, 0);
         float rimPulsationSpeed = block.GetFloat("_RimPulsationSpeed");
-        Assert.AreEqual(manager.highlightRimSettings.pulsation, rimPulsationSpeed, "Highlight should set RimPulsationSpeed to the value in highlightRimSettings.");
+        Assert.AreEqual(selectionTool.highlightRimSettings.pulsation, rimPulsationSpeed, "Highlight should set RimPulsationSpeed to the value in highlightRimSettings.");
         yield return null;
     }
 
     [UnityTest]
     public IEnumerator SelectHex_SetsPulsationSpeed()
     {
-        manager.SelectHex(testHex);
+        selectionTool.SelectHex(testHex);
         MaterialPropertyBlock block = new MaterialPropertyBlock();
         testHex.GetComponent<Renderer>().GetPropertyBlock(block, 0);
         float rimPulsationSpeed = block.GetFloat("_RimPulsationSpeed");
-        Assert.AreEqual(manager.selectionRimSettings.pulsation, rimPulsationSpeed, "Selection should set RimPulsationSpeed to the value in selectionRimSettings.");
+        Assert.AreEqual(selectionTool.selectionRimSettings.pulsation, rimPulsationSpeed, "Selection should set RimPulsationSpeed to the value in selectionRimSettings.");
         yield return null;
     }
 
     [UnityTest]
     public IEnumerator ResetHex_SetsPulsationSpeed()
     {
-        manager.HighlightHex(testHex);
-        manager.ResetHex(testHex);
+        selectionTool.HighlightHex(testHex);
+        selectionTool.ResetHex(testHex);
         MaterialPropertyBlock block = new MaterialPropertyBlock();
         testHex.GetComponent<Renderer>().GetPropertyBlock(block, 0);
         float rimPulsationSpeed = block.GetFloat("_RimPulsationSpeed");
@@ -205,11 +211,10 @@ public class HighlightingTests
     [UnityTest]
     public IEnumerator UpdateSettings_ImmediatelyReflectedInActiveHighlight()
     {
-        manager.HighlightHex(testHex);
+        selectionTool.HighlightHex(testHex);
         Color newHighlightColor = Color.cyan;
-        manager.highlightRimSettings.color = newHighlightColor;
-        Assert.AreEqual(newHighlightColor, manager.highlightRimSettings.color, "Manager field should update.");
-        manager.RefreshVisuals();
+        selectionTool.highlightRimSettings.color = newHighlightColor;
+        selectionTool.RefreshVisuals();
         yield return null;
         MaterialPropertyBlock block = new MaterialPropertyBlock();
         testHex.GetComponent<Renderer>().GetPropertyBlock(block, 0);
@@ -221,11 +226,10 @@ public class HighlightingTests
     [UnityTest]
     public IEnumerator UpdateSettings_ImmediatelyReflectedInActiveSelection()
     {
-        manager.SelectHex(testHex);
+        selectionTool.SelectHex(testHex);
         Color newSelectionColor = Color.blue;
-        manager.selectionRimSettings.color = newSelectionColor;
-        Assert.AreEqual(newSelectionColor, manager.selectionRimSettings.color, "Manager field should update.");
-        manager.RefreshVisuals();
+        selectionTool.selectionRimSettings.color = newSelectionColor;
+        selectionTool.RefreshVisuals();
         yield return null;
         MaterialPropertyBlock block = new MaterialPropertyBlock();
         testHex.GetComponent<Renderer>().GetPropertyBlock(block, 0);
@@ -237,7 +241,7 @@ public class HighlightingTests
     [UnityTest]
     public IEnumerator UpdateSettings_ImmediatelyReflectedInDefaultHex()
     {
-        manager.ResetHex(testHex);
+        selectionTool.ResetHex(testHex);
         Color newDefaultColor = Color.magenta;
         manager.defaultRimSettings.color = newDefaultColor;
         manager.RefreshVisuals();

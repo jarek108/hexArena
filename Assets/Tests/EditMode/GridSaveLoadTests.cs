@@ -21,6 +21,7 @@ namespace HexGame.Tests
             gridManagerGO = new GameObject("GridManager");
             gridManager = gridManagerGO.AddComponent<HexGridManager>();
             gridCreator = gridManagerGO.AddComponent<GridCreator>();
+            gridCreator.Initialize(gridManager);
             testSavePath = Path.Combine(Application.temporaryCachePath, "testGrid.json");
             yield return null;
         }

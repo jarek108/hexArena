@@ -21,8 +21,6 @@ namespace HexGame
 
         [Header("Rim Settings")]
         [SerializeField] public RimSettings defaultRimSettings = new RimSettings { color = Color.black, width = -1.0f, pulsation = 0f };
-        [SerializeField] public RimSettings highlightRimSettings = new RimSettings { color = Color.yellow, width = 0.2f, pulsation = 5f };
-        [SerializeField] public RimSettings selectionRimSettings = new RimSettings { color = Color.red, width = 0.2f, pulsation = 2f };
 
         [System.Serializable]
         public struct TerrainColorMapping
@@ -49,19 +47,7 @@ namespace HexGame
             {
                 Hex hex = child.GetComponent<Hex>();
                 if (hex == null) continue;
-
-                if (hex == SelectedHex)
-                {
-                    ApplyRimSettings(hex, selectionRimSettings);
-                }
-                else if (hex == HighlightedHex)
-                {
-                    ApplyRimSettings(hex, highlightRimSettings);
-                }
-                else
-                {
-                    ApplyRimSettings(hex, defaultRimSettings);
-                }
+                ResetHexToDefault(hex);
             }
         }
 
@@ -90,8 +76,6 @@ namespace HexGame
         [SerializeField] private bool isPointyTop = true;
 
         public HexGrid Grid { get; set; }
-        public Hex SelectedHex { get; private set; }
-        public Hex HighlightedHex { get; private set; }
 
         private Mesh hexMesh;
         public Mesh GetHexMesh() { return hexMesh; }
@@ -108,17 +92,9 @@ namespace HexGame
         
         private void RebuildGridFromChildren()
         {
-             // We can't know width/height easily without iterating everything or saving it.
-             // For now, we will reconstruct a dynamic grid.
-             // Ideally, serialized data should drive this, but for Editor visual resilience:
-             
              Hex[] childHexes = GetComponentsInChildren<Hex>();
              if (childHexes.Length == 0) return;
 
-             // Infer grid size (optional, or just use dynamic dict)
-             Grid = new HexGrid(0, 0); // Size 0 implies we don't enforce bounds here? Or we should calculate max bounds.
-             // Actually, HexGrid requires fixed W/H. 
-             // Let's iterate to find max bounds.
              int maxQ = 0;
              int maxR = 0;
              foreach(var hex in childHexes) {
@@ -137,7 +113,7 @@ namespace HexGame
                      hex.AssignData(data);
                  }
                  Grid.AddHex(hex.Data);
-                 ResetHex(hex);
+                 ResetHexToDefault(hex);
              }
         }
 
@@ -176,7 +152,6 @@ namespace HexGame
         {
             ClearGrid();
             Grid = newGrid;
-            SelectedHex = null;
             
             InitializeVisuals();
 
@@ -370,39 +345,12 @@ namespace HexGame
             return new Vector3Int(q, r, s);
         }
         
-        public void HighlightHex(Hex hex)
+        public void ResetHexToDefault(Hex hex)
         {
-            if (hex == SelectedHex) return; 
-            if (HighlightedHex != null && HighlightedHex != hex) ApplyRimSettings(HighlightedHex, defaultRimSettings);
-            HighlightedHex = hex;
-            ApplyRimSettings(hex, highlightRimSettings);
+            SetHexRim(hex, defaultRimSettings);
         }
 
-        public void DeselectHex(Hex hex)
-        {
-            if (hex == SelectedHex)
-            {
-                SelectedHex = null;
-                ApplyRimSettings(hex, defaultRimSettings);
-            }
-        }
-
-        public void SelectHex(Hex hex)
-        {
-            if (SelectedHex != null && SelectedHex != hex) ApplyRimSettings(SelectedHex, defaultRimSettings);
-            SelectedHex = hex; 
-            if(SelectedHex != null) ApplyRimSettings(hex, selectionRimSettings);
-        }
-
-        public void ResetHex(Hex hex)
-        {
-            if (hex == null) return;
-            if (hex == HighlightedHex) HighlightedHex = null;
-            RimSettings settingsToApply = (hex == SelectedHex) ? selectionRimSettings : defaultRimSettings;
-            ApplyRimSettings(hex, settingsToApply);
-        }
-
-        private void ApplyRimSettings(Hex hex, RimSettings settings)
+        public void SetHexRim(Hex hex, RimSettings settings)
         {
             if (hex == null) return;
             Renderer renderer = hex.GetComponent<Renderer>();
@@ -453,6 +401,14 @@ namespace HexGame
                 else return hexMaterialSides.color;
             }
             return Color.white; 
+        }
+        
+        // Helper to get hex object - no longer needed as much since Hex IS the component, 
+        // but kept for compatibility if needed or removed if unused. 
+        // We will remove the dictionary lookup since the Hex component is on the object.
+        public GameObject GetHexGameObject(Hex hex)
+        {
+            return hex != null ? hex.gameObject : null;
         }
     }
 }

@@ -91,16 +91,17 @@
 ### Features Implemented
 
 *   **Grid Creator Architectural Refactor:**
-    *   **Goal:** Achieved a higher degree of modularity by evolving `GridPersistence` into `GridCreator` and stripping `HexGridManager` of all generation logic.
-    *   **Logic Migration:** Moved all procedural generation fields (Noise Scale, Elevation Scale, Water/Mountain/Forest levels) and the `GenerateGrid()` algorithm from `HexGridManager` to `GridCreator`.
-    *   **Visualizer Pattern:** Refactored `HexGridManager` into a pure visualizer. It now provides a `VisualizeGrid(HexGrid)` method that builds the scene based on any `HexGrid` object it receives, regardless of its source (noise vs. file).
-    *   **Cleaned Manager:** `HexGridManager` no longer tracks grid dimensions (`width`/`height`) or generation settings, making its inspector focused purely on visual presentation (Materials, Rims).
+    *   **Goal:** Achieved a higher degree of modularity by evolving `GridPersistence` into `GridCreator` and stripping `HexGridManager` of all generation and selection logic.
+    *   **Logic Migration:** Moved all procedural generation fields and the `GenerateGrid()` algorithm from `HexGridManager` to `GridCreator`.
+    *   **Selection Logic Migration:** Created `SelectionTool.cs` to hold selection state (`SelectedHex`, `HighlightedHex`) and rim settings. `HexGridManager` is now purely a visualizer that provides an API for other tools to mark hexes.
+    *   **Visualizer Pattern:** Refactored `HexGridManager` into a pure visualizer. It now provides a `VisualizeGrid(HexGrid)` method that builds the scene based on any `HexGrid` object it receives, and a `SetHexRim()` method for visual marking.
+    *   **Cleaned Manager:** `HexGridManager` no longer tracks grid dimensions, generation settings, or selection state, making its inspector focused purely on shared visual resources (Materials, default Rim).
 *   **Separated Editor UI:**
-    *   **`GridCreatorEditor.cs`:** A new custom editor that provides the "Map Control Panel." It hosts the "Generate Grid," "Save Grid," and "Load Grid" buttons along with all generation sliders.
-    *   **`HexGridEditor.cs`:** Cleaned of all generation and persistence buttons. It now only manages visual cleanup and settings.
+    *   **`GridCreatorEditor.cs`:** A custom editor for the "Map Control Panel" (Generate, Save, Load).
+    *   **`HexGridEditor.cs`:** Cleaned of all tool-specific logic.
 *   **Comprehensive Test Migration:**
-    *   Updated all 35 EditMode tests (`GridSaveLoadTests`, `HexGridVisualTests`, `HighlightingTests`, `HexComponentTests`) to work with the new `GridCreator` component.
-    *   Ensured tests correctly initialize the component hierarchy and use the new method signatures.
+    *   Updated all 35 EditMode tests to work with the new component hierarchy.
+    *   Introduced `Initialize(HexGridManager)` methods in `GridCreator` and `SelectionTool` to ensure robust test execution in EditMode (bypassing `Awake` timing issues).
 *   **Foldable Rim Settings:** Implemented a foldable section in `HexGridEditor` using `EditorGUILayout.Foldout` and `DrawPropertiesExcluding` to hide/show these advanced settings.
 
 ### Bugs encountered and fixed
