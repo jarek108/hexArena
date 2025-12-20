@@ -9,6 +9,7 @@ public class HexComponentTests
 {
     private GameObject managerGO;
     private HexGridManager manager;
+    private GridCreator creator;
     private Hex testHex;
 
     [UnitySetUp]
@@ -16,7 +17,9 @@ public class HexComponentTests
     {
         managerGO = new GameObject("HexGridManager");
         manager = managerGO.AddComponent<HexGridManager>();
-        manager.GenerateGrid();
+        creator = managerGO.AddComponent<GridCreator>();
+        yield return null;
+        creator.GenerateGrid();
         
         // Wait a few frames to ensure all components (especially Renderers) are initialized
         yield return null; 

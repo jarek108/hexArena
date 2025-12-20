@@ -8,6 +8,7 @@ public class HighlightingTests
 {
     private GameObject managerGO;
     private HexGridManager manager;
+    private GridCreator creator;
     private Hex testHex;
 
     [UnitySetUp]
@@ -15,7 +16,9 @@ public class HighlightingTests
     {
         managerGO = new GameObject("HexGridManager");
         manager = managerGO.AddComponent<HexGridManager>();
-        manager.GenerateGrid();
+        creator = managerGO.AddComponent<GridCreator>();
+        yield return null;
+        creator.GenerateGrid();
         yield return null;
         HexData data = manager.Grid.GetHexAt(0, 0);
         testHex = manager.GetHexView(data);
@@ -61,8 +64,6 @@ public class HighlightingTests
         yield return null;
     }
 
-    // ... (rest of the tests remain the same)
-    
     [UnityTest]
     public IEnumerator HighlightHex_ActivatesRim()
     {

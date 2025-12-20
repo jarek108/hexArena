@@ -1,6 +1,8 @@
 
+using System.Collections;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.TestTools;
 using System.IO;
 
 namespace HexGame.Tests
@@ -9,82 +11,82 @@ namespace HexGame.Tests
     public class GridSaveLoadTests
     {
         private HexGridManager gridManager;
-        private GridPersistence gridPersistence;
+        private GridCreator gridCreator;
         private GameObject gridManagerGO;
         private string testSavePath;
 
-        [SetUp]
-        public void SetUp()
+        [UnitySetUp]
+        public IEnumerator SetUp()
         {
             gridManagerGO = new GameObject("GridManager");
             gridManager = gridManagerGO.AddComponent<HexGridManager>();
-            gridPersistence = gridManagerGO.AddComponent<GridPersistence>(); // Add the new component
+            gridCreator = gridManagerGO.AddComponent<GridCreator>();
             testSavePath = Path.Combine(Application.temporaryCachePath, "testGrid.json");
+            yield return null;
         }
 
-        [TearDown]
-        public void TearDown()
+        [UnityTearDown]
+        public IEnumerator TearDown()
         {
             Object.DestroyImmediate(gridManagerGO);
             if (File.Exists(testSavePath))
             {
                 File.Delete(testSavePath);
             }
+            yield return null;
         }
 
-        [Test]
-        public void SaveAndLoad_GridDimensions_ArePreserved()
+        [UnityTest]
+        public IEnumerator SaveAndLoad_GridDimensions_ArePreserved()
         {
             // Arrange
-            gridManager.gridWidth = 15;
-            gridManager.gridHeight = 12;
-            gridManager.GenerateGrid();
+            gridCreator.gridWidth = 15;
+            gridCreator.gridHeight = 12;
+            gridCreator.GenerateGrid();
 
             // Act
-            gridPersistence.SaveGrid(gridManager, testSavePath);
+            gridCreator.SaveGrid(testSavePath);
             gridManager.ClearGrid(); 
-            gridPersistence.LoadGrid(gridManager, testSavePath);
+            gridCreator.LoadGrid(testSavePath);
 
             // Assert
             Assert.IsNotNull(gridManager.Grid, "Grid should not be null after loading.");
             Assert.AreEqual(15, gridManager.Grid.Width, "Grid width should be preserved.");
             Assert.AreEqual(12, gridManager.Grid.Height, "Grid height should be preserved.");
+            yield return null;
         }
 
-        [Test]
-        public void SaveAndLoad_HexData_IsCorrectlyRestored()
+        [UnityTest]
+        public IEnumerator SaveAndLoad_HexData_IsCorrectlyRestored()
         {
             // Arrange
-            gridManager.GenerateGrid();
+            gridCreator.GenerateGrid();
             HexData originalHexData = gridManager.Grid.GetHexAt(3, 4);
             originalHexData.Elevation = 5;
             originalHexData.TerrainType = TerrainType.Desert;
 
             // Act
-            gridPersistence.SaveGrid(gridManager, testSavePath);
+            gridCreator.SaveGrid(testSavePath);
             gridManager.ClearGrid();
-            gridPersistence.LoadGrid(gridManager, testSavePath);
+            gridCreator.LoadGrid(testSavePath);
             HexData loadedHexData = gridManager.Grid.GetHexAt(3, 4);
 
             // Assert
             Assert.IsNotNull(loadedHexData, "Loaded hex data should not be null.");
             Assert.AreEqual(5f, loadedHexData.Elevation, "Elevation was not restored correctly.");
             Assert.AreEqual(TerrainType.Desert, loadedHexData.TerrainType, "TerrainType was not restored correctly.");
+            yield return null;
         }
         
-        [Test]
-        public void Load_NonExistentFile_HandlesErrorGracefully()
+        [UnityTest]
+        public IEnumerator Load_NonExistentFile_HandlesErrorGracefully()
         {
             // Arrange
             string nonExistentPath = Path.Combine(Application.temporaryCachePath, "nonexistent.json");
 
             // Act & Assert
-            // We expect a log message, not an exception. The function should simply return without crashing.
-            Assert.DoesNotThrow(() => gridPersistence.LoadGrid(gridManager, nonExistentPath), "Loading a non-existent file should not throw an exception.");
-            
-            // Optional: Check for a warning log
-            // LogAssert.Expect(LogType.Warning, $"File not found at {nonExistentPath}. Aborting load.");
-            // For now, we'll just ensure it doesn't crash.
+            Assert.DoesNotThrow(() => gridCreator.LoadGrid(nonExistentPath), "Loading a non-existent file should not throw an exception.");
+            yield return null;
         }
     }
 }

@@ -11,14 +11,14 @@ public class HexGridVisualTests
 {
     private GameObject managerGO;
     private HexGridManager manager;
+    private GridCreator creator;
 
     [UnitySetUp]
     public IEnumerator SetUp()
     {
         managerGO = new GameObject("HexGridManager");
         manager = managerGO.AddComponent<HexGridManager>();
-        
-        // No need to assign hexPrefab anymore as it's generated internally
+        creator = managerGO.AddComponent<GridCreator>();
         
         yield return null;
     }
@@ -41,7 +41,7 @@ public class HexGridVisualTests
     public IEnumerator HexGridManager_GeneratesGrid_SpawnsObjects()
     {
         // Manually trigger generation after setup
-        manager.GenerateGrid();
+        creator.GenerateGrid();
         yield return null;
 
         Assert.Greater(manager.transform.childCount, 0, "Grid should spawn child objects");
@@ -60,13 +60,13 @@ public class HexGridVisualTests
     [UnityTest]
     public IEnumerator HexGridManager_RegeneratesAndClearsGrid_Correctly()
     {
-        SerializedObject so = new SerializedObject(manager);
+        SerializedObject so = new SerializedObject(creator);
 
         // --- First Generation (5x5) ---
         so.FindProperty("gridWidth").intValue = 5;
         so.FindProperty("gridHeight").intValue = 5;
         so.ApplyModifiedProperties();
-        manager.GenerateGrid();
+        creator.GenerateGrid();
         yield return null;
         Assert.AreEqual(25, manager.transform.childCount, "First grid generation should spawn 25 hexes.");
 
@@ -74,7 +74,7 @@ public class HexGridVisualTests
         so.FindProperty("gridWidth").intValue = 3;
         so.FindProperty("gridHeight").intValue = 3;
         so.ApplyModifiedProperties();
-        manager.GenerateGrid();
+        creator.GenerateGrid();
         yield return null;
         Assert.AreEqual(9, manager.transform.childCount, "Second grid generation should spawn 9 hexes.");
 

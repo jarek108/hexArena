@@ -19,19 +19,23 @@ The project follows a **data-driven architecture** that separates the grid's log
     -   It holds serialized backing fields for its coordinates and properties (`viewQ`, `viewR`, etc.). This provides resilience against Unity's domain reloads, ensuring the grid state can be reconstructed even after scripts recompile.
 
 -   **Bridge & Manager (`HexGridManager.cs`):**
-    -   This central `MonoBehaviour` orchestrates the grid's runtime state.
+    -   This component is now a **pure visualizer and state holder**.
     -   It holds the primary instance of the logical `HexGrid`.
-    -   It handles procedural generation and the creation of the visual grid.
-    -   It provides helper methods like `WorldToHex` and `GetHexView` to bridge the gap between Unity's world space and the grid's data layer.
+    -   It is responsible for **VisualizeGrid(HexGrid)**: clearing the scene and instantiating the visual `Hex` GameObjects based on provided data.
+    -   It manages shared visual resources (Meshes, Materials) and handles coordinate conversions (`HexToWorld`, `WorldToHex`).
+    -   It is completely unaware of *how* the grid is created (procedural vs. loaded).
 
--   **Persistence (`GridPersistence.cs`):**
-    -   A separate `MonoBehaviour` that resides on the same `GameObject` as `HexGridManager`.
-    -   It is solely responsible for saving and loading the grid state.
-    -   It uses `JsonUtility` to serialize a list of simple `HexSaveData` objects to a file, ensuring the save format is stable and decoupled from runtime logic.
+-   **Grid Creator & Persistence (`GridCreator.cs`):**
+    -   A dedicated component that handles the **creation and I/O** of the grid.
+    -   It contains all **Generation Settings** (Perlin noise, terrain thresholds, grid dimensions).
+    -   It provides the **GenerateGrid()** logic, constructing a `HexGrid` data object from scratch and passing it to the manager.
+    -   It handles **Save/Load** operations, converting between disk files and live `HexGrid` objects.
+    -   This separation ensures that the visualization logic is decoupled from the generation logic.
 
--   **Interaction (`SelectionManager.cs`, `HexGridEditor.cs`):**
+-   **Interaction (`SelectionManager.cs`, `HexGridEditor.cs`, `GridCreatorEditor.cs`):**
     -   `SelectionManager` is a focused controller that handles player input and calls public methods on `HexGridManager` to manage visual states like highlighting and selection.
-    -   `HexGridEditor` provides a powerful custom inspector with tools for "painting" terrain, adjusting elevation, and buttons that call the appropriate methods on `HexGridManager` or `GridPersistence` to generate, save, load, or clear the grid.
+    -   `HexGridEditor` provides a clean interface for managing the visual grid's general state and rim effects.
+    -   `GridCreatorEditor` provides the "Map Control Panel" with buttons to generate, save, and load the grid using the `GridCreator` component.
 
 # Workflow and coding standards
 
@@ -63,8 +67,10 @@ The project follows a **data-driven architecture** that separates the grid's log
     *   **Test run** always use unity-mcp's `run_tests`. *Troubleshooting: If 'No Unity plugins connected' error occurs, try waiting for recompilation.*
     *   **Post-test Console Check** BEFORE reporting test results further, check the console again. In Unity errors may indicate unreliable tests results
 4.  **Git Usage:** 
-    *   You may propose commit msgs after a major feature/bug fix is verified and CONFIRMED BY THE USER. 
-    *   Even then only suggest the commit message and ask for confirmation to make such commit. Never commit changes without user confirmation.
-    *   Prepare commit messages based on the session notes and your context. Avoid long git diff HEAD analysis etc.
+    *   You may propose commit msgs after a major feature/bug fix is verified and CONFIRMED BY THE USER. Never commit changes without user confirmation.
+    *   Prepare commit messages based on the session notes, your context and a list of modified files. Do not do long git diff HEAD analysis etc.
+    *   Use simple language and lis all areas of change
+    *   Run each git command independently, do not chain them with &&
+    *   Make sure you push after each commit
 5.  **Scene inspection/Management:** - Use use unity-mcp's `manage_gameobject` (action: `get_components`) or `manage_scene` (action: `get_hierarchy`) to inspect scene
 6. **Editing** - while using edit replacing 'old_string' with new always break long edits into smaller to avoid tool issues due to the errors in the replaced strings ('The exact text in old_string was not found') 
