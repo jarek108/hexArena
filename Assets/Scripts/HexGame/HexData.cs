@@ -11,7 +11,20 @@ namespace HexGame
         public int Q;
         public int R;
         public int S;
-        public float Elevation;
+        
+        private float _elevation;
+        public float Elevation
+        {
+            get => _elevation;
+            set
+            {
+                if (!Mathf.Approximately(_elevation, value))
+                {
+                    _elevation = value;
+                    OnElevationChanged?.Invoke();
+                }
+            }
+        }
         
         private TerrainType _terrainType;
         public TerrainType TerrainType
@@ -41,6 +54,7 @@ namespace HexGame
 
         public event Action OnStateChanged;
         public event Action OnTerrainChanged;
+        public event Action OnElevationChanged;
         
         public HexData(int q, int r)
         {

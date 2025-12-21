@@ -28,8 +28,11 @@ namespace HexGame
                 {
                     Data.Elevation = value;
                 }
-                viewElevation = value; // Keep view in sync
-                UpdatePosition();
+                else
+                {
+                    viewElevation = value; 
+                    UpdatePosition();
+                }
             }
         }
 
@@ -42,8 +45,11 @@ namespace HexGame
                 {
                     Data.TerrainType = value;
                 }
-                viewTerrainType = value; // Keep view in sync
-                UpdateVisuals();
+                else
+                {
+                    viewTerrainType = value; 
+                    UpdateVisuals();
+                }
             }
         }
 
@@ -62,6 +68,7 @@ namespace HexGame
             {
                 Data.OnStateChanged -= HandleStateChanged;
                 Data.OnTerrainChanged -= HandleTerrainChanged;
+                Data.OnElevationChanged -= HandleElevationChanged;
             }
 
             Data = data;
@@ -70,6 +77,7 @@ namespace HexGame
             {
                 Data.OnStateChanged += HandleStateChanged;
                 Data.OnTerrainChanged += HandleTerrainChanged;
+                Data.OnElevationChanged += HandleElevationChanged;
             }
 
             // Sync View Memory with Data
@@ -93,6 +101,8 @@ namespace HexGame
                 Data.OnStateChanged += HandleStateChanged;
                 Data.OnTerrainChanged -= HandleTerrainChanged;
                 Data.OnTerrainChanged += HandleTerrainChanged;
+                Data.OnElevationChanged -= HandleElevationChanged;
+                Data.OnElevationChanged += HandleElevationChanged;
             }
         }
 
@@ -102,6 +112,7 @@ namespace HexGame
             {
                 Data.OnStateChanged -= HandleStateChanged;
                 Data.OnTerrainChanged -= HandleTerrainChanged;
+                Data.OnElevationChanged -= HandleElevationChanged;
             }
         }
 
@@ -119,6 +130,13 @@ namespace HexGame
             // Sync View Memory
             viewTerrainType = Data.TerrainType;
             UpdateVisuals();
+        }
+
+        private void HandleElevationChanged()
+        {
+            // Sync View Memory
+            viewElevation = Data.Elevation;
+            UpdatePosition();
         }
         
         private void UpdatePosition()
