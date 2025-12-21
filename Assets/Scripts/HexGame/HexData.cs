@@ -12,7 +12,21 @@ namespace HexGame
         public int R;
         public int S;
         public float Elevation;
-        public TerrainType TerrainType;
+        
+        private TerrainType _terrainType;
+        public TerrainType TerrainType
+        {
+            get => _terrainType;
+            set
+            {
+                if (_terrainType != value)
+                {
+                    _terrainType = value;
+                    OnTerrainChanged?.Invoke();
+                }
+            }
+        }
+        
         public Unit Unit;
 
         private HashSet<HexState> _states;
@@ -26,6 +40,7 @@ namespace HexGame
         }
 
         public event Action OnStateChanged;
+        public event Action OnTerrainChanged;
         
         public HexData(int q, int r)
         {

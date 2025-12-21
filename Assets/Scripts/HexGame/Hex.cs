@@ -61,6 +61,7 @@ namespace HexGame
             if (Data != null)
             {
                 Data.OnStateChanged -= HandleStateChanged;
+                Data.OnTerrainChanged -= HandleTerrainChanged;
             }
 
             Data = data;
@@ -68,6 +69,7 @@ namespace HexGame
             if (Data != null)
             {
                 Data.OnStateChanged += HandleStateChanged;
+                Data.OnTerrainChanged += HandleTerrainChanged;
             }
 
             // Sync View Memory with Data
@@ -89,6 +91,8 @@ namespace HexGame
             {
                 Data.OnStateChanged -= HandleStateChanged;
                 Data.OnStateChanged += HandleStateChanged;
+                Data.OnTerrainChanged -= HandleTerrainChanged;
+                Data.OnTerrainChanged += HandleTerrainChanged;
             }
         }
 
@@ -97,6 +101,7 @@ namespace HexGame
             if (Data != null)
             {
                 Data.OnStateChanged -= HandleStateChanged;
+                Data.OnTerrainChanged -= HandleTerrainChanged;
             }
         }
 
@@ -107,6 +112,13 @@ namespace HexGame
             {
                 visualizer.RefreshVisuals(this);
             }
+        }
+
+        private void HandleTerrainChanged()
+        {
+            // Sync View Memory
+            viewTerrainType = Data.TerrainType;
+            UpdateVisuals();
         }
         
         private void UpdatePosition()
