@@ -44,26 +44,38 @@ namespace HexGame
             List<HexData> neighbors = new List<HexData>();
             if (hex == null) return neighbors;
             
-            // Hex neighbor directions (Cube coordinates logic adaptation)
-            // Directions: (1, -1, 0), (1, 0, -1), (0, 1, -1), (-1, 1, 0), (-1, 0, 1), (0, -1, 1)
-            // Q, R changes:
-            // (+1, 0), (+1, -1), (0, -1), (-1, 0), (-1, +1), (0, +1)
-            
-            int[] dq = { 1, 1, 0, -1, -1, 0 };
-            int[] dr = { 0, -1, -1, 0, 1, 1 };
-
             for (int i = 0; i < 6; i++)
             {
-                int nq = hex.Q + dq[i];
-                int nr = hex.R + dr[i];
-                
-                HexData neighbor = GetHexAt(nq, nr);
+                Vector3Int neighborCoords = Hex.Neighbor(new Vector3Int(hex.Q, hex.R, hex.S), i);
+                HexData neighbor = GetHexAt(neighborCoords.x, neighborCoords.y);
                 if (neighbor != null)
                 {
                     neighbors.Add(neighbor);
                 }
             }
             return neighbors;
+        }
+        
+        public List<HexData> GetHexesInRange(HexData center, int radius)
+        {
+            List<HexData> results = new List<HexData>();
+            if (center == null) return results;
+
+            Vector3Int centerCoords = new Vector3Int(center.Q, center.R, center.S);
+
+            for (int q = -radius; q <= radius; q++)
+            {
+                for (int r = Mathf.Max(-radius, -q - radius); r <= Mathf.Min(radius, -q + radius); r++)
+                {
+                    Vector3Int relativeCoords = new Vector3Int(q, r, -q-r);
+                    HexData hex = GetHexAt(center.Q + q, center.R + r);
+                    if (hex != null)
+                    {
+                        results.Add(hex);
+                    }
+                }
+            }
+            return results;
         }
 
         public IEnumerable<HexData> GetAllHexes()

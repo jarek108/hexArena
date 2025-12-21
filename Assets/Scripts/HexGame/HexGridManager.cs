@@ -157,12 +157,12 @@ namespace HexGame
             // Instantiate GameObjects for every hex in the data
             foreach (HexData hexData in Grid.GetAllHexes())
             {
-                Vector3 worldPos = HexToWorld(hexData.Q, hexData.R);
-                worldPos.y = hexData.Elevation;
+                Vector3 localPos = HexToWorld(hexData.Q, hexData.R);
+                localPos.y = hexData.Elevation;
 
                 GameObject hexGO = new GameObject($"Hex ({hexData.Q}, {hexData.R})");
                 hexGO.transform.SetParent(this.transform);
-                hexGO.transform.position = worldPos;
+                hexGO.transform.localPosition = localPos;
                 
                 MeshFilter mf = hexGO.AddComponent<MeshFilter>();
                 mf.sharedMesh = hexMesh;
@@ -284,16 +284,18 @@ namespace HexGame
 
         public Hex WorldToHex(Vector3 worldPos)
         {
+            Vector3 localPos = transform.InverseTransformPoint(worldPos);
+
             float q_float, r_float;
             if (isPointyTop)
             {
-                q_float = (Mathf.Sqrt(3) / 3f * worldPos.x - 1f / 3f * worldPos.z) / hexSize;
-                r_float = (2f / 3f * worldPos.z) / hexSize;
+                q_float = (Mathf.Sqrt(3) / 3f * localPos.x - 1f / 3f * localPos.z) / hexSize;
+                r_float = (2f / 3f * localPos.z) / hexSize;
             }
             else
             {
-                q_float = (2f / 3f * worldPos.x) / hexSize;
-                r_float = (-1f / 3f * worldPos.x + Mathf.Sqrt(3) / 3f * worldPos.z) / hexSize;
+                q_float = (2f / 3f * localPos.x) / hexSize;
+                r_float = (-1f / 3f * localPos.x + Mathf.Sqrt(3) / 3f * localPos.z) / hexSize;
             }
 
             Vector3Int coords = RoundToHex(q_float, r_float);
