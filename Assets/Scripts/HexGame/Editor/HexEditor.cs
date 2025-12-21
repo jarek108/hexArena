@@ -56,29 +56,33 @@ namespace HexGame.Editor
                 return;
             }
 
-            EditorGUILayout.LabelField("Coordinates (Logic Layer)", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("Hex Coordinates (Q, R, S)", EditorStyles.boldLabel);
             GUI.enabled = false;
-            EditorGUILayout.IntField("Q (Column)", targetHex.Q);
-            EditorGUILayout.IntField("R (Row)", targetHex.R);
-            EditorGUILayout.IntField("S (Cube Z)", targetHex.S);
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.IntField(GUIContent.none, targetHex.Q);
+            EditorGUILayout.IntField(GUIContent.none, targetHex.R);
+            EditorGUILayout.IntField(GUIContent.none, targetHex.S);
+            EditorGUILayout.EndHorizontal();
             GUI.enabled = true;
 
             EditorGUILayout.Space();
-            EditorGUILayout.LabelField("Properties (Logic Layer)", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("Terrain Properties", EditorStyles.boldLabel);
 
-            float newElevation = EditorGUILayout.FloatField("Elevation", targetHex.Elevation);
+            EditorGUILayout.BeginHorizontal();
+            float newElevation = EditorGUILayout.FloatField("Elev", targetHex.Elevation, GUILayout.Width(100));
             if (newElevation != targetHex.Elevation)
             {
                 Undo.RecordObject(targetHex, "Change Hex Elevation");
                 targetHex.Elevation = newElevation;
             }
 
-            TerrainType newType = (TerrainType)EditorGUILayout.EnumPopup("Terrain Type", targetHex.TerrainType);
+            TerrainType newType = (TerrainType)EditorGUILayout.EnumPopup(GUIContent.none, targetHex.TerrainType);
             if (newType != targetHex.TerrainType)
             {
                 Undo.RecordObject(targetHex, "Change Hex Terrain");
                 targetHex.TerrainType = newType;
             }
+            EditorGUILayout.EndHorizontal();
 
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("Active States (Logic Layer)", EditorStyles.boldLabel);

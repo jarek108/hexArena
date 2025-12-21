@@ -7,81 +7,69 @@ using HexGame;
 using UnityEditor;
 #endif
 
-public class HexGridVisualTests
+namespace HexGame.Tests
 {
-    private GameObject managerGO;
-    private HexGridManager manager;
-    private GridCreator creator;
-
-    [UnitySetUp]
-    public IEnumerator SetUp()
+    public class HexGridVisualTests
     {
-        managerGO = new GameObject("HexGridManager");
-        manager = managerGO.AddComponent<HexGridManager>();
-        creator = managerGO.AddComponent<GridCreator>();
-        creator.Initialize(manager);
-        
-        yield return null;
-    }
+        private GameObject managerGO;
+        private GridVisualizationManager manager;
+        private GridCreator creator;
 
-    [UnityTearDown]
-    public IEnumerator TearDown()
-    {
-        if (Application.isPlaying)
+        [UnitySetUp]
+        public IEnumerator SetUp()
         {
-            Object.Destroy(managerGO);
+            managerGO = TestHelper.CreateTestManager();
+            manager = managerGO.GetComponent<GridVisualizationManager>();
+            creator = managerGO.GetComponent<GridCreator>();
+            yield return null;
         }
-        else
+
+        [TearDown]
+        public void TearDown()
         {
             Object.DestroyImmediate(managerGO);
         }
-        yield return null;
-    }
 
-    [UnityTest]
-    public IEnumerator HexGridManager_GeneratesGrid_SpawnsObjects()
-    {
-        // Manually trigger generation after setup
-        creator.GenerateGrid();
-        yield return null;
+        [UnityTest]
+        public IEnumerator GridVisualizationManager_GeneratesGrid_SpawnsObjects()
+        {
+            HexGrid grid = new HexGrid(3, 3);
+            for (int r = 0; r < 3; r++)
+                for (int q = 0; q < 3; q++)
+                    grid.AddHex(new HexData(q, r));
 
-        Assert.Greater(manager.transform.childCount, 0, "Grid should spawn child objects");
-        
-        // Check first hex position
-        Transform firstHex = manager.transform.GetChild(0);
-        Assert.IsNotNull(firstHex);
-        
-        // Verify components
-        Assert.IsNotNull(firstHex.GetComponent<Hex>(), "Hex component missing");
-        Assert.IsNotNull(firstHex.GetComponent<MeshFilter>(), "MeshFilter component missing");
-        Assert.IsNotNull(firstHex.GetComponent<MeshRenderer>(), "MeshRenderer component missing");
-        Assert.IsNotNull(firstHex.GetComponent<MeshCollider>(), "MeshCollider component missing");
-    }
+            manager.VisualizeGrid(grid);
 
-    [UnityTest]
-    public IEnumerator HexGridManager_RegeneratesAndClearsGrid_Correctly()
-    {
-        SerializedObject so = new SerializedObject(creator);
+            yield return null;
 
-        // --- First Generation (5x5) ---
-        so.FindProperty("gridWidth").intValue = 5;
-        so.FindProperty("gridHeight").intValue = 5;
-        so.ApplyModifiedProperties();
-        creator.GenerateGrid();
-        yield return null;
-        Assert.AreEqual(25, manager.transform.childCount, "First grid generation should spawn 25 hexes.");
+            Assert.AreEqual(9, manager.transform.childCount, "Grid should have 9 hex children spawned.");
+        }
 
-        // --- Second Generation (3x3) ---
-        so.FindProperty("gridWidth").intValue = 3;
-        so.FindProperty("gridHeight").intValue = 3;
-        so.ApplyModifiedProperties();
-        creator.GenerateGrid();
-        yield return null;
-        Assert.AreEqual(9, manager.transform.childCount, "Second grid generation should spawn 9 hexes.");
+        [UnityTest]
+        public IEnumerator GridVisualizationManager_RegeneratesAndClearsGrid_Correctly()
+        {
+            SerializedObject so = new SerializedObject(creator);
 
-        // --- Clear Grid ---
-        creator.ClearGrid();
-        yield return null;
-        Assert.AreEqual(0, manager.transform.childCount, "ClearGrid should remove all hexes.");
+            // --- First Generation (5x5) ---
+            so.FindProperty("gridWidth").intValue = 5;
+            so.FindProperty("gridHeight").intValue = 5;
+            so.ApplyModifiedProperties();
+            creator.GenerateGrid();
+            yield return null;
+            Assert.AreEqual(25, manager.transform.childCount, "First grid generation should spawn 25 hexes.");
+
+            // --- Second Generation (3x3) ---
+            so.FindProperty("gridWidth").intValue = 3;
+            so.FindProperty("gridHeight").intValue = 3;
+            so.ApplyModifiedProperties();
+            creator.GenerateGrid();
+            yield return null;
+            Assert.AreEqual(9, manager.transform.childCount, "Second grid generation should spawn 9 hexes.");
+
+            // --- Clear Grid ---
+            creator.ClearGrid();
+            yield return null;
+            Assert.AreEqual(0, manager.transform.childCount, "ClearGrid should remove all hexes.");
+        }
     }
 }

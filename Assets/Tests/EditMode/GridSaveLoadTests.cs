@@ -9,19 +9,19 @@ namespace HexGame.Tests
     [TestFixture]
     public class GridSaveLoadTests
     {
-        private HexGridManager gridManager;
-        private GridCreator gridCreator;
         private GameObject gridManagerGO;
+        private GridVisualizationManager gridManager;
+        private GridCreator gridCreator;
         private string testSavePath;
 
         [UnitySetUp]
         public IEnumerator SetUp()
         {
-            gridManagerGO = new GameObject("GridManager");
-            gridManager = gridManagerGO.AddComponent<HexGridManager>();
+            gridManagerGO = new GameObject("GridVisualizationManager");
+            gridManager = gridManagerGO.AddComponent<GridVisualizationManager>();
             gridCreator = gridManagerGO.AddComponent<GridCreator>();
-            gridCreator.Initialize(gridManager);
-            testSavePath = Path.Combine(Application.temporaryCachePath, "testGrid.json");
+            gridManager.InitializeVisuals();
+            testSavePath = Path.Combine(Application.temporaryCachePath, "test_grid.json");
             yield return null;
         }
 

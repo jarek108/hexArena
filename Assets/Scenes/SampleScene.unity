@@ -38589,13 +38589,13 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1562658887}
-  - component: {fileID: 1562658886}
   - component: {fileID: 1562658888}
-  - component: {fileID: 1562658890}
+  - component: {fileID: 1562658897}
   - component: {fileID: 1562658892}
   - component: {fileID: 1562658893}
   - component: {fileID: 1562658894}
   - component: {fileID: 1562658895}
+  - component: {fileID: 1562658896}
   m_Layer: 0
   m_Name: GridManager
   m_TagString: Untagged
@@ -38603,33 +38603,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1562658886
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1562658885}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8fe659aa0dac4df45ad5a06b6319ebc2, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::HexGame.HexGridManager
-  hexSurfaceMaterial: {fileID: 2100000, guid: 5d55eef216af7954393a43d632918c03, type: 2}
-  hexMaterialSides: {fileID: 2100000, guid: fb355f546a99bc248817d3895613ef17, type: 2}
-  terrainTypeColors:
-  - terrainType: 0
-    color: {r: 0, g: 1, b: 0, a: 1}
-  - terrainType: 1
-    color: {r: 0, g: 0, b: 1, a: 1}
-  - terrainType: 2
-    color: {r: 0.5, g: 0.5, b: 0.5, a: 1}
-  - terrainType: 3
-    color: {r: 0.11301827, g: 0.3207547, b: 0.10439658, a: 1}
-  - terrainType: 4
-    color: {r: 0.8, g: 0.8, b: 0.4, a: 1}
-  hexSize: 1
-  isPointyTop: 1
 --- !u!4 &1562658887
 Transform:
   m_ObjectHideFlags: 0
@@ -39066,63 +39039,6 @@ MonoBehaviour:
   mountainLevel: 0.7
   forestLevel: 0.5
   forestScale: 5
---- !u!114 &1562658890
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1562658885}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ae525a183ce48c4439b87454765736dd, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: HexGame::HexGame.HexStateVisualizer
-  stateSettings:
-  - state: 0
-    priority: 0
-    visuals:
-      color: {r: 0, g: 0, b: 0, a: 1}
-      width: 0.05
-      pulsation: 0
-  - state: 1
-    priority: 10
-    visuals:
-      color: {r: 0.9772253, g: 1, b: 0, a: 1}
-      width: 0.15
-      pulsation: 4
-  - state: 2
-    priority: 20
-    visuals:
-      color: {r: 1, g: 0, b: 0, a: 1}
-      width: 0.15
-      pulsation: 3
-  - state: 3
-    priority: 30
-    visuals:
-      color: {r: 0, g: 0, b: 0, a: 1}
-      width: 0
-      pulsation: 0
-  - state: 4
-    priority: 40
-    visuals:
-      color: {r: 0, g: 0, b: 0, a: 1}
-      width: 0
-      pulsation: 0
-  - state: 5
-    priority: 50
-    visuals:
-      color: {r: 0, g: 0, b: 0, a: 1}
-      width: 0
-      pulsation: 0
-  - state: 6
-    priority: 60
-    visuals:
-      color: {r: 0, g: 0, b: 0, a: 1}
-      width: 0
-      pulsation: 0
-  showGrid: 1
-  gridWidth: 0.05
 --- !u!114 &1562658892
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -39177,6 +39093,138 @@ MonoBehaviour:
   m_EditorClassIdentifier: HexGame::HexGame.Tools.TerrainTool
   paintType: 0
   brushSize: 1
+--- !u!114 &1562658896
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1562658885}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8d63e1d88be98be42944aadd9f48887b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: HexGame::HexGame.GridVisualizationManager
+  hexSurfaceMaterial: {fileID: 2100000, guid: 5d55eef216af7954393a43d632918c03, type: 2}
+  hexMaterialSides: {fileID: 2100000, guid: fb355f546a99bc248817d3895613ef17, type: 2}
+  colorPlains: {r: 0, g: 1, b: 0, a: 1}
+  colorWater: {r: 0, g: 0, b: 1, a: 1}
+  colorMountains: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+  colorForest: {r: 0.1, g: 0.4, b: 0.1, a: 1}
+  colorDesert: {r: 0.8, g: 0.8, b: 0.4, a: 1}
+  stateSettings:
+  - state: 0
+    priority: 0
+    visuals:
+      color: {r: 0, g: 0, b: 0, a: 1}
+      width: 0.05
+      pulsation: 0
+  - state: 1
+    priority: 10
+    visuals:
+      color: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
+      width: 0.15
+      pulsation: 5
+  - state: 2
+    priority: 20
+    visuals:
+      color: {r: 1, g: 0, b: 0, a: 1}
+      width: 0.2
+      pulsation: 2
+  - state: 3
+    priority: 30
+    visuals:
+      color: {r: 0, g: 0, b: 1, a: 1}
+      width: 0.15
+      pulsation: 0
+  - state: 4
+    priority: 40
+    visuals:
+      color: {r: 1, g: 0.5, b: 0, a: 1}
+      width: 0.15
+      pulsation: 3
+  - state: 5
+    priority: 50
+    visuals:
+      color: {r: 1, g: 1, b: 1, a: 1}
+      width: 0.2
+      pulsation: 0
+  - state: 6
+    priority: 60
+    visuals:
+      color: {r: 1, g: 0, b: 1, a: 1}
+      width: 0.1
+      pulsation: 1
+  showGrid: 1
+  gridWidth: 0.05
+  hexSize: 1
+  isPointyTop: 1
+--- !u!114 &1562658897
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1562658885}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8d63e1d88be98be42944aadd9f48887b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: HexGame::HexGame.GridVisualizationManager
+  hexSurfaceMaterial: {fileID: 2100000, guid: 5d55eef216af7954393a43d632918c03, type: 2}
+  hexMaterialSides: {fileID: 2100000, guid: fb355f546a99bc248817d3895613ef17, type: 2}
+  colorPlains: {r: 0, g: 1, b: 0, a: 1}
+  colorWater: {r: 0, g: 0, b: 1, a: 1}
+  colorMountains: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+  colorForest: {r: 0.1, g: 0.4, b: 0.1, a: 1}
+  colorDesert: {r: 0.8, g: 0.8, b: 0.4, a: 1}
+  stateSettings:
+  - state: 0
+    priority: 0
+    visuals:
+      color: {r: 0, g: 0, b: 0, a: 1}
+      width: 0.05
+      pulsation: 0
+  - state: 1
+    priority: 10
+    visuals:
+      color: {r: 0.993973, g: 1, b: 0, a: 1}
+      width: 0.1
+      pulsation: 5
+  - state: 2
+    priority: 20
+    visuals:
+      color: {r: 1, g: 0, b: 0, a: 1}
+      width: 0.15
+      pulsation: 3
+  - state: 3
+    priority: 30
+    visuals:
+      color: {r: 0, g: 0, b: 1, a: 1}
+      width: 0.15
+      pulsation: 0
+  - state: 4
+    priority: 40
+    visuals:
+      color: {r: 1, g: 0.5, b: 0, a: 1}
+      width: 0.15
+      pulsation: 3
+  - state: 5
+    priority: 50
+    visuals:
+      color: {r: 1, g: 1, b: 1, a: 1}
+      width: 0.2
+      pulsation: 0
+  - state: 6
+    priority: 60
+    visuals:
+      color: {r: 1, g: 0, b: 1, a: 1}
+      width: 0.1
+      pulsation: 1
+  showGrid: 1
+  gridWidth: 0.05
+  hexSize: 1
+  isPointyTop: 1
 --- !u!1 &1576879954
 GameObject:
   m_ObjectHideFlags: 0

@@ -8,23 +8,26 @@ namespace HexGame.Tests
     {
         public static GameObject CreateTestManager()
         {
-            var go = new GameObject("TestManager");
-            var gridManager = go.AddComponent<HexGridManager>();
+            var existing = Object.FindFirstObjectByType<GridVisualizationManager>();
+            if (existing != null) Object.DestroyImmediate(existing.gameObject);
+
+            var go = new GameObject("TestGridManager");
+            var manager = go.AddComponent<GridVisualizationManager>();
+            
+            #if UNITY_EDITOR
+            manager.hexSurfaceMaterial = UnityEditor.AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/HexSurfaceMaterial.mat");
+            manager.hexMaterialSides = UnityEditor.AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/HexSideMaterial.mat");
+            #endif
+            
             var creator = go.AddComponent<GridCreator>();
-            var toolManager = go.AddComponent<ToolManager>();
-            var selectionTool = go.AddComponent<SelectionTool>();
-            var terrainTool = go.AddComponent<TerrainTool>();
-            var elevationTool = go.AddComponent<ElevationTool>();
-            var visualizer = go.AddComponent<HexStateVisualizer>();
-            var raycaster = go.AddComponent<HexRaycaster>();
-            var selectionManager = go.AddComponent<SelectionManager>();
-
-            // Initialize all components in the correct order
-            creator.Initialize(gridManager);
-            toolManager.SetUpForTesting();
-            selectionManager.Initialize(toolManager, raycaster);
-            toolManager.SetActiveTool(selectionTool); // Set a default tool
-
+            creator.Initialize(manager);
+            go.AddComponent<ToolManager>();
+            go.AddComponent<SelectionTool>();
+            go.AddComponent<SelectionManager>();
+            go.AddComponent<TerrainTool>();
+            go.AddComponent<ElevationTool>();
+            manager.InitializeVisuals();
+            manager.ClearCache();
             return go;
         }
     }

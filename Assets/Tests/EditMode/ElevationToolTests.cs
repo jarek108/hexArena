@@ -11,8 +11,7 @@ namespace HexGame.Tests
     public class ElevationToolTests
     {
         private GameObject managerGO;
-        private HexGridManager manager;
-        private GridCreator creator;
+        private GridVisualizationManager manager;
         private ElevationTool elevationTool;
         private Hex testHex;
 
@@ -20,14 +19,18 @@ namespace HexGame.Tests
         public IEnumerator SetUp()
         {
             managerGO = TestHelper.CreateTestManager();
-            manager = managerGO.GetComponent<HexGridManager>();
-            creator = managerGO.GetComponent<GridCreator>();
+            manager = managerGO.GetComponent<GridVisualizationManager>();
             elevationTool = managerGO.AddComponent<ElevationTool>();
             
-            creator.GenerateGrid();
-            yield return null;
+            // Create a small grid and get a hex from it
+            HexGrid grid = new HexGrid(5, 5);
+            for (int r = 0; r < 5; r++)
+                for (int q = 0; q < 5; q++)
+                    grid.AddHex(new HexData(q, r));
+            manager.VisualizeGrid(grid);
+            testHex = manager.GetHexView(manager.Grid.GetHexAt(2, 2));
             
-            testHex = manager.GetHexView(manager.Grid.GetHexAt(0, 0));
+            yield return null;
         }
 
         [TearDown]

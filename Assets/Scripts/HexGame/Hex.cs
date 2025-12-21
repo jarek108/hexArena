@@ -118,10 +118,10 @@ namespace HexGame
 
         public void HandleStateChanged()
         {
-            var visualizer = FindFirstObjectByType<HexStateVisualizer>();
-            if (visualizer != null)
+            var manager = FindFirstObjectByType<GridVisualizationManager>() ?? GridVisualizationManager.Instance;
+            if (manager != null)
             {
-                visualizer.RefreshVisuals(this);
+                manager.RefreshVisuals(this);
             }
         }
 
@@ -156,10 +156,10 @@ namespace HexGame
 
         private void UpdateVisuals()
         {
-            HexGridManager manager = FindFirstObjectByType<HexGridManager>();
+            GridVisualizationManager manager = FindFirstObjectByType<GridVisualizationManager>() ?? GridVisualizationManager.Instance;
             if (manager != null && GetComponent<Renderer>() != null)
             {
-                manager.SetHexColor(this, manager.GetDefaultHexColor(this));
+                manager.RefreshVisuals(this);
             }
         }
 

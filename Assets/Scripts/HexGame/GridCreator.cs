@@ -5,35 +5,32 @@ using UnityEditor;
 
 namespace HexGame
 {
-    [RequireComponent(typeof(HexGridManager))]
+    [RequireComponent(typeof(GridVisualizationManager))]
     public class GridCreator : MonoBehaviour
     {
-        private HexGridManager _gridManager;
-        private HexGridManager gridManager 
+        private GridVisualizationManager _gridManager;
+        private GridVisualizationManager gridManager 
         {
             get 
             {
-                if (_gridManager == null) _gridManager = GetComponent<HexGridManager>();
+                if (_gridManager == null) _gridManager = GetComponent<GridVisualizationManager>();
                 return _gridManager;
             }
         }
 
-        [Header("Grid Settings")]
         [SerializeField] public int gridWidth = 10;
         [SerializeField] public int gridHeight = 10;
 
-        [Header("Generation Settings")]
         [SerializeField] private float noiseScale = 0.1f;
         [SerializeField] private float elevationScale = 2.0f;
         [SerializeField] private Vector2 noiseOffset;
 
-        [Header("Terrain Generation")]
         [SerializeField] private float waterLevel = 0.4f;
         [SerializeField] private float mountainLevel = 0.8f;
         [SerializeField] private float forestLevel = 0.6f;
         [SerializeField] private float forestScale = 5.0f;
 
-        public void Initialize(HexGridManager manager)
+        public void Initialize(GridVisualizationManager manager)
         {
             _gridManager = manager;
         }
@@ -56,7 +53,7 @@ namespace HexGame
         {
             if (gridManager == null)
             {
-                Debug.LogError("GridCreator: HexGridManager component not found on the same GameObject!");
+                Debug.LogError("GridCreator: GridVisualizationManager component not found on the same GameObject!");
                 return;
             }
 

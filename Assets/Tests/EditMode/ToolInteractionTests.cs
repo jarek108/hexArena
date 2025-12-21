@@ -8,12 +8,10 @@ using UnityEditor;
 
 namespace HexGame.Tests
 {
-    [TestFixture]
     public class ToolInteractionTests
     {
         private GameObject managerGO;
-        private HexGridManager manager;
-        private GridCreator creator;
+        private GridVisualizationManager manager;
         private ToolManager toolManager;
         private SelectionTool selectionTool;
         private TerrainTool terrainTool;
@@ -23,16 +21,21 @@ namespace HexGame.Tests
         public IEnumerator SetUp()
         {
             managerGO = TestHelper.CreateTestManager();
-            manager = managerGO.GetComponent<HexGridManager>();
-            creator = managerGO.GetComponent<GridCreator>();
+            manager = managerGO.GetComponent<GridVisualizationManager>();
             toolManager = managerGO.GetComponent<ToolManager>();
             selectionTool = managerGO.GetComponent<SelectionTool>();
             terrainTool = managerGO.GetComponent<TerrainTool>();
             selectionManager = managerGO.GetComponent<SelectionManager>();
-
-            creator.gridWidth = 5;
-            creator.gridHeight = 5;
-            creator.GenerateGrid();
+            
+            var caster = managerGO.AddComponent<HexRaycaster>();
+            selectionManager.Initialize(toolManager, caster);
+            
+            // Create a small grid
+            HexGrid grid = new HexGrid(5, 5);
+            for (int r = 0; r < 5; r++)
+                for (int q = 0; q < 5; q++)
+                    grid.AddHex(new HexData(q, r));
+            manager.VisualizeGrid(grid);
             yield return null;
         }
 

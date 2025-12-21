@@ -47,10 +47,10 @@ namespace HexGame.Editor
 
         public override void OnInspectorGUI()
         {
-            DrawDefaultInspector(); // Draw serialized fields normally
+            serializedObject.Update();
 
             EditorGUILayout.Space();
-            EditorGUILayout.LabelField("Tool Selection", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("Tool Management", EditorStyles.boldLabel);
 
             // Ensure the tool list is up-to-date in case new tools were added/removed
             UpdateToolList(); 
@@ -58,34 +58,31 @@ namespace HexGame.Editor
             if (toolNames.Length == 0)
             {
                 EditorGUILayout.HelpBox("No ITool components found on this GameObject.", MessageType.Warning);
+                serializedObject.ApplyModifiedProperties();
                 return;
             }
 
-            // Display current active tool
+            // Dropdown to select tool and display current
             EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.LabelField("Active Tool:", GUILayout.Width(80));
-            GUI.enabled = false;
-            EditorGUILayout.TextField(toolManager.ActiveTool != null ? toolManager.ActiveTool.ToolName : "None");
-            GUI.enabled = true;
-            EditorGUILayout.EndHorizontal();
-
-            // Dropdown to select tool
-            int newSelectedToolIndex = EditorGUILayout.Popup("Select Tool", selectedToolIndex, toolNames);
+            int newSelectedToolIndex = EditorGUILayout.Popup("Switch Tool", selectedToolIndex, toolNames);
             if (newSelectedToolIndex != selectedToolIndex)
             {
                 selectedToolIndex = newSelectedToolIndex;
                 toolManager.SelectToolByName(toolNames[selectedToolIndex]);
             }
+            
+            GUI.enabled = false;
+            EditorGUILayout.TextField(toolManager.ActiveTool != null ? toolManager.ActiveTool.ToolName : "None", GUILayout.Width(100));
+            GUI.enabled = true;
+            EditorGUILayout.EndHorizontal();
 
             EditorGUILayout.Space();
-
             if (GUILayout.Button("Force Refresh Tool List"))
             {
                 UpdateToolList();
             }
 
-            // Ensure changes are saved
-            if (GUI.changed)
+            if (serializedObject.ApplyModifiedProperties())
             {
                 EditorUtility.SetDirty(toolManager);
             }

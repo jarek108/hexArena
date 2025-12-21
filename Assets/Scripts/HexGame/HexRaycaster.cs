@@ -5,12 +5,12 @@ namespace HexGame
 {
     public class HexRaycaster : MonoBehaviour
     {
-        private HexGridManager gridManager;
+        private GridVisualizationManager gridManager;
         public Hex currentHex;
 
         private void Start()
         {
-            gridManager = FindFirstObjectByType<HexGridManager>();
+            gridManager = FindFirstObjectByType<GridVisualizationManager>();
         }
 
         private void Update()

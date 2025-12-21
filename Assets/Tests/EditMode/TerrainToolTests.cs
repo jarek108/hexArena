@@ -12,23 +12,21 @@ namespace HexGame.Tests
     public class TerrainToolTests
     {
         private GameObject managerGO;
-        private HexGridManager manager;
-        private GridCreator creator;
+        private GridVisualizationManager manager;
         private TerrainTool terrainTool;
 
         [UnitySetUp]
         public IEnumerator SetUp()
         {
-            managerGO = new GameObject("ManagerGO");
-            manager = managerGO.AddComponent<HexGridManager>();
-            creator = managerGO.AddComponent<GridCreator>();
-            terrainTool = managerGO.AddComponent<TerrainTool>();
+            managerGO = TestHelper.CreateTestManager();
+            manager = managerGO.GetComponent<GridVisualizationManager>();
+            terrainTool = managerGO.GetComponent<TerrainTool>();
             
-            creator.Initialize(manager);
-
-            creator.gridWidth = 5;
-            creator.gridHeight = 5;
-            creator.GenerateGrid();
+            HexGrid grid = new HexGrid(5, 5);
+            for (int r = 0; r < 5; r++)
+                for (int q = 0; q < 5; q++)
+                    grid.AddHex(new HexData(q, r));
+            manager.VisualizeGrid(grid);
             yield return null;
         }
 

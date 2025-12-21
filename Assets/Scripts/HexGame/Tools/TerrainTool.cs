@@ -41,7 +41,7 @@ namespace HexGame.Tools
         {
             if (!IsEnabled || centerHex == null || centerHex.Data == null) return;
             
-            var manager = FindFirstObjectByType<HexGridManager>();
+            var manager = FindFirstObjectByType<GridVisualizationManager>() ?? GridVisualizationManager.Instance;
             if (manager == null || manager.Grid == null) return;
 
             List<HexData> hexesInRadius = manager.Grid.GetHexesInRange(centerHex.Data, brushSize - 1);
@@ -60,7 +60,7 @@ namespace HexGame.Tools
 
             if (newHex != null && newHex.Data != null)
             {
-                var manager = FindFirstObjectByType<HexGridManager>();
+                var manager = FindFirstObjectByType<GridVisualizationManager>() ?? GridVisualizationManager.Instance;
                 if (manager == null || manager.Grid == null) return;
 
                 lastHighlightedHexes = manager.Grid.GetHexesInRange(newHex.Data, brushSize - 1);
