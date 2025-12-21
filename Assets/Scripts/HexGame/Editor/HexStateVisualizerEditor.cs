@@ -8,20 +8,31 @@ namespace HexGame.Editor
     public class HexStateVisualizerEditor : UnityEditor.Editor
     {
         private SerializedProperty stateSettingsProp;
+        private SerializedProperty showGridProp;
+        private SerializedProperty gridWidthProp;
 
         private void OnEnable()
         {
             stateSettingsProp = serializedObject.FindProperty("stateSettings");
+            showGridProp = serializedObject.FindProperty("showGrid");
+            gridWidthProp = serializedObject.FindProperty("gridWidth");
         }
 
         public override void OnInspectorGUI()
         {
             serializedObject.Update();
 
-            EditorGUILayout.Space();
-            EditorGUILayout.LabelField("State Visual Settings", EditorStyles.boldLabel);
             EditorGUILayout.HelpBox("'Default' is the fallback. Higher Priority overrides lower ones. Changes to 'Default' also update the shared material asset.", MessageType.Info);
             EditorGUILayout.Space();
+
+            // Grid Visuals Row
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.PropertyField(showGridProp, new GUIContent("Show Grid"));
+            EditorGUILayout.PropertyField(gridWidthProp, new GUIContent("Grid Width"));
+            EditorGUILayout.EndHorizontal();
+
+            EditorGUILayout.Space();
+            EditorGUILayout.LabelField("State Visual Settings", EditorStyles.boldLabel);
 
             // Header Row
             EditorGUILayout.BeginHorizontal();

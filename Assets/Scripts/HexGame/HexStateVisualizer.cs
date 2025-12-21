@@ -29,6 +29,9 @@ namespace HexGame
         [HideInInspector] 
         [SerializeField] public List<StateSetting> stateSettings = new List<StateSetting>();
 
+        public bool showGrid = true;
+        public float gridWidth = 0.05f;
+
         private void OnValidate()
         {
             if (stateSettings == null) stateSettings = new List<StateSetting>();
@@ -47,17 +50,31 @@ namespace HexGame
                 }
             }
 
+            UpdateGridVisibility();
             SyncMaterialWithDefault();
 
             // Refresh the grid visuals immediately when settings change in the inspector
-            // This works in both Editor and Play Mode.
             if (gridManager != null)
             {
                 gridManager.RefreshVisuals();
             }
         }
 
-        private void SyncMaterialWithDefault()
+        private void UpdateGridVisibility()
+        {
+            if (stateSettings == null) return;
+            
+            var defaultIndex = stateSettings.FindIndex(s => s.state == HexState.Default);
+            if (defaultIndex != -1)
+            {
+                var setting = stateSettings[defaultIndex];
+                // Rim width is gridWidth when grid is on, 0 when off
+                setting.visuals.width = showGrid ? gridWidth : 0f;
+                stateSettings[defaultIndex] = setting;
+            }
+        }
+
+        public void SyncMaterialWithDefault()
         {
             if (gridManager == null || gridManager.hexSurfaceMaterial == null) return;
             
