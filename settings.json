@@ -1,0 +1,32 @@
+{
+  "ide": {
+    "hasSeenNudge": true
+  },
+  "security": {
+    "auth": {
+      "selectedType": "oauth-personal"
+    }
+  },
+  "general": {
+    "previewFeatures": true
+  },
+  "ui": {
+    "showStatusInTitle": true,
+    "footer": {
+      "hideContextPercentage": false
+    },
+    "showMemoryUsage": true,
+    "showCitations": true,
+    "showModelInfoInChat": true
+  },
+  "mcpServers": {
+    "unity-mcp": {
+      "httpUrl": "http://localhost:8080/mcp",
+      "transport": "http",
+      "timeout": 180000
+    }
+  },
+  "model": {
+    "compressionThreshold": 0.5
+  }
+}

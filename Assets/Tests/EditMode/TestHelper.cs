@@ -13,7 +13,7 @@ namespace HexGame.Tests
             var creator = go.AddComponent<GridCreator>();
             var toolManager = go.AddComponent<ToolManager>();
             var selectionTool = go.AddComponent<SelectionTool>();
-            var terrainBrush = go.AddComponent<TerrainBrush>();
+            var terrainTool = go.AddComponent<TerrainTool>();
             var visualizer = go.AddComponent<HexStateVisualizer>();
             var raycaster = go.AddComponent<HexRaycaster>();
             var selectionManager = go.AddComponent<SelectionManager>();

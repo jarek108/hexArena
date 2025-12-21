@@ -16,7 +16,7 @@ namespace HexGame.Tests
         private GridCreator creator;
         private ToolManager toolManager;
         private SelectionTool selectionTool;
-        private TerrainBrush terrainBrush;
+        private TerrainTool terrainTool;
         private SelectionManager selectionManager;
 
         [UnitySetUp]
@@ -27,7 +27,7 @@ namespace HexGame.Tests
             creator = managerGO.GetComponent<GridCreator>();
             toolManager = managerGO.GetComponent<ToolManager>();
             selectionTool = managerGO.GetComponent<SelectionTool>();
-            terrainBrush = managerGO.GetComponent<TerrainBrush>();
+            terrainTool = managerGO.GetComponent<TerrainTool>();
             selectionManager = managerGO.GetComponent<SelectionManager>();
 
             creator.gridWidth = 5;
@@ -63,10 +63,10 @@ namespace HexGame.Tests
         }
 
         [UnityTest]
-        public IEnumerator TerrainBrush_WhenActive_HighlightsHoveredHexes()
+        public IEnumerator TerrainTool_WhenActive_HighlightsHoveredHexes()
         {
-            toolManager.SetActiveTool(terrainBrush);
-            var brushSO = new SerializedObject(terrainBrush);
+            toolManager.SetActiveTool(terrainTool);
+            var brushSO = new SerializedObject(terrainTool);
             brushSO.FindProperty("brushSize").intValue = 2;
             brushSO.ApplyModifiedProperties();
             

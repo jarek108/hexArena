@@ -6,14 +6,14 @@ using UnityEngine.InputSystem;
 namespace HexGame.Tools
 {
     [RequireComponent(typeof(ToolManager))]
-    public class TerrainBrush : MonoBehaviour, ITool, IHighlightingTool
+    public class TerrainTool : MonoBehaviour, ITool, IHighlightingTool
     {
         [SerializeField] private TerrainType paintType = TerrainType.Plains;
         [SerializeField] [Range(1, 10)] private int brushSize = 1;
 
         private List<HexData> lastHighlightedHexes = new List<HexData>();
         
-        public string ToolName => "Terrain Brush";
+        public string ToolName => "Terrain Tool";
         public bool IsEnabled { get; private set; }
 
         public void OnActivate()

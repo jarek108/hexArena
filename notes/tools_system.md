@@ -28,5 +28,5 @@ The Tools System follows a decoupled, modular design, where each "tool" is a sel
 
 *   **Concrete Tools (Implementations of `ITool`):**
     *   **`SelectionTool`**: Manages highlighting and selecting hexes.
-    *   **`TerrainBrush`**: Modifies `TerrainType` on `HexData`.
-    *   **`ElevationEditTool`**: (To be implemented) Modifies `Elevation` on `HexData`.
+    *   **`TerrainTool`**: Modifies `TerrainType` on `HexData`.
+    *   **`ElevationTool`**: Modifies `Elevation` on `HexData`.

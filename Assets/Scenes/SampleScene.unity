@@ -38595,6 +38595,7 @@ GameObject:
   - component: {fileID: 1562658892}
   - component: {fileID: 1562658891}
   - component: {fileID: 1562658893}
+  - component: {fileID: 1562658894}
   m_Layer: 0
   m_Name: GridManager
   m_TagString: Untagged
@@ -39134,6 +39135,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: HexGame::HexGame.Tools.TerrainBrush
   paintType: 0
   brushSize: 1
+  lastHighlightedHexes: []
+  <IsEnabled>k__BackingField: 1
 --- !u!114 &1562658892
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -39146,7 +39149,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2c11b1a8a32029048b4e9b178698e40b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: HexGame::HexGame.ToolManager
-  activeToolName: Terrain Brush
+  activeToolName: Selection
 --- !u!114 &1562658893
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -39159,6 +39162,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a30eb120cfa99a145ae630f4cb313621, type: 3}
   m_Name: 
   m_EditorClassIdentifier: HexGame::HexGame.Tools.SelectionTool
+--- !u!114 &1562658894
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1562658885}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 14f63d57b96802d49915530164de58d4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: HexGame::HexGame.Tools.ElevationTool
+  brushSize: 1
+  minElevation: 0
+  maxElevation: 10
 --- !u!1 &1576879954
 GameObject:
   m_ObjectHideFlags: 0

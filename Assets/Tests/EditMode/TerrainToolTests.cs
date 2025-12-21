@@ -9,12 +9,12 @@ using UnityEditor;
 namespace HexGame.Tests
 {
     [TestFixture]
-    public class TerrainBrushTests
+    public class TerrainToolTests
     {
         private GameObject managerGO;
         private HexGridManager manager;
         private GridCreator creator;
-        private TerrainBrush terrainBrush;
+        private TerrainTool terrainTool;
 
         [UnitySetUp]
         public IEnumerator SetUp()
@@ -22,7 +22,7 @@ namespace HexGame.Tests
             managerGO = new GameObject("ManagerGO");
             manager = managerGO.AddComponent<HexGridManager>();
             creator = managerGO.AddComponent<GridCreator>();
-            terrainBrush = managerGO.AddComponent<TerrainBrush>();
+            terrainTool = managerGO.AddComponent<TerrainTool>();
             
             creator.Initialize(manager);
 
@@ -39,23 +39,23 @@ namespace HexGame.Tests
         }
 
         [Test]
-        public void TerrainBrush_WhenEnabled_PaintsTerrainOnTargetHex()
+        public void TerrainTool_WhenEnabled_PaintsTerrainOnTargetHex()
         {
             // Arrange
             Hex targetHex = manager.GetHexView(manager.Grid.GetHexAt(2, 2));
             targetHex.Data.TerrainType = TerrainType.Water; // Set initial different type
 
-            var brushSO = new SerializedObject(terrainBrush);
+            var brushSO = new SerializedObject(terrainTool);
             brushSO.FindProperty("paintType").enumValueIndex = (int)TerrainType.Desert;
             brushSO.ApplyModifiedProperties();
             
-            terrainBrush.OnActivate();
+            terrainTool.OnActivate();
 
             // Act
-            terrainBrush.Paint(targetHex);
+            terrainTool.Paint(targetHex);
 
             // Assert
-            Assert.AreEqual(TerrainType.Desert, targetHex.Data.TerrainType, "Brush should have changed the hex terrain type to Desert.");
+            Assert.AreEqual(TerrainType.Desert, targetHex.Data.TerrainType, "Tool should have changed the hex terrain type to Desert.");
         }
     }
 }
