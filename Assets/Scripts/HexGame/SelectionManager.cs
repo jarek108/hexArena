@@ -1,85 +1,50 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using HexGame.Tools;
 
 namespace HexGame
 {
     public class SelectionManager : MonoBehaviour
     {
         private HexRaycaster hexRaycaster;
-        private SelectionTool selectionTool;
-
+        private ToolManager toolManager;
         private Hex lastHoveredHex;
-        private Hex selectedHex;
 
-        private void Start()
+        private void Awake()
         {
-            hexRaycaster = FindFirstObjectByType<HexRaycaster>();
-            selectionTool = FindFirstObjectByType<SelectionTool>();
-            
-            if (selectionTool == null)
-            {
-                // Auto-add if missing (though it should be set up in scene)
-                var gridManager = FindFirstObjectByType<HexGridManager>();
-                if (gridManager != null)
-                {
-                    selectionTool = gridManager.gameObject.AddComponent<SelectionTool>();
-                }
-            }
-            
-            selectedHex = null; 
+            Initialize(FindFirstObjectByType<ToolManager>(), FindFirstObjectByType<HexRaycaster>());
+        }
+
+        public void Initialize(ToolManager tm, HexRaycaster caster)
+        {
+            toolManager = tm;
+            hexRaycaster = caster;
         }
 
         private void Update()
         {
-            if (Mouse.current == null || selectionTool == null) return;
+            if (Mouse.current == null) return;
             
-            HandleHighlighting();
-            HandleSelection();
-        }
+            if (toolManager == null) toolManager = FindFirstObjectByType<ToolManager>();
+            if (hexRaycaster == null) hexRaycaster = FindFirstObjectByType<HexRaycaster>();
 
-        private void HandleHighlighting()
-        {
+            if (toolManager == null || hexRaycaster == null) return;
+            
             Hex currentHoveredHex = hexRaycaster.currentHex;
-            if (currentHoveredHex != lastHoveredHex)
-            {
-                // Reset the hex we just left
-                if (lastHoveredHex != null)
-                {
-                    selectionTool.ResetHex(lastHoveredHex);
-                }
-
-                // Highlight the new hex
-                if (currentHoveredHex != null)
-                {
-                    selectionTool.HighlightHex(currentHoveredHex);
-                }
-
-                lastHoveredHex = currentHoveredHex;
-            }
+            ManualUpdate(currentHoveredHex);
         }
 
-        private void HandleSelection()
+        public void ManualUpdate(Hex hoveredHex)
         {
-            if (Mouse.current.leftButton.wasPressedThisFrame)
+            if (toolManager == null || toolManager.ActiveTool == null) return;
+            
+            if (hoveredHex != lastHoveredHex)
             {
-                Hex newSelectedHex = hexRaycaster.currentHex;
-
-                // Deselect if clicking the same hex or empty space
-                if (newSelectedHex == selectedHex)
-                {
-                    if (selectedHex != null)
-                    {
-                        selectionTool.DeselectHex(selectedHex);
-                    }
-                    selectedHex = null;
-                }
-                // Select a new hex
-                else
-                {
-                    selectedHex = newSelectedHex;
-                    selectionTool.SelectHex(selectedHex);
-                }
+                (toolManager.ActiveTool as IHighlightingTool)?.HandleHighlighting(lastHoveredHex, hoveredHex);
+                lastHoveredHex = hoveredHex;
             }
+
+            toolManager.ActiveTool.HandleInput(hoveredHex);
         }
     }
 }

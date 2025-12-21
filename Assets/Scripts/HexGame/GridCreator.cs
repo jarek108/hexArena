@@ -151,7 +151,6 @@ namespace HexGame
 
             string json = JsonUtility.ToJson(saveData, true);
             File.WriteAllText(path, json);
-            Debug.Log($"Grid saved to {path}");
         }
 
         public void LoadGrid(string path)
@@ -160,7 +159,6 @@ namespace HexGame
 
             if (!File.Exists(path))
             {
-                Debug.LogWarning($"File not found at {path}. Aborting load.");
                 return;
             }
 
