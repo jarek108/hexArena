@@ -4,47 +4,26 @@
 - Target platform: PC
 - C# gameplay logic separated from UI/presentation.
 
-## Current Architecture
+## Architecture
 
-The project follows a **data-driven architecture** that separates the grid's logical state from its visual representation in Unity. This ensures a clean, testable, and flexible design.
+We follow a **Data-Driven Architecture** prioritizing strict Logic/View separation. High-level summaries are below; for detailed architectural breakdowns, refer to the specific system notes in the `notes/` folder.
 
--   **Logic Layer (`HexData.cs`, `HexGrid.cs`):**
-    -   At its core, the map is a pure C# `HexGrid` class that manages a collection of `HexData` objects.
-    -   `HexData` is a lightweight class holding the essential state for each hex: axial coordinates (`Q`, `R`), `Elevation`, `TerrainType`, and a reference to any occupying `Unit`.
-    -   This layer is entirely independent of Unity's `GameObject` system, allowing for fast, headless operations like pathfinding and logical calculations.
-
--   **View Layer (`Hex.cs`):**
-    -   `Hex` is a `MonoBehaviour` attached to each hexagonal `GameObject` in the scene.
-    -   It acts as a visual "puppet," synchronizing its appearance with the state of its assigned `HexData` object.
-    -   It holds serialized backing fields for its coordinates and properties (`viewQ`, `viewR`, etc.). This provides resilience against Unity's domain reloads, ensuring the grid state can be reconstructed even after scripts recompile.
-
--   **Bridge & Manager (`HexGridManager.cs`):**
-    -   This component is now a **pure visualizer and state holder**.
-    -   It holds the primary instance of the logical `HexGrid`.
-    -   It is responsible for **VisualizeGrid(HexGrid)**: clearing the scene and instantiating the visual `Hex` GameObjects based on provided data.
-    -   It provides a **Visual Marking API** (`SetHexRim`, `ResetHexToDefault`) for other tools to use.
-    -   It manages shared visual resources (Meshes, Materials) and handles coordinate conversions (`HexToWorld`, `WorldToHex`).
-    -   It is completely unaware of *how* the grid is created or how it is being interacted with.
-
--   **Interaction & Tools:**
-    -   **`SelectionTool.cs`**: A dedicated component that manages selection and highlighting state. It uses the `HexGridManager` API to apply visual markers (rims).
-    -   **`SelectionManager.cs`**: A controller that handles player input and drives the `SelectionTool`.
-    -   **`GridCreator.cs`**: A dedicated component that handles the **creation and I/O** of the grid (procedural generation and Save/Load).
-
--   **Interaction (`SelectionManager.cs`, `HexGridEditor.cs`, `GridCreatorEditor.cs`):**
-    -   `SelectionManager` is a focused controller that handles player input and calls public methods on `HexGridManager` to manage visual states like highlighting and selection.
-    -   `HexGridEditor` provides a clean interface for managing the visual grid's general state and rim effects.
-    -   `GridCreatorEditor` provides the "Map Control Panel" with buttons to generate, save, and load the grid using the `GridCreator` component.
+### Systems
+*   **Grid System** (Detailed in `notes/grid_system.md`):
+    *   **Logic**: `HexData` & `HexGrid` (Pure C#).
+    *   **View**: `Hex`, `HexGridManager`, `HexStateVisualizer`.
+    *   **Interaction**: `SelectionTool` & `GridCreator`.
+    *   **Principle**: Logic dictates state; View reacts. `HexStateVisualizer` is the sole authority on hex styling (rims/colors) based on abstract state priorities.
 
 # Workflow and coding standards
 
-## Documentation 
-- **Session Metadata:** At the start of each session, record the **Date**, **Start Time**, and at the end of the session, record the **End Time**  in the corresponding session entry in an appropriate md file (e.g., `grid.md`)
-- Append work to the most recent session block 
-- Start a new session only when explicitly instructed
-- For each session section maintain subsections: ### Features Implemented, ### Bugs encountered and fixed
-- In the ### Bugs encountered and fixed section list all the mistakes/bug fixing iterations with 'Bug', 'Human effort to resolve'(add in a bracket add estimation of how much expertise and time was needed to help you) and 'Solution' points
-- Only update the bugs after their resolution is confirmed by the user
+## Documentation workflow
+*   **Central Hub**: `GEMINI.md` contains high-level context, environment details, and the active session log.
+*   **System Documentation**: Detailed architecture, decision logs, and structures for specific systems live in `notes/<system_name>.md`.
+*   **Policy**:
+    *   Always keep documentation high-level in the root file and detailed in the notes.
+    *   **User Confirmation**: Never delete or significantly restructure documentation without explicit user confirmation.
+    *   Update `notes/` files as features are completed and verified.
 
 ## TDD Feature introduction workflow
 1.  **Understand & Strategize:** Analyze the required feature, propose options, select approach with the user.
@@ -72,4 +51,4 @@ The project follows a **data-driven architecture** that separates the grid's log
     *   Run each git command independently, do not chain them with &&
     *   Make sure you push after each commit
 5.  **Scene inspection/Management:** - Use use unity-mcp's `manage_gameobject` (action: `get_components`) or `manage_scene` (action: `get_hierarchy`) to inspect scene
-6. **Editing** - while using edit replacing 'old_string' with new always break long edits into smaller to avoid tool issues due to the errors in the replaced strings ('The exact text in old_string was not found') 
+6. **Editing** - while using edit replacing 'old_string' with new always break long edits into smaller to avoid tool issues due to the errors in the replaced strings ('The exact text in old_string was not found')

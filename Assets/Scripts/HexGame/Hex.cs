@@ -58,8 +58,18 @@ namespace HexGame
 
         public void AssignData(HexData data)
         {
+            if (Data != null)
+            {
+                Data.OnStateChanged -= HandleStateChanged;
+            }
+
             Data = data;
             
+            if (Data != null)
+            {
+                Data.OnStateChanged += HandleStateChanged;
+            }
+
             // Sync View Memory with Data
             viewQ = data.Q;
             viewR = data.R;
@@ -70,11 +80,34 @@ namespace HexGame
             name = $"Hex ({data.Q}, {data.R})";
             UpdatePosition();
             UpdateVisuals();
+            HandleStateChanged(); // Ensure initial state (Default) is applied
         }
-        
-        // Deprecated/Stubbed for refactor
-        public void Initialize(int q, int r) { } 
-        public void Initialize(int q, int r, int s) { }
+
+        private void OnEnable()
+        {
+            if (Data != null)
+            {
+                Data.OnStateChanged -= HandleStateChanged;
+                Data.OnStateChanged += HandleStateChanged;
+            }
+        }
+
+        private void OnDisable()
+        {
+            if (Data != null)
+            {
+                Data.OnStateChanged -= HandleStateChanged;
+            }
+        }
+
+        public void HandleStateChanged()
+        {
+            var visualizer = FindFirstObjectByType<HexStateVisualizer>();
+            if (visualizer != null)
+            {
+                visualizer.RefreshVisuals(this);
+            }
+        }
         
         private void UpdatePosition()
         {
@@ -86,14 +119,13 @@ namespace HexGame
         [ContextMenu("Update Hex Visuals")]
         private void OnValidate()
         {
-            // Update visuals in editor when properties change
             UpdatePosition(); 
             UpdateVisuals();
+            HandleStateChanged(); 
         }
 
         private void UpdateVisuals()
         {
-            // Update color based on TerrainType
             HexGridManager manager = FindFirstObjectByType<HexGridManager>();
             if (manager != null && GetComponent<Renderer>() != null)
             {
@@ -125,7 +157,6 @@ namespace HexGame
 
         public static Vector3Int Direction(int direction)
         {
-            // direction must be 0-5
             return directions[direction % 6]; 
         }
 

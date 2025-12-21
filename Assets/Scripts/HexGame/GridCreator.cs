@@ -38,6 +38,20 @@ namespace HexGame
             _gridManager = manager;
         }
 
+        public void ClearGrid()
+        {
+            if (gridManager == null) return;
+
+            int childCount = gridManager.transform.childCount;
+            for (int i = childCount - 1; i >= 0; i--)
+            {
+                if (Application.isPlaying) Destroy(gridManager.transform.GetChild(i).gameObject);
+                else DestroyImmediate(gridManager.transform.GetChild(i).gameObject);
+            }
+            if (gridManager.Grid != null) gridManager.Grid.Clear();
+            gridManager.Grid = null;
+        }
+
         public void GenerateGrid()
         {
             if (gridManager == null)
@@ -45,6 +59,8 @@ namespace HexGame
                 Debug.LogError("GridCreator: HexGridManager component not found on the same GameObject!");
                 return;
             }
+
+            ClearGrid();
 
             HexGrid grid = new HexGrid(gridWidth, gridHeight);
 
@@ -147,6 +163,8 @@ namespace HexGame
                 Debug.LogWarning($"File not found at {path}. Aborting load.");
                 return;
             }
+
+            ClearGrid();
 
             string json = File.ReadAllText(path);
             GridSaveData loadedData = JsonUtility.FromJson<GridSaveData>(json);

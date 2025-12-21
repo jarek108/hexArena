@@ -1,4 +1,3 @@
-
 using System.Collections;
 using NUnit.Framework;
 using UnityEngine;
@@ -47,7 +46,7 @@ namespace HexGame.Tests
 
             // Act
             gridCreator.SaveGrid(testSavePath);
-            gridManager.ClearGrid(); 
+            gridCreator.ClearGrid(); 
             gridCreator.LoadGrid(testSavePath);
 
             // Assert
@@ -68,7 +67,7 @@ namespace HexGame.Tests
 
             // Act
             gridCreator.SaveGrid(testSavePath);
-            gridManager.ClearGrid();
+            gridCreator.ClearGrid();
             gridCreator.LoadGrid(testSavePath);
             HexData loadedHexData = gridManager.Grid.GetHexAt(3, 4);
 

@@ -80,7 +80,7 @@ public class HexGridVisualTests
         Assert.AreEqual(9, manager.transform.childCount, "Second grid generation should spawn 9 hexes.");
 
         // --- Clear Grid ---
-        manager.ClearGrid();
+        creator.ClearGrid();
         yield return null;
         Assert.AreEqual(0, manager.transform.childCount, "ClearGrid should remove all hexes.");
     }

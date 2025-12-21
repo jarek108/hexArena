@@ -55,11 +55,11 @@ Material:
     - _QueueOffset: 0
     - _RimPower: 5
     - _RimPulsation: 0
-    - _RimPulsationSpeed: 1
-    - _RimWidth: 0.2
+    - _RimPulsationSpeed: 0
+    - _RimWidth: 0.05
     - _RimWidthMin: 0.2
     m_Colors:
     - _BaseColor: {r: 0, g: 1, b: 0.057691574, a: 1}
-    - _RimColor: {r: 1, g: 0, b: 0, a: 1}
+    - _RimColor: {r: 0, g: 0, b: 0, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

@@ -20,6 +20,14 @@ namespace HexGame.Editor
                 creator.GenerateGrid();
             }
 
+            if (GUILayout.Button("Clear Grid"))
+            {
+                creator.ClearGrid();
+            }
+
+            EditorGUILayout.Space();
+            EditorGUILayout.LabelField("Persistence", EditorStyles.boldLabel);
+
             if (GUILayout.Button("Save Grid"))
             {
                 string path = EditorUtility.SaveFilePanel("Save Grid", "", "grid.json", "json");

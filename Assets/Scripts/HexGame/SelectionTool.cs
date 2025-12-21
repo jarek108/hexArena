@@ -15,10 +15,6 @@ namespace HexGame
             }
         }
 
-        [Header("Selection Rim Settings")]
-        [SerializeField] public HexGridManager.RimSettings highlightRimSettings = new HexGridManager.RimSettings { color = Color.yellow, width = 0.2f, pulsation = 5f };
-        [SerializeField] public HexGridManager.RimSettings selectionRimSettings = new HexGridManager.RimSettings { color = Color.red, width = 0.2f, pulsation = 2f };
-
         public Hex SelectedHex { get; private set; }
         public Hex HighlightedHex { get; private set; }
 
@@ -31,23 +27,19 @@ namespace HexGame
         {
             if (gridManager == null) return;
 
-            // Visual Priority: Selection > Highlight
+            // Visual Priority handled by HexStateVisualizer
             if (hex == SelectedHex) return; 
 
             // Reset old highlight if it changed
             if (HighlightedHex != null && HighlightedHex != hex)
             {
-                // Only reset if it's not the selected hex (though logic above handles that, safety first)
-                if (HighlightedHex != SelectedHex)
-                {
-                    gridManager.ResetHexToDefault(HighlightedHex);
-                }
+                HighlightedHex.Data.RemoveState(HexState.Hovered);
             }
 
             HighlightedHex = hex;
             if (hex != null)
             {
-                gridManager.SetHexRim(hex, highlightRimSettings);
+                hex.Data.AddState(HexState.Hovered);
             }
         }
 
@@ -58,7 +50,7 @@ namespace HexGame
             if (hex == SelectedHex)
             {
                 SelectedHex = null;
-                gridManager.ResetHexToDefault(hex);
+                if (hex != null) hex.Data.RemoveState(HexState.Selected);
             }
         }
 
@@ -66,49 +58,30 @@ namespace HexGame
         {
             if (gridManager == null) return;
 
-            // If a different hex was previously selected, reset its visuals.
+            // If a different hex was previously selected, remove its state
             if (SelectedHex != null && SelectedHex != hex)
             {
-                gridManager.ResetHexToDefault(SelectedHex);
+                SelectedHex.Data.RemoveState(HexState.Selected);
             }
             
             SelectedHex = hex; 
 
             if(SelectedHex != null)
             {
-                gridManager.SetHexRim(hex, selectionRimSettings);
+                SelectedHex.Data.AddState(HexState.Selected);
             }
         }
 
         public void ResetHex(Hex hex)
         {
-            if (gridManager == null) return;
-
-            if (hex == null) return;
+            if (gridManager == null || hex == null) return;
 
             if (hex == HighlightedHex)
             {
                 HighlightedHex = null;
+                hex.Data.RemoveState(HexState.Hovered);
             }
-
-            // Re-apply the correct visual state without changing the logical selection.
-            if (hex == SelectedHex)
-            {
-                gridManager.SetHexRim(hex, selectionRimSettings);
-            }
-            else
-            {
-                gridManager.ResetHexToDefault(hex);
-            }
-        }
-        
-        // Helper to force refresh visuals if settings change
-        public void RefreshVisuals()
-        {
-            if (gridManager == null) return;
-
-            if (SelectedHex != null) gridManager.SetHexRim(SelectedHex, selectionRimSettings);
-            if (HighlightedHex != null && HighlightedHex != SelectedHex) gridManager.SetHexRim(HighlightedHex, highlightRimSettings);
+            // Logic for keeping Selected state is handled by HexStateVisualizer's fallback
         }
     }
 }

@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace HexGame
@@ -12,12 +14,66 @@ namespace HexGame
         public float Elevation;
         public TerrainType TerrainType;
         public Unit Unit;
+
+        private HashSet<HexState> _states;
+        public HashSet<HexState> States 
+        { 
+            get
+            {
+                if (_states == null) _states = new HashSet<HexState>();
+                return _states;
+            }
+        }
+
+        public event Action OnStateChanged;
         
         public HexData(int q, int r)
         {
             this.Q = q;
             this.R = r;
             this.S = -q - r;
+        }
+
+        public void AddState(HexState state)
+        {
+            if (States.Add(state))
+            {
+                OnStateChanged?.Invoke();
+            }
+        }
+
+        public void RemoveState(HexState state)
+        {
+            if (States.Remove(state))
+            {
+                OnStateChanged?.Invoke();
+            }
+        }
+
+        public void UpdateStates(IEnumerable<HexState> toAdd, IEnumerable<HexState> toRemove)
+        {
+            bool changed = false;
+
+            if (toRemove != null)
+            {
+                foreach (var state in toRemove)
+                {
+                    if (States.Remove(state)) changed = true;
+                }
+            }
+
+            if (toAdd != null)
+            {
+                foreach (var state in toAdd)
+                {
+                    if (States.Add(state)) changed = true;
+                }
+            }
+
+            if (changed)
+            {
+                OnStateChanged?.Invoke();
+            }
         }
     }
 }

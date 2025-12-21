@@ -15,12 +15,9 @@ namespace HexGame
         public struct RimSettings
         {
             public Color color;
-            [Range(-1f, 1f)] public float width;
+            [Range(0f, 1f)] public float width;
             public float pulsation;
         }
-
-        [Header("Rim Settings")]
-        [SerializeField] public RimSettings defaultRimSettings = new RimSettings { color = Color.black, width = -1.0f, pulsation = 0f };
 
         [System.Serializable]
         public struct TerrainColorMapping
@@ -43,11 +40,14 @@ namespace HexGame
 
         public void RefreshVisuals()
         {
+            var visualizer = GetComponent<HexStateVisualizer>();
+            if (visualizer == null) return;
+
             foreach (Transform child in transform)
             {
                 Hex hex = child.GetComponent<Hex>();
                 if (hex == null) continue;
-                ResetHexToDefault(hex);
+                visualizer.RefreshVisuals(hex);
             }
         }
 
@@ -113,8 +113,8 @@ namespace HexGame
                      hex.AssignData(data);
                  }
                  Grid.AddHex(hex.Data);
-                 ResetHexToDefault(hex);
              }
+             RefreshVisuals();
         }
 
         public void InitializeVisuals()
@@ -150,7 +150,6 @@ namespace HexGame
 
         public void VisualizeGrid(HexGrid newGrid)
         {
-            ClearGrid();
             Grid = newGrid;
             
             InitializeVisuals();
@@ -159,7 +158,6 @@ namespace HexGame
             foreach (HexData hexData in Grid.GetAllHexes())
             {
                 Vector3 worldPos = HexToWorld(hexData.Q, hexData.R);
-                // Adjust Y based on elevation
                 worldPos.y = hexData.Elevation;
 
                 GameObject hexGO = new GameObject($"Hex ({hexData.Q}, {hexData.R})");
@@ -168,27 +166,15 @@ namespace HexGame
                 
                 MeshFilter mf = hexGO.AddComponent<MeshFilter>();
                 mf.sharedMesh = hexMesh;
-                
                 MeshRenderer mr = hexGO.AddComponent<MeshRenderer>();
                 mr.sharedMaterials = new Material[] { hexSurfaceMaterial, hexMaterialSides };
-                
                 MeshCollider mc = hexGO.AddComponent<MeshCollider>();
                 mc.sharedMesh = hexMesh;
 
                 Hex hex = hexGO.AddComponent<Hex>();
-                hex.AssignData(hexData);
-                
-                // Set visuals
-                MaterialPropertyBlock block = new MaterialPropertyBlock();
-                mr.GetPropertyBlock(block, 0);
-                
-                block.SetColor("_BaseColor", GetDefaultHexColor(hex));
-                block.SetColor("_RimColor", defaultRimSettings.color);
-                block.SetFloat("_RimWidth", defaultRimSettings.width);
-                block.SetFloat("_RimPulsationSpeed", defaultRimSettings.pulsation);
-
-                mr.SetPropertyBlock(block, 0);
+                hex.AssignData(hexData); 
             }
+            RefreshVisuals();
         }
         
         private Mesh CreateHexMesh()
@@ -267,18 +253,6 @@ namespace HexGame
             return mesh;
         }
 
-        public void ClearGrid()
-        {
-            int childCount = transform.childCount;
-            for (int i = childCount - 1; i >= 0; i--)
-            {
-                if (Application.isPlaying) Destroy(transform.GetChild(i).gameObject);
-                else DestroyImmediate(transform.GetChild(i).gameObject);
-            }
-            if (Grid != null) Grid.Clear();
-            Grid = null;
-        }
-
         public Vector3 HexToWorld(Hex hex) { return HexToWorld(hex.Q, hex.R); }
         
         public Vector3 HexToWorld(int q, int r)
@@ -323,7 +297,6 @@ namespace HexGame
             }
 
             Vector3Int coords = RoundToHex(q_float, r_float);
-            // Ensure grid exists before query
             if(Grid == null) RebuildGridFromChildren();
             
             HexData data = Grid.GetHexAt(coords.x, coords.y);
@@ -343,11 +316,6 @@ namespace HexGame
             else if (r_diff > s_diff) r = -q - s;
             else s = -q - r;
             return new Vector3Int(q, r, s);
-        }
-        
-        public void ResetHexToDefault(Hex hex)
-        {
-            SetHexRim(hex, defaultRimSettings);
         }
 
         public void SetHexRim(Hex hex, RimSettings settings)
@@ -401,14 +369,6 @@ namespace HexGame
                 else return hexMaterialSides.color;
             }
             return Color.white; 
-        }
-        
-        // Helper to get hex object - no longer needed as much since Hex IS the component, 
-        // but kept for compatibility if needed or removed if unused. 
-        // We will remove the dictionary lookup since the Hex component is on the object.
-        public GameObject GetHexGameObject(Hex hex)
-        {
-            return hex != null ? hex.gameObject : null;
         }
     }
 }

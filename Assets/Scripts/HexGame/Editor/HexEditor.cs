@@ -1,5 +1,6 @@
 using UnityEditor;
 using UnityEngine;
+using System.Linq;
 
 namespace HexGame.Editor
 {
@@ -7,18 +8,49 @@ namespace HexGame.Editor
     [CanEditMultipleObjects]
     public class HexEditor : UnityEditor.Editor
     {
+        private Hex targetHex;
+
+        private void OnEnable()
+        {
+            targetHex = (Hex)target;
+            if (targetHex != null && targetHex.Data != null)
+            {
+                targetHex.Data.OnStateChanged += HandleStateChanged;
+            }
+        }
+
+        private void OnDisable()
+        {
+            if (targetHex != null && targetHex.Data != null)
+            {
+                targetHex.Data.OnStateChanged -= HandleStateChanged;
+            }
+        }
+
+        private void HandleStateChanged()
+        {
+            Repaint();
+        }
+
         public override void OnInspectorGUI()
         {
-            Hex hex = (Hex)target;
+            // If data was assigned after OnEnable, try to subscribe
+            if (targetHex.Data != null)
+            {
+                // Simple way to ensure we are subscribed if data appears late 
+                // (e.g. after generation while inspector is open)
+                targetHex.Data.OnStateChanged -= HandleStateChanged;
+                targetHex.Data.OnStateChanged += HandleStateChanged;
+            }
 
             // Script field
             GUI.enabled = false;
-            EditorGUILayout.ObjectField("Script", MonoScript.FromMonoBehaviour(hex), typeof(Hex), false);
+            EditorGUILayout.ObjectField("Script", MonoScript.FromMonoBehaviour(targetHex), typeof(Hex), false);
             GUI.enabled = true;
 
             EditorGUILayout.Space();
             
-            if (hex.Data == null)
+            if (targetHex.Data == null)
             {
                 EditorGUILayout.HelpBox("No HexData assigned to this View. This usually happens if the Grid was not generated or re-linked.", MessageType.Warning);
                 return;
@@ -26,38 +58,50 @@ namespace HexGame.Editor
 
             EditorGUILayout.LabelField("Coordinates (Logic Layer)", EditorStyles.boldLabel);
             GUI.enabled = false;
-            EditorGUILayout.IntField("Q (Column)", hex.Q);
-            EditorGUILayout.IntField("R (Row)", hex.R);
-            EditorGUILayout.IntField("S (Cube Z)", hex.S);
+            EditorGUILayout.IntField("Q (Column)", targetHex.Q);
+            EditorGUILayout.IntField("R (Row)", targetHex.R);
+            EditorGUILayout.IntField("S (Cube Z)", targetHex.S);
             GUI.enabled = true;
 
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("Properties (Logic Layer)", EditorStyles.boldLabel);
 
-            // Since we are in the inspector for the Hex (View), 
-            // we proxy the edits to the underlying data properties.
-            // Note: Changing these in the inspector won't be "undoable" in the standard way
-            // unless we use SerializedProperties on HexData, but for a simple view, 
-            // direct assignment is fine for debugging.
-
-            float newElevation = EditorGUILayout.FloatField("Elevation", hex.Elevation);
-            if (newElevation != hex.Elevation)
+            float newElevation = EditorGUILayout.FloatField("Elevation", targetHex.Elevation);
+            if (newElevation != targetHex.Elevation)
             {
-                Undo.RecordObject(hex, "Change Hex Elevation");
-                hex.Elevation = newElevation;
+                Undo.RecordObject(targetHex, "Change Hex Elevation");
+                targetHex.Elevation = newElevation;
             }
 
-            TerrainType newType = (TerrainType)EditorGUILayout.EnumPopup("Terrain Type", hex.TerrainType);
-            if (newType != hex.TerrainType)
+            TerrainType newType = (TerrainType)EditorGUILayout.EnumPopup("Terrain Type", targetHex.TerrainType);
+            if (newType != targetHex.TerrainType)
             {
-                Undo.RecordObject(hex, "Change Hex Terrain");
-                hex.TerrainType = newType;
+                Undo.RecordObject(targetHex, "Change Hex Terrain");
+                targetHex.TerrainType = newType;
             }
 
             EditorGUILayout.Space();
-            EditorGUILayout.LabelField("State", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("Active States (Logic Layer)", EditorStyles.boldLabel);
+            
+            if (targetHex.Data.States == null || targetHex.Data.States.Count == 0)
+            {
+                EditorGUILayout.LabelField("None", EditorStyles.miniLabel);
+            }
+            else
+            {
+                // Draw states as tags
+                EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+                foreach (var state in targetHex.Data.States.OrderBy(s => s))
+                {
+                    EditorGUILayout.LabelField($"• {state}", EditorStyles.wordWrappedLabel);
+                }
+                EditorGUILayout.EndVertical();
+            }
+
+            EditorGUILayout.Space();
+            EditorGUILayout.LabelField("Hierarchy", EditorStyles.boldLabel);
             GUI.enabled = false;
-            EditorGUILayout.ObjectField("Occupying Unit", hex.Unit, typeof(Unit), true);
+            EditorGUILayout.ObjectField("Occupying Unit", targetHex.Unit, typeof(Unit), true);
             GUI.enabled = true;
         }
     }
