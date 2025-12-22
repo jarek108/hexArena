@@ -38,7 +38,7 @@ We follow a **Data-Driven Architecture** prioritizing strict Logic/View separati
 1. When writing Python, be very concise and prefer brevity over handling all errors etc.
 
 # Tool Usage
-1. **Game Screenshots** - run `python tools/unityGameScreenshot.py` to capture screenshots (and not unity-mcp). *Note: This script automatically moves the screenshot outside the Assets folder to `Screenshots`. Captures Game View only. Edit Mode screenshots are ok, but Play Mode may be unreliable; ask user for manual verification if needed.*
+1. **Game Screenshots** - run `python tools/unityGameScreenshot.py` without any arguments to capture screenshots (and not unity-mcp). NEVER provide a custom filename. You MUST use the filename provided in the tool's stdout output when referring to the screenshot. *Note: This script automatically moves the screenshot outside the Assets folder to `Screenshots`. Captures Game View only. Edit Mode screenshots are ok, but Play Mode may be unreliable; ask user for manual verification if needed.*
 2. **Waiting** - in interactions where you suspect some ongoing process needs to finish use `python tools/waitFewSeconds.py`. It accepts a single integer - the number of seconds to wait before returning. Useful in interactions where a delay is needed, for example, to allow Unity to recompile scripts or process asset changes.
 3. **Window Activation** - run `python tools/windowActivator.py "<title_substring>"` to bring windows containing the substring in their title to the foreground. Useful for switching back to Unity or the Game view.
 4. **Testing** Prefer `EditMode` over `PlayMode` testing. Always follow this testing sequence:
