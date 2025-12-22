@@ -22,7 +22,12 @@ namespace HexGame.Tests
             
             iconPrefab = new GameObject("IconPrefab");
             iconPrefab.AddComponent<RectTransform>();
-            iconPrefab.AddComponent<Image>();
+            
+            // Create child for IconImage as expected by IconManager logic
+            GameObject iconImageChild = new GameObject("IconImage");
+            iconImageChild.transform.SetParent(iconPrefab.transform);
+            iconImageChild.AddComponent<RectTransform>();
+            iconImageChild.AddComponent<Image>();
             
             iconManager.iconPrefab = iconPrefab;
         }
@@ -77,8 +82,11 @@ namespace HexGame.Tests
 
             // Assert
             GameObject child = iconManager.transform.GetChild(0).gameObject;
-            Image img = child.GetComponent<Image>();
-            Assert.IsNotNull(img);
+            Transform iconImageTransform = child.transform.Find("IconImage");
+            Assert.IsNotNull(iconImageTransform, "IconImage child not found");
+            
+            Image img = iconImageTransform.GetComponent<Image>();
+            Assert.IsNotNull(img, "Image component not found on IconImage child");
             Assert.AreEqual(testSprite, img.sprite);
             
             Object.DestroyImmediate(testSprite);
