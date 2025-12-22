@@ -130,6 +130,14 @@ namespace HexGame
             if (Instance == this) Instance = null;
         }
 
+        public void ToggleShowGrid()
+        {
+            showGrid = !showGrid;
+            UpdateGridVisibility();
+            SyncMaterialWithDefault();
+            RefreshVisuals();
+        }
+
         public void RefreshVisuals()
         {
             foreach (Transform child in transform)

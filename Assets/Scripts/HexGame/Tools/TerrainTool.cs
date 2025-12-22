@@ -13,7 +13,7 @@ namespace HexGame.Tools
 
         private List<HexData> lastHighlightedHexes = new List<HexData>();
         
-        public string ToolName => "Terrain Tool";
+        public string ToolName => "TerrainTool";
         public bool IsEnabled { get; private set; }
 
         public void OnActivate()

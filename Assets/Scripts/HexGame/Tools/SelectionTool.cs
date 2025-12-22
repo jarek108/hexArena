@@ -6,7 +6,7 @@ namespace HexGame.Tools
     [RequireComponent(typeof(ToolManager))]
     public class SelectionTool : MonoBehaviour, ITool, IHighlightingTool
     {
-        public string ToolName => "Selection";
+        public string ToolName => "SelectionTool";
         public bool IsEnabled { get; private set; }
 
         public Hex SelectedHex { get; private set; }

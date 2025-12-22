@@ -30,3 +30,12 @@ The Tools System follows a decoupled, modular design, where each "tool" is a sel
     *   **`SelectionTool`**: Manages highlighting and selecting hexes.
     *   **`TerrainTool`**: Modifies `TerrainType` on `HexData`.
     *   **`ElevationTool`**: Modifies `Elevation` on `HexData`.
+
+## UI & Input Integration
+*   **`IconManager` (View):**
+    *   Manages the toolbar visuals and hotkey detection.
+    *   **Architecture:** Uses a View-Logic separation where the `IconManager` exposes `UnityEvent` hooks via `IconData`.
+    *   **Interaction:** 
+        *   **Click:** Triggers the assigned `UnityEvent`.
+        *   **Hotkey:** Checks for key press in `Update` and triggers the same `UnityEvent`.
+    *   **Wiring:** Developers assign `ToolManager.SelectTool("ToolID")` (or similar methods) to these events in the Unity Inspector.
