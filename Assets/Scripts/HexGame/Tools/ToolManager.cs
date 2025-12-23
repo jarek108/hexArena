@@ -21,11 +21,11 @@ namespace HexGame
         {
             Initialize();
             
-            // Set SelectionTool as the default active tool
-            var selectionTool = tools.FirstOrDefault(t => t is SelectionTool);
-            if (selectionTool != null)
+            // Set PathfindingTool as the default active tool
+            var pathfindingTool = tools.FirstOrDefault(t => t is PathfindingTool);
+            if (pathfindingTool != null)
             {
-                SetActiveTool(selectionTool);
+                SetActiveTool(pathfindingTool);
             }
         }
 

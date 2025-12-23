@@ -5,7 +5,7 @@ namespace HexGame
         Default,
         Hovered,
         Selected,
-        MovementRange,
+        Target,
         AttackRange,
         Path,
         ZoneOfControl

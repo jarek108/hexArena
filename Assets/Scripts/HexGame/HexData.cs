@@ -11,6 +11,11 @@ namespace HexGame
         public int Q;
         public int R;
         public int S;
+
+        public float GetMovementCost()
+        {
+            return 1f;
+        }
         
         private float _elevation;
         public float Elevation
