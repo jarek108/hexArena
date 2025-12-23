@@ -3,18 +3,13 @@ using UnityEngine.InputSystem;
 
 namespace HexGame.Tools
 {
-    [RequireComponent(typeof(ToolManager))]
-    public class SelectionTool : MonoBehaviour, ITool, IHighlightingTool
+    public class SelectionTool : BaseTool
     {
-        public string ToolName => "SelectionTool";
-        public bool IsEnabled { get; private set; }
-
         public Hex SelectedHex { get; private set; }
 
-        public void OnActivate() => IsEnabled = true;
-        public void OnDeactivate()
+        public override void OnDeactivate()
         {
-            IsEnabled = false;
+            base.OnDeactivate();
             // Clear selection and highlights when tool is deactivated
             if (SelectedHex != null)
             {
@@ -23,8 +18,9 @@ namespace HexGame.Tools
             }
         }
 
-        public void HandleInput(Hex hoveredHex)
+        public override void HandleInput(Hex hoveredHex)
         {
+            // Note: SelectionTool needs custom guard because it handles 'null' (void) clicks
             if (!IsEnabled) return;
 
             if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame)
@@ -51,7 +47,7 @@ namespace HexGame.Tools
             }
         }
         
-        public void HandleHighlighting(Hex oldHex, Hex newHex)
+        public override void HandleHighlighting(Hex oldHex, Hex newHex)
         {
             if (!IsEnabled) return;
 

@@ -23,7 +23,7 @@ namespace HexGame.Editor
             // Set initial selected index based on active tool
             if (toolManager.ActiveTool != null)
             {
-                selectedToolIndex = System.Array.IndexOf(toolNames, toolManager.ActiveTool.ToolName);
+                selectedToolIndex = System.Array.IndexOf(toolNames, toolManager.ActiveTool.GetType().Name);
             }
             else
             {
@@ -35,7 +35,7 @@ namespace HexGame.Editor
         {
             // Get all ITool components attached to the GameObject
             var attachedTools = toolManager.GetComponents<ITool>();
-            toolNames = attachedTools.Select(t => t.ToolName).ToArray();
+            toolNames = attachedTools.Select(t => t.GetType().Name).ToArray();
 
             // If no tool is active, ensure we can still show a reasonable state
             if (toolManager.ActiveTool == null && toolNames.Length > 0)
@@ -72,7 +72,7 @@ namespace HexGame.Editor
             }
             
             GUI.enabled = false;
-            EditorGUILayout.TextField(toolManager.ActiveTool != null ? toolManager.ActiveTool.ToolName : "None", GUILayout.Width(100));
+            EditorGUILayout.TextField(toolManager.ActiveTool != null ? toolManager.ActiveTool.GetType().Name : "None", GUILayout.Width(100));
             GUI.enabled = true;
             EditorGUILayout.EndHorizontal();
 

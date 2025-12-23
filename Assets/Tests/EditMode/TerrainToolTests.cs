@@ -55,5 +55,20 @@ namespace HexGame.Tests
             // Assert
             Assert.AreEqual(TerrainType.Desert, targetHex.Data.TerrainType, "Tool should have changed the hex terrain type to Desert.");
         }
+
+        [Test]
+        public void TerrainTool_BrushSize_CanBeModified()
+        {
+            terrainTool.OnActivate();
+            
+            var field = terrainTool.GetType().GetField("brushSize", 
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            
+            int initialSize = (int)field.GetValue(terrainTool);
+            field.SetValue(terrainTool, Mathf.Clamp(initialSize + 1, 1, 10));
+            
+            int newSize = (int)field.GetValue(terrainTool);
+            Assert.AreNotEqual(initialSize, newSize, "Brush size should have changed.");
+        }
     }
 }

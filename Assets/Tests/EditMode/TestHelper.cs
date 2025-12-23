@@ -21,6 +21,7 @@ namespace HexGame.Tests
             
             var creator = go.AddComponent<GridCreator>();
             creator.Initialize(manager);
+            go.AddComponent<InputManager>();
             go.AddComponent<ToolManager>();
             go.AddComponent<SelectionTool>();
             go.AddComponent<TerrainTool>();
