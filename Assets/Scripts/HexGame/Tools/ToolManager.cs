@@ -34,7 +34,7 @@ namespace HexGame
             tools = GetComponents<ITool>().ToList();
             if (ActiveTool != null)
             {
-                activeToolName = ActiveTool.ToolName;
+                activeToolName = ActiveTool.GetType().Name;
             }
             
             if (hexRaycaster == null) hexRaycaster = FindFirstObjectByType<HexRaycaster>();
@@ -92,7 +92,7 @@ namespace HexGame
             if (ActiveTool != null)
             {
                 ActiveTool.OnActivate();
-                activeToolName = ActiveTool.ToolName;
+                activeToolName = ActiveTool.GetType().Name;
             }
             else
             {
@@ -102,7 +102,7 @@ namespace HexGame
 
         public void SelectToolByName(string toolName)
         {
-            var toolToActivate = tools.FirstOrDefault(t => t.ToolName == toolName);
+            var toolToActivate = tools.FirstOrDefault(t => t.GetType().Name == toolName);
             if (toolToActivate != null)
             {
                 SetActiveTool(toolToActivate);
@@ -115,7 +115,7 @@ namespace HexGame
         
         public IEnumerable<string> GetAvailableToolNames()
         {
-            return tools.Select(t => t.ToolName);
+            return tools.Select(t => t.GetType().Name);
         }
     }
 }

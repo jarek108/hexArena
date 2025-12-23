@@ -11,7 +11,6 @@ namespace HexGame.Tests
     public class MockTool : MonoBehaviour, ITool
     {
         public bool IsActive { get; private set; }
-        public string ToolName => "MockTool";
         public void OnActivate() { IsActive = true; }
         public void OnDeactivate() { IsActive = false; }
         public void HandleInput(Hex hoveredHex) { }
@@ -20,7 +19,6 @@ namespace HexGame.Tests
     public class MockToolB : MonoBehaviour, ITool
     {
         public bool IsActive { get; private set; }
-        public string ToolName => "MockToolB";
         public void OnActivate() { IsActive = true; }
         public void OnDeactivate() { IsActive = false; }
         public void HandleInput(Hex hoveredHex) { }
@@ -59,7 +57,7 @@ namespace HexGame.Tests
 
             // Assert
             Assert.AreEqual(toolA, toolManager.ActiveTool, "Tool A should be the active tool.");
-            Assert.AreEqual(toolA.ToolName, toolManager.activeToolName, "activeToolName should match Tool A's name.");
+            Assert.AreEqual(toolA.GetType().Name, toolManager.activeToolName, "activeToolName should match Tool A's class name.");
 
 
             // Act
@@ -67,7 +65,7 @@ namespace HexGame.Tests
 
             // Assert
             Assert.AreEqual(toolB, toolManager.ActiveTool, "Tool B should be the active tool.");
-            Assert.AreEqual(toolB.ToolName, toolManager.activeToolName, "activeToolName should match Tool B's name.");
+            Assert.AreEqual(toolB.GetType().Name, toolManager.activeToolName, "activeToolName should match Tool B's class name.");
         }
 
         [Test]
