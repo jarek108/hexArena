@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using System.Collections.Generic;
 
 namespace HexGame.Tools
 {
@@ -7,6 +8,8 @@ namespace HexGame.Tools
     {
         public Hex SourceHex { get; private set; }
         public Hex TargetHex { get; private set; }
+        [SerializeField] private float maxElevationChange = 1f;
+        private List<HexData> currentPath = new List<HexData>();
 
         public override void OnDeactivate()
         {
@@ -48,7 +51,6 @@ namespace HexGame.Tools
             if (!IsEnabled) return;
 
             // Always remove hover from old, regardless of selection state.
-            // GridVisualizationManager priorities handle the actual visual visibility.
             if (oldHex != null)
             {
                 oldHex.Data.RemoveState(HexState.Hovered);
@@ -79,7 +81,7 @@ namespace HexGame.Tools
             SourceHex.Data.RemoveState(HexState.Hovered);
             SourceHex.Data.AddState(HexState.Selected);
             
-            // Selection changes might invalidate current target
+            // Selection changes invalidate current target and path
             ClearTarget();
         }
 
@@ -97,6 +99,40 @@ namespace HexGame.Tools
             // When targeting, remove hovered so it doesn't stay in the background
             TargetHex.Data.RemoveState(HexState.Hovered);
             TargetHex.Data.AddState(HexState.Target);
+
+            UpdatePath();
+        }
+
+        private void UpdatePath()
+        {
+            ClearPath();
+
+            if (SourceHex == null || TargetHex == null) return;
+
+            var manager = FindFirstObjectByType<GridVisualizationManager>() ?? GridVisualizationManager.Instance;
+            if (manager == null || manager.Grid == null) return;
+
+            PathResult result = Pathfinder.FindPath(manager.Grid, SourceHex.Data, TargetHex.Data, maxElevationChange);
+            if (result.Success)
+            {
+                currentPath = result.Path;
+                foreach (var hexData in currentPath)
+                {
+                    // Exclude Source and Target from receiving the 'Path' state visuals
+                    if (hexData == SourceHex.Data || hexData == TargetHex.Data) continue;
+                    
+                    hexData.AddState(HexState.Path);
+                }
+            }
+        }
+
+        private void ClearPath()
+        {
+            foreach (var hexData in currentPath)
+            {
+                if (hexData != null) hexData.RemoveState(HexState.Path);
+            }
+            currentPath.Clear();
         }
 
         private void ClearTarget()
@@ -106,6 +142,7 @@ namespace HexGame.Tools
                 TargetHex.Data.RemoveState(HexState.Target);
                 TargetHex = null;
             }
+            ClearPath();
         }
 
         private void ClearAll()

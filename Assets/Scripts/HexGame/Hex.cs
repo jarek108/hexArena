@@ -163,44 +163,12 @@ namespace HexGame
             }
         }
 
-        // Static directions for neighbors (pointy-top orientation)
-        private static readonly Vector3Int[] directions =
-        {
-            new Vector3Int(1, 0, -1), new Vector3Int(1, -1, 0), new Vector3Int(0, -1, 1),
-            new Vector3Int(-1, 0, 1), new Vector3Int(-1, 1, 0), new Vector3Int(0, 1, -1)
-        };
-
-        public static Vector3Int Add(Vector3Int a, Vector3Int b)
-        {
-            return a + b;
-        }
-
-        public static Vector3Int Subtract(Vector3Int a, Vector3Int b)
-        {
-            return a - b;
-        }
-        
-        public static Vector3Int Scale(Vector3Int a, int k)
-        {
-            return a * k;
-        }
-
-        public static Vector3Int Direction(int direction)
-        {
-            return directions[direction % 6]; 
-        }
-
-        public static Vector3Int Neighbor(Vector3Int hex, int direction)
-        {
-            return Add(hex, Direction(direction));
-        }
-
-        public static int Distance(Vector3Int a, Vector3Int b)
-        {
-            return (Mathf.Abs(a.x - b.x)
-                  + Mathf.Abs(a.y - b.y)
-                  + Mathf.Abs(a.z - b.z)) / 2;
-        }
+        public static Vector3Int Add(Vector3Int a, Vector3Int b) => HexMath.Add(a, b);
+        public static Vector3Int Subtract(Vector3Int a, Vector3Int b) => HexMath.Subtract(a, b);
+        public static Vector3Int Scale(Vector3Int a, int k) => HexMath.Scale(a, k);
+        public static Vector3Int Direction(int direction) => HexMath.Direction(direction);
+        public static Vector3Int Neighbor(Vector3Int hex, int direction) => HexMath.Neighbor(hex, direction);
+        public static int Distance(Vector3Int a, Vector3Int b) => HexMath.Distance(a, b);
         
         public Vector3Int Coordinates => new Vector3Int(Q, R, S);
     }
