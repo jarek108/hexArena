@@ -3,9 +3,21 @@ using UnityEngine.InputSystem;
 
 namespace HexGame
 {
+    [ExecuteAlways]
     public class InputManager : MonoBehaviour
     {
-        public static InputManager Instance { get; private set; }
+        private static InputManager _instance;
+        public static InputManager Instance
+        {
+            get
+            {
+                if (_instance == null)
+                {
+                    _instance = Object.FindFirstObjectByType<InputManager>();
+                }
+                return _instance;
+            }
+        }
 
         [Header("Settings")]
         [Tooltip("Global multiplier for mouse scroll delta.")]
@@ -14,14 +26,24 @@ namespace HexGame
         [Tooltip("The minimum delta required to trigger a scroll step.")]
         public float scrollThreshold = 0.01f;
 
+        private void OnEnable()
+        {
+            if (_instance == null) _instance = this;
+        }
+
+        private void OnDisable()
+        {
+            if (_instance == this) _instance = null;
+        }
+
         private void Awake()
         {
-            if (Instance != null && Instance != this)
+            if (Application.isPlaying && _instance != null && _instance != this)
             {
                 Destroy(gameObject);
                 return;
             }
-            Instance = this;
+            _instance = this;
         }
 
         /// <summary>
