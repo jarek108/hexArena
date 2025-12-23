@@ -16,7 +16,6 @@ namespace HexGame.Tests
         private GridCreator creator;
         private SelectionTool selectionTool;
         private ToolManager toolManager;
-        private SelectionManager selectionManager;
         private Hex testHex;
 
         private GridVisualizationManager.RimSettings highlightVisuals = new GridVisualizationManager.RimSettings { color = Color.yellow, width = 0.2f, pulsation = 5f };
@@ -34,10 +33,8 @@ namespace HexGame.Tests
             creator = managerGO.GetComponent<GridCreator>();
             toolManager = managerGO.GetComponent<ToolManager>();
             selectionTool = managerGO.GetComponent<SelectionTool>();
-            selectionManager = managerGO.GetComponent<SelectionManager>();
 
             var caster = managerGO.AddComponent<HexRaycaster>();
-            selectionManager.Initialize(toolManager, caster);
             toolManager.SetActiveTool(selectionTool);
 
             manager.stateSettings = new List<GridVisualizationManager.StateSetting>
@@ -70,7 +67,7 @@ namespace HexGame.Tests
         yield return null;
         Assert.AreEqual(selectionVisuals.color, manager.GetHexRimColor(testHex), "Pre-condition: Hex A should be visually selected.");
 
-        selectionManager.ManualUpdate(null); // Hover off
+        toolManager.ManualUpdate(null); // Hover off
         yield return null;
         Assert.AreEqual(selectionVisuals.color, manager.GetHexRimColor(testHex), "Selection should remain Red when hovering off.");
     }
@@ -91,7 +88,7 @@ namespace HexGame.Tests
     [UnityTest]
     public IEnumerator HighlightHex_ActivatesRim()
     {
-        selectionManager.ManualUpdate(testHex);
+        toolManager.ManualUpdate(testHex);
         yield return null;
         
         Assert.AreEqual(highlightVisuals.color, manager.GetHexRimColor(testHex), "Highlight should set RimColor to Yellow.");
@@ -113,9 +110,9 @@ namespace HexGame.Tests
     [UnityTest]
     public IEnumerator ResetHex_DeactivatesRim()
     {
-        selectionManager.ManualUpdate(testHex);
+        toolManager.ManualUpdate(testHex);
         yield return null;
-        selectionManager.ManualUpdate(null); // Simulate hovering off
+        toolManager.ManualUpdate(null); // Simulate hovering off
         yield return null;
         
         Assert.AreEqual(0, manager.GetHexRimWidth(testHex), "Reset should set RimWidth to a zero value (hiding it).");
@@ -125,7 +122,7 @@ namespace HexGame.Tests
     [UnityTest]
     public IEnumerator Transition_HighlightToSelect_UpdatesProperties()
     {
-                selectionManager.ManualUpdate(testHex);
+                toolManager.ManualUpdate(testHex);
                 yield return null;
                 Assert.AreEqual(highlightVisuals.color, manager.GetHexRimColor(testHex));
         
@@ -139,9 +136,9 @@ namespace HexGame.Tests
         Hex hexA = manager.GetHexView(manager.Grid.GetHexAt(0, 0));
         Hex hexB = manager.GetHexView(manager.Grid.GetHexAt(1, 0));
         
-        selectionManager.ManualUpdate(hexA);
+        toolManager.ManualUpdate(hexA);
         yield return null;
-        selectionManager.ManualUpdate(hexB);
+        toolManager.ManualUpdate(hexB);
         yield return null;
         Assert.AreEqual(defaultVisuals.color, manager.GetHexRimColor(hexA), "Old Hex A should be reset.");
         Assert.AreEqual(highlightVisuals.color, manager.GetHexRimColor(hexB), "New Hex B should be highlighted.");
@@ -168,7 +165,7 @@ namespace HexGame.Tests
         yield return null;
         Assert.AreEqual(selectionVisuals.color, manager.GetHexRimColor(testHex));
 
-        selectionManager.ManualUpdate(testHex); // Hover while selected
+        toolManager.ManualUpdate(testHex); // Hover while selected
         yield return null;
         Assert.AreEqual(selectionVisuals.color, manager.GetHexRimColor(testHex), "Highlighting a Selected hex should be ignored (remain Red).");
     }
@@ -176,7 +173,7 @@ namespace HexGame.Tests
     [UnityTest]
     public IEnumerator HighlightHex_SetsPulsationSpeed()
     {
-        selectionManager.ManualUpdate(testHex);
+        toolManager.ManualUpdate(testHex);
         yield return null;
         Assert.AreEqual(highlightVisuals.pulsation, manager.GetHexRimPulsation(testHex), "Highlight should set RimPulsationSpeed to expected value.");
     }
@@ -192,9 +189,9 @@ namespace HexGame.Tests
     [UnityTest]
     public IEnumerator ResetHex_SetsPulsationSpeed()
     {
-        selectionManager.ManualUpdate(testHex);
+        toolManager.ManualUpdate(testHex);
         yield return null;
-        selectionManager.ManualUpdate(null);
+        toolManager.ManualUpdate(null);
         yield return null;
         MaterialPropertyBlock block = new MaterialPropertyBlock();
         testHex.GetComponent<Renderer>().GetPropertyBlock(block, 0);
@@ -205,7 +202,7 @@ namespace HexGame.Tests
     [UnityTest]
     public IEnumerator UpdateSettings_ImmediatelyReflectedInActiveHighlight()
     {
-        selectionManager.ManualUpdate(testHex);
+        toolManager.ManualUpdate(testHex);
         yield return null;
         
         for (int i = 0; i < manager.stateSettings.Count; i++)
@@ -249,7 +246,7 @@ namespace HexGame.Tests
     [UnityTest]
     public IEnumerator UpdateSettings_ImmediatelyReflectedInDefaultHex()
     {
-        selectionManager.ManualUpdate(null);
+        toolManager.ManualUpdate(null);
         yield return null;
 
         Color newDefaultColor = Color.magenta;

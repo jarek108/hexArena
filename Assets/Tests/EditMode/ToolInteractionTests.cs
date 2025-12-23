@@ -15,7 +15,6 @@ namespace HexGame.Tests
         private ToolManager toolManager;
         private SelectionTool selectionTool;
         private TerrainTool terrainTool;
-        private SelectionManager selectionManager;
 
         [UnitySetUp]
         public IEnumerator SetUp()
@@ -25,10 +24,8 @@ namespace HexGame.Tests
             toolManager = managerGO.GetComponent<ToolManager>();
             selectionTool = managerGO.GetComponent<SelectionTool>();
             terrainTool = managerGO.GetComponent<TerrainTool>();
-            selectionManager = managerGO.GetComponent<SelectionManager>();
             
             var caster = managerGO.AddComponent<HexRaycaster>();
-            selectionManager.Initialize(toolManager, caster);
             
             // Create a small grid
             HexGrid grid = new HexGrid(5, 5);
@@ -52,13 +49,13 @@ namespace HexGame.Tests
             Hex hexA = manager.GetHexView(manager.Grid.GetHexAt(1, 1));
             Hex hexB = manager.GetHexView(manager.Grid.GetHexAt(2, 2));
             
-            selectionManager.ManualUpdate(hexA); 
+            toolManager.ManualUpdate(hexA); 
             yield return null;
 
             Assert.IsTrue(hexA.Data.States.Contains(HexState.Hovered), "Hex A should be in Hovered state.");
             Assert.IsFalse(hexB.Data.States.Contains(HexState.Hovered), "Hex B should not be in Hovered state.");
 
-            selectionManager.ManualUpdate(hexB);
+            toolManager.ManualUpdate(hexB);
             yield return null;
 
             Assert.IsFalse(hexA.Data.States.Contains(HexState.Hovered), "Hex A should no longer be in Hovered state.");
@@ -77,7 +74,7 @@ namespace HexGame.Tests
             Hex neighborHex = manager.GetHexView(manager.Grid.GetHexAt(2, 3));
             Hex distantHex = manager.GetHexView(manager.Grid.GetHexAt(4, 4));
 
-            selectionManager.ManualUpdate(centerHex);
+            toolManager.ManualUpdate(centerHex);
             yield return null;
 
             Assert.IsTrue(centerHex.Data.States.Contains(HexState.Hovered), "Center hex should be highlighted.");

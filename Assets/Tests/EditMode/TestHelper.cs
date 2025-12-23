@@ -23,7 +23,6 @@ namespace HexGame.Tests
             creator.Initialize(manager);
             go.AddComponent<ToolManager>();
             go.AddComponent<SelectionTool>();
-            go.AddComponent<SelectionManager>();
             go.AddComponent<TerrainTool>();
             go.AddComponent<ElevationTool>();
             manager.InitializeVisuals();
