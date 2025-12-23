@@ -14,7 +14,7 @@ namespace HexGame.Tests
         private GameObject managerGO;
         private GridVisualizationManager manager;
         private GridCreator creator;
-        private SelectionTool selectionTool;
+        private PathfindingTool pathfindingTool;
         private ToolManager toolManager;
         private Hex testHex;
 
@@ -32,16 +32,17 @@ namespace HexGame.Tests
             
             creator = managerGO.GetComponent<GridCreator>();
             toolManager = managerGO.GetComponent<ToolManager>();
-            selectionTool = managerGO.GetComponent<SelectionTool>();
+            pathfindingTool = managerGO.GetComponent<PathfindingTool>();
 
             var caster = managerGO.AddComponent<HexRaycaster>();
-            toolManager.SetActiveTool(selectionTool);
+            toolManager.SetActiveTool(pathfindingTool);
 
             manager.stateSettings = new List<GridVisualizationManager.StateSetting>
             {
                 new GridVisualizationManager.StateSetting { state = HexState.Default, priority = 0, visuals = defaultVisuals },
                 new GridVisualizationManager.StateSetting { state = HexState.Hovered, priority = 10, visuals = highlightVisuals },
-                new GridVisualizationManager.StateSetting { state = HexState.Selected, priority = 20, visuals = selectionVisuals }
+                new GridVisualizationManager.StateSetting { state = HexState.Selected, priority = 20, visuals = selectionVisuals },
+                new GridVisualizationManager.StateSetting { state = HexState.Target, priority = 30, visuals = new GridVisualizationManager.RimSettings { color = Color.blue, width = 0.15f } }
             };
             
             manager.RefreshVisuals(); // Apply settings to all hexes
@@ -61,11 +62,9 @@ namespace HexGame.Tests
     [UnityTest]
     public IEnumerator HoveringOffSelectedHex_DoesNotClearSelectionVisuals()
     {
-        Hex hexA = manager.GetHexView(manager.Grid.GetHexAt(1, 1));
-        Hex hexB = manager.GetHexView(manager.Grid.GetHexAt(2, 2));
-        selectionTool.SelectHex(testHex);
+        pathfindingTool.SetSource(testHex);
         yield return null;
-        Assert.AreEqual(selectionVisuals.color, manager.GetHexRimColor(testHex), "Pre-condition: Hex A should be visually selected.");
+        Assert.AreEqual(selectionVisuals.color, manager.GetHexRimColor(testHex), "Pre-condition: Hex should be visually selected.");
 
         toolManager.ManualUpdate(null); // Hover off
         yield return null;
@@ -75,11 +74,11 @@ namespace HexGame.Tests
     [UnityTest]
     public IEnumerator Transition_SelectToDeselect_UpdatesProperties()
     {
-        selectionTool.SelectHex(testHex);
+        pathfindingTool.SetSource(testHex);
         yield return null;
         Assert.Greater(manager.GetHexRimWidth(testHex), 0f);
 
-        selectionTool.DeselectHex(testHex); // Correct way to deselect
+        pathfindingTool.SetSource(testHex); // Toggle selection off
         yield return null;
         manager.RefreshVisuals(testHex); // Force refresh to update visual cache
         Assert.AreEqual(0f, manager.GetHexRimWidth(testHex));
@@ -99,7 +98,7 @@ namespace HexGame.Tests
     [UnityTest]
     public IEnumerator SelectHex_ActivatesRim_WithDifferentSettings()
     {
-        selectionTool.SelectHex(testHex);
+        pathfindingTool.SetSource(testHex);
         yield return null;
         
         Assert.AreEqual(selectionVisuals.color, manager.GetHexRimColor(testHex), "Selection should set RimColor to Red.");
@@ -126,7 +125,7 @@ namespace HexGame.Tests
                 yield return null;
                 Assert.AreEqual(highlightVisuals.color, manager.GetHexRimColor(testHex));
         
-                selectionTool.SelectHex(testHex);
+                pathfindingTool.SetSource(testHex);
                 yield return null;
                 Assert.AreEqual(selectionVisuals.color, manager.GetHexRimColor(testHex));    }
 
@@ -150,9 +149,9 @@ namespace HexGame.Tests
         Hex hexA = manager.GetHexView(manager.Grid.GetHexAt(0, 0));
         Hex hexB = manager.GetHexView(manager.Grid.GetHexAt(1, 0));
         
-        selectionTool.SelectHex(hexA);
+        pathfindingTool.SetSource(hexA);
         yield return null;
-        selectionTool.SelectHex(hexB);
+        pathfindingTool.SetSource(hexB);
         yield return null;
         Assert.AreEqual(defaultVisuals.color, manager.GetHexRimColor(hexA), "Old Hex A should be reset.");
         Assert.AreEqual(selectionVisuals.color, manager.GetHexRimColor(hexB), "New Hex B should be selected.");
@@ -161,7 +160,7 @@ namespace HexGame.Tests
     [UnityTest]
     public IEnumerator Highlight_OnSelectedHex_Ignored()
     {
-        selectionTool.SelectHex(testHex);
+        pathfindingTool.SetSource(testHex);
         yield return null;
         Assert.AreEqual(selectionVisuals.color, manager.GetHexRimColor(testHex));
 
@@ -181,7 +180,7 @@ namespace HexGame.Tests
     [UnityTest]
     public IEnumerator SelectHex_SetsPulsationSpeed()
     {
-        selectionTool.SelectHex(testHex);
+        pathfindingTool.SetSource(testHex);
         yield return null;
         Assert.AreEqual(selectionVisuals.pulsation, manager.GetHexRimPulsation(testHex), "Selection should set RimPulsationSpeed to expected value.");
     }
@@ -224,7 +223,7 @@ namespace HexGame.Tests
     [UnityTest]
     public IEnumerator UpdateSettings_ImmediatelyReflectedInActiveSelection()
     {
-        selectionTool.SelectHex(testHex);
+        pathfindingTool.SetSource(testHex);
         yield return null;
 
         for (int i = 0; i < manager.stateSettings.Count; i++)

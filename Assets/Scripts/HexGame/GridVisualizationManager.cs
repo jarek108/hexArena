@@ -78,7 +78,7 @@ namespace HexGame
                         case HexState.Selected:
                             defaultVisuals = new RimSettings { color = Color.red, width = 0.2f, pulsation = 2f };
                             break;
-                        case HexState.MovementRange:
+                        case HexState.Target:
                             defaultVisuals = new RimSettings { color = Color.blue, width = 0.15f, pulsation = 0f };
                             break;
                         case HexState.AttackRange:

@@ -13,7 +13,7 @@ namespace HexGame.Tests
         private GameObject managerGO;
         private GridVisualizationManager manager;
         private ToolManager toolManager;
-        private SelectionTool selectionTool;
+        private PathfindingTool pathfindingTool;
         private TerrainTool terrainTool;
 
         [UnitySetUp]
@@ -22,7 +22,7 @@ namespace HexGame.Tests
             managerGO = TestHelper.CreateTestManager();
             manager = managerGO.GetComponent<GridVisualizationManager>();
             toolManager = managerGO.GetComponent<ToolManager>();
-            selectionTool = managerGO.GetComponent<SelectionTool>();
+            pathfindingTool = managerGO.GetComponent<PathfindingTool>();
             terrainTool = managerGO.GetComponent<TerrainTool>();
             
             var caster = managerGO.AddComponent<HexRaycaster>();
@@ -43,9 +43,9 @@ namespace HexGame.Tests
         }
 
         [UnityTest]
-        public IEnumerator SelectionTool_WhenActive_HighlightsHoveredHex()
+        public IEnumerator PathfindingTool_WhenActive_HighlightsHoveredHex()
         {
-            toolManager.SetActiveTool(selectionTool);
+            toolManager.SetActiveTool(pathfindingTool);
             Hex hexA = manager.GetHexView(manager.Grid.GetHexAt(1, 1));
             Hex hexB = manager.GetHexView(manager.Grid.GetHexAt(2, 2));
             
