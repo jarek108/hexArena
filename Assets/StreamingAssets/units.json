@@ -1,0 +1,28 @@
+{
+    "Items": [
+        {
+            "Name": "warrior 1h",
+            "MaxHp": 150,
+            "MovementRange": 1,
+            "AttackDamage": 20,
+            "Accuracy": 90,
+            "Armour": 10
+        },
+        {
+            "Name": "archer",
+            "MaxHp": 80,
+            "MovementRange": 8,
+            "AttackDamage": 12,
+            "Accuracy": 60,
+            "Armour": 1
+        },
+        {
+            "Name": "warrior 2h",
+            "MaxHp": 150,
+            "MovementRange": 1,
+            "AttackDamage": 30,
+            "Accuracy": 90,
+            "Armour": 5
+        }
+    ]
+}

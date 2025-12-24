@@ -19,7 +19,6 @@ namespace HexGame
             }
         }
 
-        [Header("Settings")]
         [Tooltip("Global multiplier for mouse scroll delta.")]
         public float scrollSensitivity = 0.1f;
 

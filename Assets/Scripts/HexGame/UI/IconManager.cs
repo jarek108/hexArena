@@ -19,11 +19,9 @@ namespace HexGame.UI
     [ExecuteAlways]
     public class IconManager : MonoBehaviour
     {
-        [Header("Icons")]
         [SerializeField]
         public List<IconData> icons = new List<IconData>();
 
-        [Header("Settings")]
         [SerializeField]
         public GameObject iconPrefab;
         
@@ -42,7 +40,6 @@ namespace HexGame.UI
         [SerializeField] [Range(0, 100)]
         public float padding = 10f;
 
-        [Header("Hotkey Settings")]
         [SerializeField]
         public Color hotkeyColor = Color.black;
 

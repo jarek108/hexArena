@@ -37,6 +37,10 @@ We follow a **Data-Driven Architecture** prioritizing strict Logic/View separati
 ## Python coding
 1. When writing Python, be very concise and prefer brevity over handling all errors etc.
 
+## Unity Editor Coding
+*   **ScrollViews**: In custom editors, never use `GUILayout.Height` inside `EditorGUILayout.BeginScrollView`. It restricts the layout unnecessarily and often looks poor.
+*   **Headers**: Never use `[Header("...")]` attributes in MonoBehaviours. All section labeling and organization must be handled within the custom editor.
+
 # Tool Usage
 1. **Game Screenshots** - run `python tools/unityGameScreenshot.py` without any arguments to capture screenshots (and not unity-mcp). NEVER provide a custom filename. You MUST use the filename provided in the tool's stdout output when referring to the screenshot. *Note: This script automatically moves the screenshot outside the Assets folder to `Screenshots`. Captures Game View only. Edit Mode screenshots are ok, but Play Mode may be unreliable; ask user for manual verification if needed.*
 2. **Waiting** - in interactions where you suspect some ongoing process needs to finish use `python tools/waitFewSeconds.py`. It accepts a single integer - the number of seconds to wait before returning. Useful in interactions where a delay is needed, for example, to allow Unity to recompile scripts or process asset changes.
