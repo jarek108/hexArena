@@ -6,9 +6,11 @@ namespace HexGame.Units.Editor
 {
     public static class UnitEditorUI
     {
-        public static void DrawSchemaEditor(UnitSchema schema)
+        public static void DrawSchemaEditor(UnitSchema schema, ref Vector2 scrollPos)
         {
             if (schema == null) return;
+
+            scrollPos = EditorGUILayout.BeginScrollView(scrollPos);
 
             EditorGUILayout.LabelField("Stat Definitions", EditorStyles.boldLabel);
 
@@ -65,6 +67,8 @@ namespace HexGame.Units.Editor
                 schema.definitions.Add(new UnitStatDefinition { id = "New", name = "Description" });
                 EditorUtility.SetDirty(schema);
             }
+            
+            EditorGUILayout.EndScrollView();
         }
 
         public static void DrawUnitSetEditor(UnitSet set, ref Vector2 scrollPos)

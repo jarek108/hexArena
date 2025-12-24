@@ -127,7 +127,7 @@ namespace HexGame.Units.Editor
 
             if (selectedSchema != null)
             {
-                UnitEditorUI.DrawSchemaEditor(selectedSchema);
+                UnitEditorUI.DrawSchemaEditor(selectedSchema, ref scrollPos);
             }
             else
             {
