@@ -54,15 +54,13 @@ namespace HexGame.Units.Editor
         private void DrawToolbar()
         {
             EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
+
+            string[] modes = { "Unit Sets", "Schemas" };
             
             EditorGUI.BeginChangeCheck();
-            bool setsToggled = GUILayout.Toggle(currentMode == Mode.Sets, "Unit Sets", EditorStyles.toolbarButton);
-            bool schemasToggled = GUILayout.Toggle(currentMode == Mode.Schemas, "Schemas", EditorStyles.toolbarButton);
-            
+            currentMode = (Mode)GUILayout.Toolbar((int)currentMode, modes, EditorStyles.toolbarButton);
             if (EditorGUI.EndChangeCheck())
             {
-                if (setsToggled) currentMode = Mode.Sets;
-                else if (schemasToggled) currentMode = Mode.Schemas;
                 EditorPrefs.SetInt(PREF_MODE, (int)currentMode);
             }
 
