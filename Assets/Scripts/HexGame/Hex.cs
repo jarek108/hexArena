@@ -14,6 +14,8 @@ namespace HexGame
         [SerializeField, HideInInspector] private float viewElevation;
         [SerializeField, HideInInspector] private TerrainType viewTerrainType;
 
+        private TerrainType? _previewTerrain;
+
         // Properties: Read from Data (Logic) if active, otherwise Backup (View)
         public int Q => Data != null ? Data.Q : viewQ;
         public int R => Data != null ? Data.R : viewR;
@@ -38,7 +40,11 @@ namespace HexGame
 
         public TerrainType TerrainType
         {
-            get => Data != null ? Data.TerrainType : viewTerrainType;
+            get 
+            {
+                if (_previewTerrain.HasValue) return _previewTerrain.Value;
+                return Data != null ? Data.TerrainType : viewTerrainType;
+            }
             set
             {
                 if (Data != null)
@@ -50,6 +56,15 @@ namespace HexGame
                     viewTerrainType = value; 
                     UpdateVisuals();
                 }
+            }
+        }
+
+        public void SetPreviewTerrain(TerrainType? type)
+        {
+            if (_previewTerrain != type)
+            {
+                _previewTerrain = type;
+                UpdateVisuals();
             }
         }
 

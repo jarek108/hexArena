@@ -61,6 +61,11 @@ namespace HexGame.Editor
                 EditorGUILayout.PropertyField(brushSizeProp);
             }
 
+            EditorGUILayout.Space();
+            EditorGUILayout.LabelField("Ghost Visuals", EditorStyles.boldLabel);
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("ghostTransparency"));
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("disableGhostShadows"));
+
             serializedObject.ApplyModifiedProperties();
         }
     }

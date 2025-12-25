@@ -73,7 +73,7 @@ namespace HexGame.Tests
             Hex targetHex = manager.GetHexView(manager.Grid.GetHexAt(2, 2));
             unitTool.OnActivate(); 
             
-            var placeMethod = unitTool.GetType().GetMethod("PlaceUnit", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            var placeMethod = unitTool.GetType().GetMethod("PlaceUnitAt", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             placeMethod.Invoke(unitTool, new object[] { targetHex });
 
             // Assert
@@ -93,7 +93,7 @@ namespace HexGame.Tests
             unitTool.OnActivate();
             
             // Place first unit
-             var placeMethod = unitTool.GetType().GetMethod("PlaceUnit", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+             var placeMethod = unitTool.GetType().GetMethod("PlaceUnitAt", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             placeMethod.Invoke(unitTool, new object[] { targetHex });
             
             Unit firstUnit = targetHex.Data.Unit;
@@ -122,7 +122,7 @@ namespace HexGame.Tests
             Hex targetHex = manager.GetHexView(manager.Grid.GetHexAt(0, 0));
             unitTool.OnActivate();
 
-            var placeMethod = unitTool.GetType().GetMethod("PlaceUnit", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            var placeMethod = unitTool.GetType().GetMethod("PlaceUnitAt", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             
             // Act
             placeMethod.Invoke(unitTool, new object[] { targetHex });
@@ -131,6 +131,141 @@ namespace HexGame.Tests
             Transform container = managerGO.transform.Find("Units");
             Assert.IsNotNull(container, "Units container should be created.");
             Assert.AreEqual(container, targetHex.Data.Unit.transform.parent, "Unit should be parented to the Units container.");
+        }
+
+        [Test]
+        public void UnitPlacementTool_BrushSize_PlacesMultipleUnits()
+        {
+            // Arrange
+            Hex targetHex = manager.GetHexView(manager.Grid.GetHexAt(2, 2));
+            
+            // Set brush size to 2 (range 1) via reflection
+            var brushField = unitTool.GetType().BaseType.GetField("brushSize", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            brushField.SetValue(unitTool, 2);
+            
+            unitTool.OnActivate();
+
+            var placeMethod = unitTool.GetType().GetMethod("PlaceUnits", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            
+            // Act
+            placeMethod.Invoke(unitTool, new object[] { targetHex });
+
+            // Assert
+            // Range 1 around (2,2) should be 7 hexes total (center + 6 neighbors)
+            int unitCount = managerGO.transform.Find("Units").childCount;
+            Assert.AreEqual(7, unitCount, "Should place 7 units for brush size 2.");
+        }
+
+        [Test]
+        public void UnitPlacementTool_BrushSize_ShowsMultipleGhosts()
+        {
+            // Arrange
+            Hex targetHex = manager.GetHexView(manager.Grid.GetHexAt(2, 2));
+            var brushField = unitTool.GetType().BaseType.GetField("brushSize", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            brushField.SetValue(unitTool, 2);
+            
+            unitTool.OnActivate();
+
+            // Act
+            unitTool.HandleHighlighting(null, targetHex);
+
+            // Assert
+            Transform container = managerGO.transform.Find("Units");
+            int activeGhosts = 0;
+            foreach (Transform child in container)
+            {
+                if (child.name == "UnitPlacement_PreviewGhost" && child.gameObject.activeSelf)
+                    activeGhosts++;
+            }
+            Assert.AreEqual(7, activeGhosts, "Should show 7 ghosts for brush size 2.");
+        }
+
+        [Test]
+        public void UnitPlacementTool_EraseUnits_RemovesUnitsInBrush()
+        {
+            // Arrange: Place some units first
+            Hex targetHex = manager.GetHexView(manager.Grid.GetHexAt(2, 2));
+            var brushField = unitTool.GetType().BaseType.GetField("brushSize", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            brushField.SetValue(unitTool, 2);
+            
+            unitTool.OnActivate();
+            var placeMethod = unitTool.GetType().GetMethod("PlaceUnits", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            placeMethod.Invoke(unitTool, new object[] { targetHex });
+
+            Assert.AreEqual(7, managerGO.transform.Find("Units").childCount);
+
+            // Act: Erase units
+            var eraseMethod = unitTool.GetType().GetMethod("EraseUnits", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            eraseMethod.Invoke(unitTool, new object[] { targetHex });
+
+            // Assert
+            Assert.AreEqual(0, managerGO.transform.Find("Units").childCount, "All units in brush should be removed.");
+            Assert.IsNull(targetHex.Data.Unit, "Center hex unit should be null.");
+        }
+
+        [Test]
+        public void UnitPlacementTool_OnActivate_DoesNotCreateGhostUntilHover()
+        {
+            // Act
+            unitTool.OnActivate();
+
+            // Assert
+            Transform ghost = managerGO.transform.Find("Units/UnitPlacement_PreviewGhost");
+            Assert.IsNull(ghost, "Ghost unit should NOT be created until first hover.");
+        }
+
+        [Test]
+        public void UnitPlacementTool_OnDeactivate_DestroysGhost()
+        {
+            // Arrange
+            Hex targetHex = manager.GetHexView(manager.Grid.GetHexAt(3, 3));
+            unitTool.OnActivate();
+            unitTool.HandleHighlighting(null, targetHex);
+            Assert.IsNotNull(managerGO.transform.Find("Units/UnitPlacement_PreviewGhost"));
+
+            // Act
+            unitTool.OnDeactivate();
+
+            // Assert
+            Assert.IsNull(managerGO.transform.Find("Units/UnitPlacement_PreviewGhost"), "Ghost should be destroyed on deactivation.");
+        }
+
+        [Test]
+        public void UnitPlacementTool_Hover_MovesGhost()
+        {
+            // Arrange
+            Hex targetHex = manager.GetHexView(manager.Grid.GetHexAt(3, 3));
+            unitTool.OnActivate();
+            
+            // Act
+            unitTool.HandleHighlighting(null, targetHex);
+            Transform ghost = managerGO.transform.Find("Units/UnitPlacement_PreviewGhost");
+
+            // Assert
+            Assert.IsNotNull(ghost, "Ghost should be created on hover.");
+            Assert.IsTrue(ghost.gameObject.activeSelf, "Ghost should be active when hovering a hex.");
+            Vector3 expectedPos = targetHex.transform.position;
+            expectedPos.y += ghost.GetComponent<UnitVisualization>().yOffset;
+            Assert.AreEqual(expectedPos, ghost.position, "Ghost should move to hovered hex position.");
+        }
+
+        [Test]
+        public void UnitPlacementTool_Ghost_AppliesVisuals()
+        {
+            // Arrange
+            Hex targetHex = manager.GetHexView(manager.Grid.GetHexAt(3, 3));
+            unitTool.OnActivate();
+            
+            // Act
+            unitTool.HandleHighlighting(null, targetHex);
+            Transform ghost = managerGO.transform.Find("Units/UnitPlacement_PreviewGhost");
+            Renderer renderer = ghost.GetComponentInChildren<Renderer>();
+
+            // Assert
+            if (renderer != null)
+            {
+                Assert.AreEqual(UnityEngine.Rendering.ShadowCastingMode.Off, renderer.shadowCastingMode, "Ghost should have shadows disabled by default.");
+            }
         }
     }
 }

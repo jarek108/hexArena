@@ -70,5 +70,75 @@ namespace HexGame.Tests
             int newSize = (int)field.GetValue(terrainTool);
             Assert.AreNotEqual(initialSize, newSize, "Brush size should have changed.");
         }
+
+        [Test]
+        public void TerrainTool_Hover_ShowsPreview()
+        {
+            // Arrange
+            Hex targetHex = manager.GetHexView(manager.Grid.GetHexAt(2, 2));
+            targetHex.Data.TerrainType = TerrainType.Water;
+            
+            var brushSO = new SerializedObject(terrainTool);
+            brushSO.FindProperty("paintType").enumValueIndex = (int)TerrainType.Desert;
+            brushSO.ApplyModifiedProperties();
+            
+            terrainTool.OnActivate();
+
+            // Act
+            terrainTool.HandleHighlighting(null, targetHex);
+
+            // Assert
+            Assert.AreEqual(TerrainType.Desert, targetHex.TerrainType, "Hex View should show Desert preview.");
+            Assert.AreEqual(TerrainType.Water, targetHex.Data.TerrainType, "Hex Data should still be Water.");
+        }
+
+        [Test]
+        public void TerrainTool_MoveHover_ClearsOldPreview()
+        {
+            // Arrange
+            Hex hex1 = manager.GetHexView(manager.Grid.GetHexAt(1, 1));
+            Hex hex2 = manager.GetHexView(manager.Grid.GetHexAt(2, 2));
+            hex1.Data.TerrainType = TerrainType.Plains;
+            
+            var brushSO = new SerializedObject(terrainTool);
+            brushSO.FindProperty("paintType").enumValueIndex = (int)TerrainType.Desert;
+            brushSO.ApplyModifiedProperties();
+            
+            terrainTool.OnActivate();
+
+            // Act
+            terrainTool.HandleHighlighting(null, hex1);
+            Assert.AreEqual(TerrainType.Desert, hex1.TerrainType);
+            
+            terrainTool.HandleHighlighting(hex1, hex2);
+
+            // Assert
+            Assert.AreEqual(TerrainType.Plains, hex1.TerrainType, "Old hex should revert to its original terrain.");
+            Assert.AreEqual(TerrainType.Desert, hex2.TerrainType, "New hex should show preview.");
+        }
+
+        [Test]
+        public void TerrainTool_Deactivate_ClearsAllPreviews()
+        {
+            // Arrange
+            Hex targetHex = manager.GetHexView(manager.Grid.GetHexAt(2, 2));
+            targetHex.Data.TerrainType = TerrainType.Plains;
+            
+            // Set tool to Desert
+            var paintTypeField = terrainTool.GetType().GetField("paintType", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            paintTypeField.SetValue(terrainTool, TerrainType.Desert);
+
+            terrainTool.OnActivate();
+            
+            // Act 1: Hover to show preview
+            terrainTool.HandleHighlighting(null, targetHex);
+            Assert.AreEqual(TerrainType.Desert, targetHex.TerrainType, "Preview should be visible before deactivation.");
+
+            // Act 2: Deactivate
+            terrainTool.OnDeactivate();
+
+            // Assert
+            Assert.AreEqual(TerrainType.Plains, targetHex.TerrainType, "Preview should be cleared on deactivation.");
+        }
     }
 }
