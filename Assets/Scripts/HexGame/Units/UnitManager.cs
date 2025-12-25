@@ -6,11 +6,9 @@ namespace HexGame.Units
     [ExecuteAlways]
     public class UnitManager : MonoBehaviour
     {
-        [Header("Configuration")]
         public UnitSet activeUnitSet;
         public UnitVisualization defaultUnitVisualization;
 
-        [Header("Runtime State")]
         public List<Unit> units = new List<Unit>();
 
         private void OnEnable()

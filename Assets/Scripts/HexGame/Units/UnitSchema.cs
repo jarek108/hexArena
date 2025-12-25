@@ -22,12 +22,5 @@ namespace HexGame.Units
             new UnitStatDefinition { id = "Acc", name = "Accuracy" },
             new UnitStatDefinition { id = "Arm", name = "Armour" }
         };
-
-        public string GetHash()
-        {
-            if (definitions == null || definitions.Count == 0) return "";
-            // Hash based ONLY on IDs
-            return string.Join("|", definitions.Select(d => d.id));
-        }
     }
 }

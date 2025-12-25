@@ -27,13 +27,13 @@ MonoBehaviour:
     name: Ranged Skill
   - id: MDF
     name: Melee Defense
+  - id: MRNG
+    name: Melee Range
   - id: RDF
     name: Ranged Defense
   - id: AP
     name: Action Points
   - id: VIS
     name: Vision Range
-  - id: MRNG
-    name: Melee Range
   - id: RRNG
     name: Ranged Range

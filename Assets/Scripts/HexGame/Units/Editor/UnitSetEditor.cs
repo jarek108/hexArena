@@ -87,21 +87,12 @@ namespace HexGame.Units.Editor
             }
 
             // --- Standard Validation ---
+            // Delegated to UnitEditorUI
             if (set.schema == null)
             {
-                EditorGUILayout.HelpBox("Please assign a Unit Schema to begin editing.", MessageType.Error);
+                UnitEditorUI.DrawUnitSetEditor(set, ref scrollPos);
                 serializedObject.ApplyModifiedProperties();
                 return;
-            }
-
-            if (!set.IsHashValid())
-            {
-                EditorGUILayout.HelpBox("Schema Hash Mismatch! The Schema definition has changed.", MessageType.Warning);
-                if (GUILayout.Button("Update Hash & Validate"))
-                {
-                    set.UpdateHash();
-                    EditorUtility.SetDirty(set);
-                }
             }
 
             // --- Unit List Editor ---
@@ -172,7 +163,6 @@ namespace HexGame.Units.Editor
 
             UnitSet newSet = Instantiate(originalSet);
             newSet.schema = newSchema;
-            newSet.UpdateHash();
             // Ensure the internal name matches the file name logic we want
             // newSet.setName is already set because we instantiated logic
             

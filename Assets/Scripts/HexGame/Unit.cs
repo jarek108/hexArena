@@ -48,10 +48,15 @@ namespace HexGame
             if (unitType != null && manager.activeUnitSet != null && manager.activeUnitSet.schema != null)
             {
                 var definitions = manager.activeUnitSet.schema.definitions;
-                for (int i = 0; i < definitions.Count; i++)
+                foreach (var def in definitions)
                 {
-                    string statName = definitions[i].id;
-                    int val = (i < unitType.Stats.Count) ? unitType.Stats[i] : 0;
+                    string statName = def.id;
+                    int val = 0;
+                    if (unitType.Stats != null)
+                    {
+                        int index = unitType.Stats.FindIndex(s => s.id == statName);
+                        if (index != -1) val = unitType.Stats[index].value;
+                    }
                     Stats[statName] = val;
                 }
             }

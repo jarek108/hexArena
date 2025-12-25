@@ -4,6 +4,13 @@ using System.Collections.Generic;
 namespace HexGame.Units
 {
     [Serializable]
+    public struct UnitStatValue
+    {
+        public string id;
+        public int value;
+    }
+
+    [Serializable]
     public class UnitType
     {
         public string Name = "New Unit";
@@ -11,7 +18,7 @@ namespace HexGame.Units
         // (Visuals are handled by index or name reference usually, but here we might keep it simple or remove if using Manager defaults)
         
         // The dynamic stats. 
-        // We use a parallel array/list approach where the index corresponds to the UnitManager's characteristic list.
-        public List<int> Stats = new List<int>();
+        // Changed to ID-based list for robustness against Schema reordering/renaming.
+        public List<UnitStatValue> Stats = new List<UnitStatValue>();
     }
 }

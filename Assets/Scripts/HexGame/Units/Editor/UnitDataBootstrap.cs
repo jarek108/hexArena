@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
 using System.IO;
+using HexGame.Units;
 
 namespace HexGame.Units.Editor
 {
@@ -55,7 +56,6 @@ namespace HexGame.Units.Editor
             }
 
             set.schema = schema;
-            set.UpdateHash();
             
             // Clear existing for a clean generation
             set.units.Clear();
@@ -64,7 +64,21 @@ namespace HexGame.Units.Editor
             void CreateUnit(string name, int hp, int fat, int res, int ini, int mat, int rat, int mdf, int rdf, int ap, int vis, int mrng, int rrng)
             {
                 UnitType u = new UnitType { Name = name };
-                u.Stats = new List<int> { hp, fat, res, ini, mat, rat, mdf, rdf, ap, vis, mrng, rrng };
+                u.Stats = new List<UnitStatValue>
+                {
+                    new UnitStatValue { id = "HP", value = hp },
+                    new UnitStatValue { id = "FAT", value = fat },
+                    new UnitStatValue { id = "RES", value = res },
+                    new UnitStatValue { id = "INI", value = ini },
+                    new UnitStatValue { id = "MAT", value = mat },
+                    new UnitStatValue { id = "RAT", value = rat },
+                    new UnitStatValue { id = "MDF", value = mdf },
+                    new UnitStatValue { id = "RDF", value = rdf },
+                    new UnitStatValue { id = "AP", value = ap },
+                    new UnitStatValue { id = "VIS", value = vis },
+                    new UnitStatValue { id = "MRNG", value = mrng },
+                    new UnitStatValue { id = "RRNG", value = rrng }
+                };
                 set.units.Add(u);
             }
 
