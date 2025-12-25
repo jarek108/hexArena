@@ -5,6 +5,8 @@ namespace HexGame.Units
 {
     public abstract class UnitVisualization : MonoBehaviour
     {
+        [SerializeField] public float yOffset = 0f;
+
         /// <summary>
         /// Called when the visualization is linked to a unit.
         /// </summary>

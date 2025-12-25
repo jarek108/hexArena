@@ -7,72 +7,51 @@ namespace HexGame
     [ExecuteAlways]
     public class Unit : MonoBehaviour
     {
-        [SerializeField] private UnitType unitType;
-        public UnitType UnitType => unitType;
+        public UnitSet unitSet;
+        [SerializeField] private int unitIndex;
+
+        public UnitType UnitType 
+        {
+            get 
+            {
+                if (unitSet != null && unitIndex >= 0 && unitIndex < unitSet.units.Count)
+                    return unitSet.units[unitIndex];
+                return null;
+            }
+        }
+
+        public string unitName => UnitType != null ? UnitType.Name : "Unknown Unit";
 
         public Hex CurrentHex { get; private set; }
         
         public Dictionary<string, int> Stats = new Dictionary<string, int>();
         private UnitVisualization currentView;
 
-        private void OnEnable()
-        {
-            var manager = FindFirstObjectByType<UnitManager>();
-            if (manager != null) manager.RegisterUnit(this);
-        }
-
-        private void OnDisable()
-        {
-            var manager = FindFirstObjectByType<UnitManager>();
-            if (manager != null) manager.UnregisterUnit(this);
-        }
-
         private void Start()
         {
-            if (unitType != null) Initialize(unitType);
+            if (unitSet != null) Initialize(unitSet, unitIndex);
         }
 
-        public void Initialize(UnitType type)
+        public void Initialize(UnitSet set, int index)
         {
-            unitType = type;
+            unitSet = set;
+            unitIndex = index;
             Stats.Clear();
 
-            var manager = FindFirstObjectByType<UnitManager>();
-            if (manager == null) 
+            UnitType type = UnitType;
+            if (type != null && type.Stats != null)
             {
-                Debug.LogWarning("Unit: Initialize failed - UnitManager not found.");
-                return;
-            }
-
-            // Load stats using the active set's schema
-            if (unitType != null && manager.activeUnitSet != null && manager.activeUnitSet.schema != null)
-            {
-                var definitions = manager.activeUnitSet.schema.definitions;
-                foreach (var def in definitions)
+                foreach (var stat in type.Stats)
                 {
-                    string statName = def.id;
-                    int val = 0;
-                    if (unitType.Stats != null)
-                    {
-                        int index = unitType.Stats.FindIndex(s => s.id == statName);
-                        if (index != -1) val = unitType.Stats[index].value;
-                    }
-                    Stats[statName] = val;
+                    Stats[stat.id] = stat.value;
                 }
             }
             
-            if (currentView != null) Destroy(currentView.gameObject);
-
-            if (manager.defaultUnitVisualization != null)
+            // Note: In the new flow, the Unit component is added TO the visualization instance.
+            currentView = GetComponent<UnitVisualization>();
+            if (currentView != null)
             {
-                currentView = Instantiate(manager.defaultUnitVisualization, transform);
-                currentView.transform.localPosition = Vector3.zero;
-                currentView.transform.localRotation = Quaternion.identity;
                 currentView.Initialize(this);
-            }
-            else
-            {
-                Debug.LogWarning($"Unit {name} could not find default visualization in UnitManager!");
             }
         }
 
@@ -83,7 +62,9 @@ namespace HexGame
             if (CurrentHex != null)
             {
                 CurrentHex.Unit = this;
-                transform.position = CurrentHex.transform.position; 
+                Vector3 pos = CurrentHex.transform.position;
+                if (currentView != null) pos.y += currentView.yOffset;
+                transform.position = pos; 
             }
         }
         

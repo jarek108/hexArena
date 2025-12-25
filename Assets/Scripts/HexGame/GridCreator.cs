@@ -41,12 +41,28 @@ namespace HexGame
         {
             if (gridManager == null) return;
 
-            int childCount = gridManager.transform.childCount;
-            for (int i = childCount - 1; i >= 0; i--)
+            // Clear Hexes
+            Transform hexContainer = gridManager.transform.Find("HexGrid");
+            if (hexContainer != null)
             {
-                if (Application.isPlaying) Destroy(gridManager.transform.GetChild(i).gameObject);
-                else DestroyImmediate(gridManager.transform.GetChild(i).gameObject);
+                for (int i = hexContainer.childCount - 1; i >= 0; i--)
+                {
+                    if (Application.isPlaying) Destroy(hexContainer.GetChild(i).gameObject);
+                    else DestroyImmediate(hexContainer.GetChild(i).gameObject);
+                }
             }
+
+            // Clear Units
+            Transform unitContainer = gridManager.transform.Find("Units");
+            if (unitContainer != null)
+            {
+                for (int i = unitContainer.childCount - 1; i >= 0; i--)
+                {
+                    if (Application.isPlaying) Destroy(unitContainer.GetChild(i).gameObject);
+                    else DestroyImmediate(unitContainer.GetChild(i).gameObject);
+                }
+            }
+
             if (gridManager.Grid != null) gridManager.Grid.Clear();
             gridManager.Grid = null;
         }

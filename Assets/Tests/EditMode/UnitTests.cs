@@ -20,13 +20,19 @@ public class UnitPlacementTests
         HexData data = new HexData(0, 0);
         hex.AssignData(data);
 
+        // Create a dummy UnitSet for initialization
+        var testSet = ScriptableObject.CreateInstance<HexGame.Units.UnitSet>();
+        testSet.units.Add(new HexGame.Units.UnitType { Name = "Test" });
+
         unitGO = new GameObject("TestUnit");
         unit = unitGO.AddComponent<Unit>();
+        unit.Initialize(testSet, 0);
     }
 
     [TearDown]
     public void TearDown()
     {
+        if (unit != null && unit.unitSet != null) Object.DestroyImmediate(unit.unitSet);
         Object.DestroyImmediate(hexGO);
         Object.DestroyImmediate(unitGO);
     }

@@ -49,9 +49,6 @@ namespace HexGame.Editor
         {
             serializedObject.Update();
 
-            EditorGUILayout.Space();
-            EditorGUILayout.LabelField("Tool Management", EditorStyles.boldLabel);
-
             // Ensure the tool list is up-to-date in case new tools were added/removed
             UpdateToolList(); 
 

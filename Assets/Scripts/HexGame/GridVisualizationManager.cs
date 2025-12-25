@@ -138,9 +138,25 @@ namespace HexGame
             RefreshVisuals();
         }
 
+        private Transform GetHexGridContainer()
+        {
+            Transform container = transform.Find("HexGrid");
+            if (container == null)
+            {
+                GameObject go = new GameObject("HexGrid");
+                container = go.transform;
+                container.SetParent(this.transform);
+                container.localPosition = Vector3.zero;
+                container.localRotation = Quaternion.identity;
+                container.localScale = Vector3.one;
+            }
+            return container;
+        }
+
         public void RefreshVisuals()
         {
-            foreach (Transform child in transform)
+            Transform container = GetHexGridContainer();
+            foreach (Transform child in container)
             {
                 Hex hex = child.GetComponent<Hex>();
                 if (hex != null) RefreshVisuals(hex);
@@ -201,7 +217,8 @@ namespace HexGame
 
         private void RebuildGridFromChildren()
         {
-             Hex[] childHexes = GetComponentsInChildren<Hex>();
+             Transform container = GetHexGridContainer();
+             Hex[] childHexes = container.GetComponentsInChildren<Hex>();
              if (childHexes.Length == 0) return;
 
              int maxQ = 0; int maxR = 0;
@@ -267,13 +284,15 @@ namespace HexGame
             Grid = newGrid;
             InitializeVisuals();
 
+            Transform container = GetHexGridContainer();
+
             foreach (HexData hexData in Grid.GetAllHexes())
             {
                 Vector3 localPos = HexToWorld(hexData.Q, hexData.R);
                 localPos.y = hexData.Elevation;
 
                 GameObject hexGO = new GameObject($"Hex ({hexData.Q}, {hexData.R})");
-                hexGO.transform.SetParent(this.transform);
+                hexGO.transform.SetParent(container);
                 hexGO.transform.localPosition = localPos;
                 
                 hexGO.AddComponent<MeshFilter>().sharedMesh = hexMesh;
@@ -352,7 +371,8 @@ namespace HexGame
 
         public Hex GetHexView(HexData data) {
             if (data == null) return null;
-            foreach (Transform child in transform) {
+            Transform container = GetHexGridContainer();
+            foreach (Transform child in container) {
                 Hex hex = child.GetComponent<Hex>();
                 if (hex != null && hex.Data == data) return hex;
             }

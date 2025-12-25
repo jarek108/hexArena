@@ -42,7 +42,9 @@ namespace HexGame.Tests
 
             yield return null;
 
-            Assert.AreEqual(9, manager.transform.childCount, "Grid should have 9 hex children spawned.");
+            Transform container = manager.transform.Find("HexGrid");
+            Assert.IsNotNull(container, "HexGrid container should exist.");
+            Assert.AreEqual(9, container.childCount, "Grid should have 9 hex children spawned.");
         }
 
         [UnityTest]
@@ -56,7 +58,9 @@ namespace HexGame.Tests
             so.ApplyModifiedProperties();
             creator.GenerateGrid();
             yield return null;
-            Assert.AreEqual(25, manager.transform.childCount, "First grid generation should spawn 25 hexes.");
+            
+            Transform container = manager.transform.Find("HexGrid");
+            Assert.AreEqual(25, container.childCount, "First grid generation should spawn 25 hexes.");
 
             // --- Second Generation (3x3) ---
             so.FindProperty("gridWidth").intValue = 3;
@@ -64,12 +68,16 @@ namespace HexGame.Tests
             so.ApplyModifiedProperties();
             creator.GenerateGrid();
             yield return null;
-            Assert.AreEqual(9, manager.transform.childCount, "Second grid generation should spawn 9 hexes.");
+            
+            container = manager.transform.Find("HexGrid");
+            Assert.AreEqual(9, container.childCount, "Second grid generation should spawn 9 hexes.");
 
             // --- Clear Grid ---
             creator.ClearGrid();
             yield return null;
-            Assert.AreEqual(0, manager.transform.childCount, "ClearGrid should remove all hexes.");
+            
+            container = manager.transform.Find("HexGrid");
+            Assert.IsTrue(container == null || container.childCount == 0, "ClearGrid should remove all hexes from container.");
         }
     }
 }

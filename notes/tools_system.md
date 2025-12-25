@@ -30,6 +30,7 @@ The Tools System follows a decoupled, modular design, where each "tool" is a sel
     *   **`SelectionTool`**: Manages highlighting and selecting hexes.
     *   **`TerrainTool`**: Modifies `TerrainType` on `HexData`.
     *   **`ElevationTool`**: Modifies `Elevation` on `HexData`.
+    *   **`UnitPlacementTool`**: Places `Unit` GameObjects on the grid based on a selected `UnitType` from a `UnitSet`.
 
 ## UI & Input Integration
 *   **`IconManager` (View):**
