@@ -26,7 +26,7 @@ public class UnitPlacementTests
 
         unitGO = new GameObject("TestUnit");
         unit = unitGO.AddComponent<Unit>();
-        unit.Initialize(testSet, 0);
+        unit.Initialize(testSet, 0, 0);
     }
 
     [TearDown]

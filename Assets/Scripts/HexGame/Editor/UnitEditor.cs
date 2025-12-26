@@ -24,6 +24,7 @@ namespace HexGame.Editor
             EditorGUILayout.TextField("Unit Name", unit.unitName);
             EditorGUILayout.PropertyField(serializedObject.FindProperty("unitSet"));
             EditorGUILayout.PropertyField(serializedObject.FindProperty("unitIndex"));
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("teamId"));
             GUI.enabled = true;
 
             EditorGUILayout.Space();

@@ -12,8 +12,33 @@ namespace HexGame.Units
             if (meshRenderer == null) 
                 meshRenderer = GetComponentInChildren<MeshRenderer>();
                 
-            // Example: Set color based on some logic if needed
-            // if (meshRenderer) meshRenderer.material.color = Color.blue;
+            if (unitLogic != null)
+            {
+                ApplyVisualIdentity(unitLogic.unitName);
+            }
+        }
+
+        public override void SetPreviewIdentity(string unitName)
+        {
+            if (meshRenderer == null) 
+                meshRenderer = GetComponentInChildren<MeshRenderer>();
+            
+            ApplyVisualIdentity(unitName);
+        }
+
+        private void ApplyVisualIdentity(string name)
+        {
+            if (meshRenderer == null) return;
+
+            // Simple deterministic hash-to-hue
+            int hash = name.GetHashCode();
+            float hue = Mathf.Abs(hash % 1000) / 1000f;
+            Color color = Color.HSVToRGB(hue, 0.7f, 0.8f);
+
+            MaterialPropertyBlock mpb = new MaterialPropertyBlock();
+            meshRenderer.GetPropertyBlock(mpb);
+            mpb.SetColor("_BaseColor", color);
+            meshRenderer.SetPropertyBlock(mpb);
         }
 
         public override void OnStartMoving(List<Vector3> path, float speed)

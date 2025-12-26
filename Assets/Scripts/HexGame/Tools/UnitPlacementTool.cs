@@ -11,6 +11,7 @@ namespace HexGame.Tools
         [SerializeField] private UnitVisualization unitVisualizationPrefab;
         [SerializeField] private UnitSet activeUnitSet;
         [SerializeField] private int selectedUnitIndex = 0;
+        [SerializeField] private int selectedTeamId = 0;
 
         [Header("Ghost Visuals")]
         [SerializeField, Range(0f, 1f)] private float ghostTransparency = 0.5f;
@@ -37,6 +38,8 @@ namespace HexGame.Tools
             base.HandleInput(hoveredHex);
             if (!IsEnabled) return;
 
+            RotateUnitSelection(hoveredHex);
+
             RefreshGhostPool();
 
             if (hoveredHex == null)
@@ -58,18 +61,35 @@ namespace HexGame.Tools
             }
         }
 
-        private void EraseUnits(Hex centerHex)
+        private void RotateUnitSelection(Hex hoveredHex)
         {
-            List<HexData> affectedHexes = GetAffectedHexes(centerHex);
-            foreach (var hexData in affectedHexes)
+            if (Keyboard.current == null || activeUnitSet == null || activeUnitSet.units.Count == 0) return;
+
+            int direction = 0;
+            if (Keyboard.current.numpadPlusKey.wasPressedThisFrame || Keyboard.current.equalsKey.wasPressedThisFrame) direction = 1;
+            else if (Keyboard.current.numpadMinusKey.wasPressedThisFrame || Keyboard.current.minusKey.wasPressedThisFrame) direction = -1;
+
+            if (direction != 0)
             {
-                if (hexData.Unit != null)
+                int count = activeUnitSet.units.Count;
+                selectedUnitIndex = (selectedUnitIndex + direction + count) % count;
+                
+                RefreshGhostPool();
+
+                if (hoveredHex != null)
                 {
-                    if (Application.isPlaying) Destroy(hexData.Unit.gameObject);
-                    else DestroyImmediate(hexData.Unit.gameObject);
-                    hexData.Unit = null;
+                    HandleHighlighting(hoveredHex, hoveredHex);
                 }
             }
+        }
+
+        private void EraseUnits(Hex centerHex)
+        {
+            var unitManager = FindFirstObjectByType<UnitManager>();
+            if (unitManager == null) return;
+
+            List<HexData> affectedHexes = GetAffectedHexes(centerHex);
+            unitManager.EraseUnits(affectedHexes);
         }
 
         public override void HandleHighlighting(Hex oldHex, Hex newHex)
@@ -154,9 +174,18 @@ namespace HexGame.Tools
         {
             if (unitVisualizationPrefab == null) return;
 
-            UnitVisualization ghost = Instantiate(unitVisualizationPrefab, GetUnitsContainer());
+            var unitManager = FindFirstObjectByType<UnitManager>();
+            Transform container = unitManager != null ? unitManager.transform : transform;
+
+            UnitVisualization ghost = Instantiate(unitVisualizationPrefab, container);
             ghost.gameObject.name = "UnitPlacement_PreviewGhost";
             ghost.gameObject.SetActive(false);
+            
+            if (activeUnitSet != null && selectedUnitIndex >= 0 && selectedUnitIndex < activeUnitSet.units.Count)
+            {
+                ghost.SetPreviewIdentity(activeUnitSet.units[selectedUnitIndex].Name);
+            }
+
             ApplyGhostVisuals(ghost.gameObject);
             previewGhosts.Add(ghost);
         }
@@ -173,61 +202,34 @@ namespace HexGame.Tools
 
                 MaterialPropertyBlock mpb = new MaterialPropertyBlock();
                 r.GetPropertyBlock(mpb);
-                Color color = r.sharedMaterial.HasProperty("_BaseColor") ? r.sharedMaterial.GetColor("_BaseColor") : Color.white;
+                
+                Color color = Color.white;
+                if (r.sharedMaterial.HasProperty("_BaseColor"))
+                {
+                    color = mpb.GetColor("_BaseColor");
+                    if (color.a == 0 && color.r == 0 && color.g == 0 && color.b == 0)
+                        color = r.sharedMaterial.GetColor("_BaseColor");
+                }
+
                 color.a = ghostTransparency;
                 mpb.SetColor("_BaseColor", color);
                 r.SetPropertyBlock(mpb);
             }
         }
 
-        private Transform GetUnitsContainer()
-        {
-            Transform container = transform.Find("Units");
-            if (container == null)
-            {
-                GameObject go = new GameObject("Units");
-                container = go.transform;
-                container.SetParent(this.transform);
-                container.localPosition = Vector3.zero;
-                container.localRotation = Quaternion.identity;
-                container.localScale = Vector3.one;
-            }
-            return container;
-        }
-
         private void PlaceUnits(Hex centerHex)
         {
+            var unitManager = FindFirstObjectByType<UnitManager>();
+            if (unitManager == null) return;
+
             List<HexData> affectedHexes = GetAffectedHexes(centerHex);
             var manager = FindFirstObjectByType<GridVisualizationManager>() ?? GridVisualizationManager.Instance;
 
             foreach (var hexData in affectedHexes)
             {
                 Hex targetHex = manager.GetHexView(hexData);
-                PlaceUnitAt(targetHex);
+                unitManager.SpawnUnit(activeUnitSet, selectedUnitIndex, selectedTeamId, targetHex, unitVisualizationPrefab);
             }
-        }
-
-        private void PlaceUnitAt(Hex targetHex)
-        {
-            if (targetHex == null || targetHex.Data == null) return;
-            if (activeUnitSet == null || selectedUnitIndex < 0 || selectedUnitIndex >= activeUnitSet.units.Count) return;
-            if (unitVisualizationPrefab == null) return;
-
-            UnitType unitType = activeUnitSet.units[selectedUnitIndex];
-
-            if (targetHex.Data.Unit != null)
-            {
-                if (Application.isPlaying) Destroy(targetHex.Data.Unit.gameObject);
-                else DestroyImmediate(targetHex.Data.Unit.gameObject);
-                targetHex.Data.Unit = null;
-            }
-            
-            UnitVisualization vizInstance = Instantiate(unitVisualizationPrefab, GetUnitsContainer());
-            vizInstance.gameObject.name = $"Unit_{unitType.Name}";
-
-            Unit unitComponent = vizInstance.gameObject.AddComponent<Unit>();
-            unitComponent.Initialize(activeUnitSet, selectedUnitIndex);
-            unitComponent.SetHex(targetHex);
         }
     }
 }

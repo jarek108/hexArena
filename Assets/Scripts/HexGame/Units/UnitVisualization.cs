@@ -13,6 +13,12 @@ namespace HexGame.Units
         /// <param name="unitLogic">The logical unit driving this visualization.</param>
         public virtual void Initialize(Unit unitLogic) { }
 
+        /// <summary>
+        /// Called to set visual identity (like color) without a full unit logic.
+        /// Useful for ghosts/previews.
+        /// </summary>
+        public virtual void SetPreviewIdentity(string unitName) { }
+
         // Core visual events - abstract to force implementation
         public abstract void OnStartMoving(List<Vector3> path, float speed);
         public abstract void OnAttack(Unit target);

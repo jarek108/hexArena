@@ -15,14 +15,14 @@ namespace HexGame.Editor
             SerializedProperty visualizationProp = serializedObject.FindProperty("unitVisualizationPrefab");
             SerializedProperty unitSetProp = serializedObject.FindProperty("activeUnitSet");
             SerializedProperty indexProp = serializedObject.FindProperty("selectedUnitIndex");
+            SerializedProperty teamProp = serializedObject.FindProperty("selectedTeamId");
 
             EditorGUILayout.PropertyField(visualizationProp);
             EditorGUILayout.PropertyField(unitSetProp);
+            EditorGUILayout.PropertyField(teamProp);
 
             UnitPlacementTool tool = (UnitPlacementTool)target;
             
-            // Access private field via reflection if necessary, but we can use the serializedProperty
-            // Actually, we can get the object reference from the property
             var unitSet = unitSetProp.objectReferenceValue as HexGame.Units.UnitSet;
 
             if (unitSet != null && unitSet.units != null && unitSet.units.Count > 0)
@@ -43,18 +43,8 @@ namespace HexGame.Editor
                 GUI.enabled = false;
                 EditorGUILayout.Popup("Selected Unit", 0, new string[] { "No units available" });
                 GUI.enabled = true;
-                
-                if (unitSet == null)
-                {
-                    EditorGUILayout.HelpBox("Assign a UnitSet to select units.", MessageType.Info);
-                }
-                else
-                {
-                    EditorGUILayout.HelpBox("The assigned UnitSet is empty.", MessageType.Warning);
-                }
             }
 
-            // Draw brush size from base BrushTool
             SerializedProperty brushSizeProp = serializedObject.FindProperty("brushSize");
             if (brushSizeProp != null)
             {

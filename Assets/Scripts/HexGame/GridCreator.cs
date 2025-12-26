@@ -41,26 +41,11 @@ namespace HexGame
         {
             if (gridManager == null) return;
 
-            // Clear Hexes
-            Transform hexContainer = gridManager.transform.Find("HexGrid");
-            if (hexContainer != null)
+            // Clear direct children (Hexes)
+            for (int i = gridManager.transform.childCount - 1; i >= 0; i--)
             {
-                for (int i = hexContainer.childCount - 1; i >= 0; i--)
-                {
-                    if (Application.isPlaying) Destroy(hexContainer.GetChild(i).gameObject);
-                    else DestroyImmediate(hexContainer.GetChild(i).gameObject);
-                }
-            }
-
-            // Clear Units
-            Transform unitContainer = gridManager.transform.Find("Units");
-            if (unitContainer != null)
-            {
-                for (int i = unitContainer.childCount - 1; i >= 0; i--)
-                {
-                    if (Application.isPlaying) Destroy(unitContainer.GetChild(i).gameObject);
-                    else DestroyImmediate(unitContainer.GetChild(i).gameObject);
-                }
+                if (Application.isPlaying) Destroy(gridManager.transform.GetChild(i).gameObject);
+                else DestroyImmediate(gridManager.transform.GetChild(i).gameObject);
             }
 
             if (gridManager.Grid != null) gridManager.Grid.Clear();
@@ -135,6 +120,9 @@ namespace HexGame
 
             // Pass the constructed data to the manager to display
             gridManager.VisualizeGrid(grid);
+
+            // Relink units to new hexes
+            UnitManager.Instance?.RelinkUnitsToGrid();
         }
 
         public void SaveGrid(string path)
@@ -199,6 +187,9 @@ namespace HexGame
 
             // Visualize
             gridManager.VisualizeGrid(grid);
+
+            // Relink units
+            UnitManager.Instance?.RelinkUnitsToGrid();
         }
     }
 }

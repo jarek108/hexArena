@@ -9,6 +9,7 @@ namespace HexGame
     {
         public UnitSet unitSet;
         [SerializeField] private int unitIndex;
+        public int teamId;
 
         public UnitType UnitType 
         {
@@ -23,19 +24,22 @@ namespace HexGame
         public string unitName => UnitType != null ? UnitType.Name : "Unknown Unit";
 
         public Hex CurrentHex { get; private set; }
+        [SerializeField, HideInInspector] private int lastQ;
+        [SerializeField, HideInInspector] private int lastR;
         
         public Dictionary<string, int> Stats = new Dictionary<string, int>();
         private UnitVisualization currentView;
 
         private void Start()
         {
-            if (unitSet != null) Initialize(unitSet, unitIndex);
+            if (unitSet != null) Initialize(unitSet, unitIndex, teamId);
         }
 
-        public void Initialize(UnitSet set, int index)
+        public void Initialize(UnitSet set, int index, int team)
         {
             unitSet = set;
             unitIndex = index;
+            teamId = team;
             Stats.Clear();
 
             UnitType type = UnitType;
@@ -62,6 +66,8 @@ namespace HexGame
             if (CurrentHex != null)
             {
                 CurrentHex.Unit = this;
+                lastQ = hex.Q;
+                lastR = hex.R;
                 Vector3 pos = CurrentHex.transform.position;
                 if (currentView != null) pos.y += currentView.yOffset;
                 transform.position = pos; 
@@ -73,5 +79,25 @@ namespace HexGame
             if (Stats.TryGetValue(statName, out int val)) return val;
             return defaultValue;
         }
+
+        public UnitSaveData GetSaveData()
+        {
+            return new UnitSaveData
+            {
+                q = lastQ,
+                r = lastR,
+                unitIndex = this.unitIndex,
+                teamId = this.teamId
+            };
+        }
+    }
+
+    [System.Serializable]
+    public class UnitSaveData
+    {
+        public int q;
+        public int r;
+        public int unitIndex;
+        public int teamId;
     }
 }
