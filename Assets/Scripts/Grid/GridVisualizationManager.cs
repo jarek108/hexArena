@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
+using System.IO;
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
@@ -23,10 +24,14 @@ namespace HexGame
         [System.Serializable]
         public struct StateSetting
         {
-            public HexState state;
+            public string state;
             public int priority;
             public RimSettings visuals;
         }
+
+        [Header("State Visuals")]
+        public string stateVisualsFile = "default_states.json";
+        public List<StateSetting> stateSettings = new List<StateSetting>();
 
         public Material hexSurfaceMaterial;
         public Material hexMaterialSides;
@@ -36,8 +41,6 @@ namespace HexGame
         public Color colorMountains = new Color(0.5f, 0.5f, 0.5f);
         public Color colorForest = new Color(0.1f, 0.4f, 0.1f);
         public Color colorDesert = new Color(0.8f, 0.8f, 0.4f);
-
-        [SerializeField] public List<StateSetting> stateSettings = new List<StateSetting>();
 
         public bool showGrid = true;
         public float gridWidth = 0.05f;
@@ -56,61 +59,9 @@ namespace HexGame
             if (hexMaterialSides == null) hexMaterialSides = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/HexSideMaterial.mat");
             #endif
 
-            if (stateSettings == null) stateSettings = new List<StateSetting>();
-
-            // Auto-populate and ensure defaults for all states
-            foreach (HexState state in System.Enum.GetValues(typeof(HexState)))
+            if (stateSettings == null || stateSettings.Count == 0)
             {
-                int index = stateSettings.FindIndex(s => s.state == state);
-                bool isNew = index == -1;
-                
-                RimSettings currentVisuals = isNew ? new RimSettings() : stateSettings[index].visuals;
-
-                // Apply defaults if new OR if visuals are essentially uninitialized (Black & 0 width)
-                if (isNew || (currentVisuals.color == Color.black && currentVisuals.width == 0f))
-                {
-                    RimSettings defaultVisuals;
-                    switch (state)
-                    {
-                        case HexState.Hovered:
-                            defaultVisuals = new RimSettings { color = Color.yellow, width = 0.15f, pulsation = 5f };
-                            break;
-                        case HexState.Selected:
-                            defaultVisuals = new RimSettings { color = Color.red, width = 0.2f, pulsation = 2f };
-                            break;
-                        case HexState.Target:
-                            defaultVisuals = new RimSettings { color = Color.blue, width = 0.15f, pulsation = 0f };
-                            break;
-                        case HexState.AttackRange:
-                            defaultVisuals = new RimSettings { color = new Color(1f, 0.5f, 0f), width = 0.15f, pulsation = 3f }; // Orange
-                            break;
-                        case HexState.Path:
-                            defaultVisuals = new RimSettings { color = Color.white, width = 0.2f, pulsation = 0f };
-                            break;
-                        case HexState.ZoneOfControl:
-                            defaultVisuals = new RimSettings { color = Color.magenta, width = 0.1f, pulsation = 1f };
-                            break;
-                        default:
-                            defaultVisuals = new RimSettings { color = Color.black, width = 0f };
-                            break;
-                    }
-
-                    if (isNew)
-                    {
-                        stateSettings.Add(new StateSetting 
-                        { 
-                            state = state, 
-                            priority = (int)state * 10, 
-                            visuals = defaultVisuals
-                        });
-                    }
-                    else
-                    {
-                        var s = stateSettings[index];
-                        s.visuals = defaultVisuals;
-                        stateSettings[index] = s;
-                    }
-                }
+                LoadStateSettings();
             }
 
             UpdateGridVisibility();
@@ -118,10 +69,46 @@ namespace HexGame
             RefreshVisuals();
         }
 
+        public void LoadStateSettings(string explicitPath = null)
+        {
+            string path = explicitPath;
+            if (string.IsNullOrEmpty(path))
+            {
+                path = Path.Combine(Application.dataPath, "Data/StateVisuals", stateVisualsFile);
+            }
+
+            if (File.Exists(path))
+            {
+                string json = File.ReadAllText(path);
+                StateSettingsWrapper wrapper = JsonUtility.FromJson<StateSettingsWrapper>(json);
+                stateSettings = wrapper.settings;
+            }
+        }
+
+        public void SaveStateSettings(string explicitPath = null)
+        {
+            string path = explicitPath;
+            if (string.IsNullOrEmpty(path))
+            {
+                string dir = Path.Combine(Application.dataPath, "Data/StateVisuals");
+                if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
+                path = Path.Combine(dir, stateVisualsFile);
+            }
+            
+            StateSettingsWrapper wrapper = new StateSettingsWrapper { settings = stateSettings };
+            string json = JsonUtility.ToJson(wrapper, true);
+            File.WriteAllText(path, json);
+        }
+
+        [System.Serializable]
+        private class StateSettingsWrapper
+        {
+            public List<StateSetting> settings;
+        }
+
         private void OnEnable()
         {
             Instance = this;
-            if (Application.IsPlaying(this)) return;
             if (Grid == null) RebuildGridFromChildren();
         }
 
@@ -154,20 +141,26 @@ namespace HexGame
             // Apply base color based on terrain
             SetHexColor(hex, GetDefaultHexColor(hex));
 
-            // Find settings for all active states (excluding Default, which is our fallback)
-            var activeSettings = stateSettings
-                .Where(s => s.state != HexState.Default && hex.Data.States.Contains(s.state))
+            // Find settings for all active states that are defined in our settings
+            var activeDefinedSettings = stateSettings
+                .Where(s => s.state != "Default" && hex.Data.States.Contains(s.state))
                 .OrderByDescending(s => s.priority)
                 .ToList();
 
             StateSetting bestSetting;
-            if (activeSettings.Count > 0)
+            if (activeDefinedSettings.Count > 0)
             {
-                bestSetting = activeSettings[0];
+                bestSetting = activeDefinedSettings[0];
             }
             else
             {
-                bestSetting = stateSettings.FirstOrDefault(s => s.state == HexState.Default);
+                // Fallback to Default
+                bestSetting = stateSettings.FirstOrDefault(s => s.state == "Default");
+                // If even Default is missing, use an empty setting
+                if (string.IsNullOrEmpty(bestSetting.state))
+                {
+                    bestSetting = new StateSetting { state = "Default", visuals = new RimSettings { color = Color.black, width = 0f } };
+                }
             }
 
             SetHexRim(hex, bestSetting.visuals);
@@ -176,7 +169,7 @@ namespace HexGame
         private void UpdateGridVisibility()
         {
             if (stateSettings == null) return;
-            var defaultIndex = stateSettings.FindIndex(s => s.state == HexState.Default);
+            var defaultIndex = stateSettings.FindIndex(s => s.state == "Default");
             if (defaultIndex != -1)
             {
                 var setting = stateSettings[defaultIndex];
@@ -188,7 +181,7 @@ namespace HexGame
         public void SyncMaterialWithDefault()
         {
             if (hexSurfaceMaterial == null) return;
-            var defaultSetting = stateSettings.FirstOrDefault(s => s.state == HexState.Default);
+            var defaultSetting = stateSettings.FirstOrDefault(s => s.state == "Default");
             
             hexSurfaceMaterial.SetColor("_RimColor", defaultSetting.visuals.color);
             hexSurfaceMaterial.SetFloat("_RimWidth", defaultSetting.visuals.width);
@@ -482,7 +475,7 @@ namespace HexGame
         public RimSettings GetDefaultRimSettings() {
             if (stateSettings == null || stateSettings.Count == 0) 
                 return new RimSettings { color = Color.black, width = 0f };
-            return stateSettings.FirstOrDefault(s => s.state == HexState.Default).visuals;
+            return stateSettings.FirstOrDefault(s => s.state == "Default").visuals;
         }
     }
 }

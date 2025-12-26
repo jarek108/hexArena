@@ -152,6 +152,12 @@ namespace HexGame
             // Sync View Memory
             viewElevation = Data.Elevation;
             UpdatePosition();
+
+            // Trigger unit repositioning if present
+            if (Unit != null)
+            {
+                Unit.UpdateVisualPosition();
+            }
         }
         
         private void UpdatePosition()

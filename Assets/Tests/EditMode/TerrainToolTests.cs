@@ -61,14 +61,14 @@ namespace HexGame.Tests
         {
             terrainTool.OnActivate();
             
-            var field = terrainTool.GetType().GetField("brushSize", 
+            var field = terrainTool.GetType().BaseType.GetField("brushSize", 
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             
             int initialSize = (int)field.GetValue(terrainTool);
             field.SetValue(terrainTool, Mathf.Clamp(initialSize + 1, 1, 10));
             
             int newSize = (int)field.GetValue(terrainTool);
-            Assert.AreNotEqual(initialSize, newSize, "Brush size should have changed.");
+            Assert.AreEqual(initialSize + 1, newSize, "Brush size should have increased.");
         }
 
         [Test]

@@ -76,7 +76,6 @@ namespace HexGame
 
             if (!tool.CheckRequirements(out string reason))
             {
-                Debug.LogWarning($"ToolManager: Cannot activate tool '{tool.GetType().Name}'. Reason: {reason}");
                 return;
             }
 
@@ -117,10 +116,6 @@ namespace HexGame
             if (toolToActivate != null)
             {
                 SetActiveTool(toolToActivate);
-            }
-            else
-            {
-                Debug.LogWarning($"ToolManager: Tool with name '{toolName}' not found.");
             }
         }
         

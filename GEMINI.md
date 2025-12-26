@@ -11,9 +11,9 @@ We follow a **Data-Driven Architecture** prioritizing strict Logic/View separati
 ### Systems
 *   **Grid System** (Detailed in `notes/grid_system.md`):
     *   **Logic**: `HexData` & `Grid` (Pure C#).
-    *   **View**: `Hex`, `GridVisualizationManager`, `HexStateVisualizer`.
+    *   **View**: `Hex`, `GridVisualizationManager`.
     *   **Interaction**: `ToolManager` (Central Hub), `PathfindingTool` (Selection/Pathing), & various Editor Tools (`TerrainTool`, `ElevationTool`, etc.).
-    *   **Principle**: Logic dictates state; View reacts. `HexStateVisualizer` is the sole authority on hex styling (rims/colors) based on abstract state priorities.
+    *   **Principle**: Logic dictates state; View reacts. `GridVisualizationManager` is the sole authority on hex styling (rims/colors) based on abstract state priorities (strings) loaded from JSON.
 
 # Workflow and coding standards
 

@@ -61,17 +61,40 @@ namespace HexGame
 
         public void SetHex(Hex hex)
         {
-            if (CurrentHex != null) CurrentHex.Unit = null;
-            CurrentHex = hex;
-            if (CurrentHex != null)
+            if (hex == null)
             {
-                CurrentHex.Unit = this;
-                lastQ = hex.Q;
-                lastR = hex.R;
-                Vector3 pos = CurrentHex.transform.position;
-                if (currentView != null) pos.y += currentView.yOffset;
-                transform.position = pos; 
+                if (CurrentHex != null) CurrentHex.Unit = null;
+                CurrentHex = null;
+                return;
             }
+
+            // If it's a different hex, clear the old one
+            if (CurrentHex != null && CurrentHex != hex)
+            {
+                CurrentHex.Unit = null;
+            }
+
+            CurrentHex = hex;
+            CurrentHex.Unit = this;
+            lastQ = hex.Q;
+            lastR = hex.R;
+            
+            UpdateVisualPosition();
+        }
+
+        public void UpdateVisualPosition()
+        {
+            if (CurrentHex == null) return;
+            
+            Vector3 pos = CurrentHex.transform.position;
+            if (currentView != null) pos.y += currentView.yOffset;
+            else
+            {
+                // Fallback: try to find view if it wasn't picked up
+                currentView = GetComponent<UnitVisualization>();
+                if (currentView != null) pos.y += currentView.yOffset;
+            }
+            transform.position = pos;
         }
         
         public int GetStat(string statName, int defaultValue = 0)

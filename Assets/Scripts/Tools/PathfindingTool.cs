@@ -23,84 +23,109 @@ namespace HexGame.Tools
         public void OnActivate()
         {
             IsEnabled = true;
-            Debug.Log("Pathfinding Tool Activated.");
         }
 
         public void OnDeactivate()
         {
             IsEnabled = false;
             ClearPath();
-            Debug.Log("Pathfinding Tool Deactivated.");
         }
 
         public void HandleInput(Hex hoveredHex)
         {
-            if (!IsEnabled || hoveredHex == null) return;
+            if (!IsEnabled) return;
 
             if (Mouse.current != null)
             {
                 if (Mouse.current.leftButton.wasPressedThisFrame)
                 {
-                    SelectHex(hoveredHex);
+                    if (hoveredHex != null) SetSource(hoveredHex);
+                    else ClearAll();
                 }
                 else if (Mouse.current.rightButton.wasPressedThisFrame)
                 {
-                    ClearPath();
+                    if (hoveredHex != null) SetTarget(hoveredHex);
+                    else ClearTarget();
                 }
             }
         }
 
-        public void SelectHex(Hex hex)
+        public void SetSource(Hex hex)
         {
-            if (SourceHex == null)
+            if (SourceHex == hex)
             {
-                SourceHex = hex;
-                SourceHex.Data.AddState(HexState.Selected);
-                Debug.Log($"Source set to: {hex.Q}, {hex.R}");
+                ClearAll();
+                return;
             }
-            else if (TargetHex == null && hex != SourceHex)
+
+            if (SourceHex != null)
             {
-                TargetHex = hex;
-                TargetHex.Data.AddState(HexState.Target);
-                Debug.Log($"Target set to: {hex.Q}, {hex.R}");
-                CalculateAndShowPath();
+                SourceHex.Data.RemoveState("Selected");
             }
-            else
-            {
-                bool clickedSource = (hex == SourceHex);
-                ClearPath();
-                
-                if (!clickedSource)
-                {
-                    SourceHex = hex;
-                    SourceHex.Data.AddState(HexState.Selected);
-                    Debug.Log($"Source set to: {hex.Q}, {hex.R}");
-                }
-            }
+
+            SourceHex = hex;
+            SourceHex.Data.AddState("Selected");
+
+            // Changing source invalidates the current path/target
+            ClearTarget();
         }
 
-        private void ClearPath()
+        public void SetTarget(Hex hex)
+        {
+            if (SourceHex == null || hex == SourceHex) return;
+
+            if (TargetHex == hex)
+            {
+                ClearTarget();
+                return;
+            }
+
+            if (TargetHex != null)
+            {
+                TargetHex.Data.RemoveState("Target");
+            }
+
+            TargetHex = hex;
+            TargetHex.Data.AddState("Target");
+
+            CalculateAndShowPath();
+        }
+
+        private void ClearAll()
         {
             if (SourceHex != null)
             {
-                SourceHex.Data.RemoveState(HexState.Selected);
+                SourceHex.Data.RemoveState("Selected");
                 SourceHex = null;
             }
+            ClearTarget();
+        }
+
+        private void ClearTarget()
+        {
             if (TargetHex != null)
             {
-                TargetHex.Data.RemoveState(HexState.Target);
+                TargetHex.Data.RemoveState("Target");
                 TargetHex = null;
             }
+            ClearPathVisuals();
+        }
 
-            // Clear all path states from the grid
+        private void ClearPathVisuals()
+        {
             var manager = FindFirstObjectByType<GridVisualizationManager>() ?? GridVisualizationManager.Instance;
             if (manager != null && manager.Grid != null)
             {
                 foreach (var hexData in manager.Grid.GetAllHexes())
                 {
-                    hexData.RemoveState(HexState.Path);
+                    hexData.RemoveState("Path");
                 }
             }
+        }
+
+        private void ClearPath() // Legacy helper for OnDeactivate
+        {
+            ClearAll();
         }
 
         public void HandleHighlighting(Hex oldHex, Hex newHex)
@@ -109,11 +134,11 @@ namespace HexGame.Tools
 
             if (oldHex != null)
             {
-                oldHex.Data.RemoveState(HexState.Hovered);
+                oldHex.Data.RemoveState("Hovered");
             }
             if (newHex != null)
             {
-                newHex.Data.AddState(HexState.Hovered);
+                newHex.Data.AddState("Hovered");
             }
         }
 
@@ -124,23 +149,19 @@ namespace HexGame.Tools
             var manager = FindFirstObjectByType<GridVisualizationManager>() ?? GridVisualizationManager.Instance;
             if (manager == null || manager.Grid == null) return;
 
+            ClearPathVisuals();
+
             PathResult result = Pathfinder.FindPath(manager.Grid, SourceHex.Data, TargetHex.Data, maxElevationChange);
 
             if (result.Success)
             {
                 foreach (var hexData in result.Path)
                 {
-                    // Don't overwrite source/target states visually if we want to keep them distinct
                     if (hexData != SourceHex.Data && hexData != TargetHex.Data)
                     {
-                        hexData.AddState(HexState.Path);
+                        hexData.AddState("Path");
                     }
                 }
-                Debug.Log($"Path found! Length: {result.Path.Count}");
-            }
-            else
-            {
-                Debug.LogWarning("No path found between selected hexes.");
             }
         }
     }

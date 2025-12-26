@@ -74,4 +74,24 @@ public class UnitPlacementTests
 
         Object.DestroyImmediate(hex2GO);
     }
+
+    [Test]
+    public void Unit_Repositioned_On_Hex_Elevation_Change()
+    {
+        // Arrange
+        unit.SetHex(hex);
+        float offset = 0.5f;
+        var viz = unitGO.AddComponent<HexGame.Units.SimpleUnitVisualization>();
+        viz.yOffset = offset;
+        unit.Initialize(unit.unitSet, 0, 0); // Re-init to pick up visualization
+
+        // Act
+        float newElevation = 5f;
+        hex.Elevation = newElevation;
+
+        // Assert
+        Vector3 expectedPos = hex.transform.position;
+        expectedPos.y += offset;
+        Assert.AreEqual(expectedPos, unit.transform.position, "Unit should move to new elevation + offset.");
+    }
 }

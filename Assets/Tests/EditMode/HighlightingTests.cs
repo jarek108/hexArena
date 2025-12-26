@@ -39,10 +39,10 @@ namespace HexGame.Tests
 
             manager.stateSettings = new List<GridVisualizationManager.StateSetting>
             {
-                new GridVisualizationManager.StateSetting { state = HexState.Default, priority = 0, visuals = defaultVisuals },
-                new GridVisualizationManager.StateSetting { state = HexState.Hovered, priority = 10, visuals = highlightVisuals },
-                new GridVisualizationManager.StateSetting { state = HexState.Selected, priority = 20, visuals = selectionVisuals },
-                new GridVisualizationManager.StateSetting { state = HexState.Target, priority = 30, visuals = new GridVisualizationManager.RimSettings { color = Color.blue, width = 0.15f } }
+                new GridVisualizationManager.StateSetting { state = "Default", priority = 0, visuals = defaultVisuals },
+                new GridVisualizationManager.StateSetting { state = "Hovered", priority = 10, visuals = highlightVisuals },
+                new GridVisualizationManager.StateSetting { state = "Selected", priority = 20, visuals = selectionVisuals },
+                new GridVisualizationManager.StateSetting { state = "Target", priority = 30, visuals = new GridVisualizationManager.RimSettings { color = Color.blue, width = 0.15f } }
             };
             
             manager.RefreshVisuals(); // Apply settings to all hexes
@@ -63,7 +63,7 @@ namespace HexGame.Tests
         [UnityTest]
         public IEnumerator HoveringOffSelectedHex_DoesNotClearSelectionVisuals()
         {
-            pathfindingTool.SelectHex(testHex);
+            pathfindingTool.SetSource(testHex);
             yield return null;
             Assert.AreEqual(selectionVisuals.color, manager.GetHexRimColor(testHex), "Pre-condition: Hex should be visually selected.");
 
@@ -76,12 +76,12 @@ namespace HexGame.Tests
         [UnityTest]
         public IEnumerator Transition_SelectToDeselect_UpdatesProperties()
         {
-            pathfindingTool.SelectHex(testHex);
+            pathfindingTool.SetSource(testHex);
             yield return null;
             Assert.Greater(manager.GetHexRimWidth(testHex), 0f);
 
-            // PathfindingTool logic: selecting same hex again calls ClearPath()
-            pathfindingTool.SelectHex(testHex); 
+            // PathfindingTool logic: selecting same hex again clears
+            pathfindingTool.SetSource(testHex); 
             yield return null;
             manager.RefreshVisuals(testHex); 
             Assert.AreEqual(0f, manager.GetHexRimWidth(testHex));
@@ -103,7 +103,7 @@ namespace HexGame.Tests
         [UnityTest]
         public IEnumerator SelectHex_ActivatesRim_WithDifferentSettings()
         {
-            pathfindingTool.SelectHex(testHex);
+            pathfindingTool.SetSource(testHex);
             yield return null;
             
             Assert.AreEqual(selectionVisuals.color, manager.GetHexRimColor(testHex), "Selection should set RimColor to Red.");
@@ -130,7 +130,7 @@ namespace HexGame.Tests
             yield return null;
             Assert.AreEqual(highlightVisuals.color, manager.GetHexRimColor(testHex));
     
-            pathfindingTool.SelectHex(testHex);
+            pathfindingTool.SetSource(testHex);
             yield return null;
             Assert.AreEqual(selectionVisuals.color, manager.GetHexRimColor(testHex));    
         }
@@ -155,11 +155,9 @@ namespace HexGame.Tests
             Hex hexA = manager.GetHexView(manager.Grid.GetHexAt(0, 0));
             Hex hexB = manager.GetHexView(manager.Grid.GetHexAt(1, 0));
             
-            pathfindingTool.SelectHex(hexA);
+            pathfindingTool.SetSource(hexA);
             yield return null;
-            pathfindingTool.SelectHex(hexA); // Deselect A first
-            yield return null;
-            pathfindingTool.SelectHex(hexB);
+            pathfindingTool.SetSource(hexB);
             yield return null;
             Assert.AreEqual(defaultVisuals.color, manager.GetHexRimColor(hexA), "Old Hex A should be reset.");
             Assert.AreEqual(selectionVisuals.color, manager.GetHexRimColor(hexB), "New Hex B should be selected.");
@@ -168,7 +166,7 @@ namespace HexGame.Tests
         [UnityTest]
         public IEnumerator Highlight_OnSelectedHex_Ignored()
         {
-            pathfindingTool.SelectHex(testHex);
+            pathfindingTool.SetSource(testHex);
             yield return null;
             Assert.AreEqual(selectionVisuals.color, manager.GetHexRimColor(testHex));
 
@@ -188,7 +186,7 @@ namespace HexGame.Tests
         [UnityTest]
         public IEnumerator SelectHex_SetsPulsationSpeed()
         {
-            pathfindingTool.SelectHex(testHex);
+            pathfindingTool.SetSource(testHex);
             yield return null;
             Assert.AreEqual(selectionVisuals.pulsation, manager.GetHexRimPulsation(testHex), "Selection should set RimPulsationSpeed to expected value.");
         }
@@ -212,7 +210,7 @@ namespace HexGame.Tests
             
             for (int i = 0; i < manager.stateSettings.Count; i++)
             {
-                if (manager.stateSettings[i].state == HexState.Hovered)
+                if (manager.stateSettings[i].state == "Hovered")
                 {
                     var s = manager.stateSettings[i];
                     s.visuals.color = Color.cyan;
@@ -229,12 +227,12 @@ namespace HexGame.Tests
         [UnityTest]
         public IEnumerator UpdateSettings_ImmediatelyReflectedInActiveSelection()
         {
-            pathfindingTool.SelectHex(testHex);
+            pathfindingTool.SetSource(testHex);
             yield return null;
 
             for (int i = 0; i < manager.stateSettings.Count; i++)
             {
-                if (manager.stateSettings[i].state == HexState.Selected)
+                if (manager.stateSettings[i].state == "Selected")
                 {
                     var s = manager.stateSettings[i];
                     s.visuals.color = Color.blue;
@@ -258,7 +256,7 @@ namespace HexGame.Tests
             
             for (int i = 0; i < manager.stateSettings.Count; i++)
             {
-                if (manager.stateSettings[i].state == HexState.Default)
+                if (manager.stateSettings[i].state == "Default")
                 {
                     var s = manager.stateSettings[i];
                     s.visuals.color = newDefaultColor;

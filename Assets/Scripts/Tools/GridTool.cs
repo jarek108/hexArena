@@ -16,7 +16,6 @@ namespace HexGame.Tools
             if (gridManager != null)
             {
                 gridManager.ToggleShowGrid();
-                Debug.Log("Grid Visibility Toggled.");
             }
         }
 

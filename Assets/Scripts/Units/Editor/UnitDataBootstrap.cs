@@ -116,9 +116,6 @@ namespace HexGame.Units.Editor
             EditorUtility.SetDirty(set);
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
-
-            Debug.Log($"Created Battle Brothers Data with {set.units.Count} units!");
-            Selection.activeObject = set;
         }
     }
 }

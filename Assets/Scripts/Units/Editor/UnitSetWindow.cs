@@ -135,14 +135,9 @@ namespace HexGame.Units.Editor
             if (Path.GetFileNameWithoutExtension(currentPath) == newName) return;
             
             string result = AssetDatabase.RenameAsset(currentPath, newName);
-            
             if (string.IsNullOrEmpty(result))
             {
-                AssetDatabase.SaveAssets(); 
-            }
-            else
-            {
-                Debug.LogError($"Failed to rename asset: {result}");
+                AssetDatabase.SaveAssets();
             }
         }
 

@@ -21,6 +21,11 @@ namespace HexGame
             Instance = this;
         }
 
+        private void Start()
+        {
+            RelinkUnitsToGrid();
+        }
+
         private void OnDisable()
         {
             if (Instance == this) Instance = null;
@@ -109,7 +114,6 @@ namespace HexGame
                     }
                 }
             }
-            Debug.Log($"Relinked {relinkedCount}/{units.Length} units to the grid.");
         }
 
         public void SaveUnits(string path)
@@ -129,7 +133,6 @@ namespace HexGame
 
             string json = JsonUtility.ToJson(batch, true);
             System.IO.File.WriteAllText(path, json);
-            Debug.Log($"Saved {batch.units.Count} units to {path}");
         }
 
         public void LoadUnits(string path)
@@ -141,7 +144,6 @@ namespace HexGame
         {
             if (!System.IO.File.Exists(path))
             {
-                Debug.LogWarning($"LoadUnits: File not found at {path}");
                 return;
             }
 
@@ -169,14 +171,12 @@ namespace HexGame
 
             if (set == null)
             {
-                Debug.LogError("LoadUnits failed: No valid UnitSet found.");
                 return;
             }
 
             var gridManager = FindFirstObjectByType<GridVisualizationManager>();
             if (gridManager == null || gridManager.Grid == null)
             {
-                Debug.LogError("LoadUnits failed: GridManager not found.");
                 return;
             }
 
@@ -192,7 +192,6 @@ namespace HexGame
                     }
                 }
             }
-            Debug.Log($"Loaded {batch.units.Count} units.");
             RelinkUnitsToGrid();
         }
     }

@@ -129,14 +129,6 @@ namespace HexGame.Units.Editor
             }
 
             string result = AssetDatabase.RenameAsset(path, newName);
-            if (string.IsNullOrEmpty(result))
-            {
-                Debug.Log($"Renamed set to {newName}");
-            }
-            else
-            {
-                Debug.LogError($"Rename failed: {result}");
-            }
             
             AssetDatabase.SaveAssets();
         }
@@ -171,8 +163,6 @@ namespace HexGame.Units.Editor
             
             Selection.activeObject = newSet;
             EditorGUIUtility.PingObject(newSet);
-            
-            Debug.Log($"Migrated set to {newPath}");
         }
     }
 }

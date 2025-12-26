@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
+using UnityEngine.InputSystem;
 
 namespace HexGame.Tools
 {
@@ -7,7 +8,8 @@ namespace HexGame.Tools
     {
         public bool IsEnabled { get; set; }
 
-        [SerializeField] [Range(1, 5)] protected int brushSize = 1;
+        [SerializeField] [Range(1, 20)] protected int brushSize = 1;
+        [SerializeField] protected int maxBrushSize = 6;
 
         public virtual bool CheckRequirements(out string reason)
         {
@@ -27,7 +29,25 @@ namespace HexGame.Tools
 
         public virtual void HandleInput(Hex hoveredHex)
         {
-            if (!IsEnabled || hoveredHex == null) return;
+            if (!IsEnabled) return;
+
+            if (Mouse.current != null)
+            {
+                float scroll = Mouse.current.scroll.ReadValue().y;
+                if (Mathf.Abs(scroll) > 0.1f)
+                {
+                    int oldSize = brushSize;
+                    
+                    // 1. Clear old highlight using current size
+                    if (hoveredHex != null) HandleHighlighting(hoveredHex, null);
+
+                    // 2. Change size
+                    brushSize = Mathf.Clamp(brushSize + (scroll > 0 ? 1 : -1), 1, maxBrushSize);
+                    
+                    // 3. Re-apply highlight using new size
+                    if (hoveredHex != null) HandleHighlighting(null, hoveredHex);
+                }
+            }
         }
 
         public virtual void HandleHighlighting(Hex oldHex, Hex newHex)
@@ -43,7 +63,7 @@ namespace HexGame.Tools
                 var lastHighlightedHexes = manager.Grid.GetHexesInRange(oldHex.Data, brushSize - 1);
                 foreach (var hData in lastHighlightedHexes)
                 {
-                    hData.RemoveState(HexState.Hovered);
+                    hData.RemoveState("Hovered");
                 }
             }
 
@@ -52,7 +72,7 @@ namespace HexGame.Tools
                 var currentHighlightedHexes = manager.Grid.GetHexesInRange(newHex.Data, brushSize - 1);
                 foreach (var hData in currentHighlightedHexes)
                 {
-                    hData.AddState(HexState.Hovered);
+                    hData.AddState("Hovered");
                 }
             }
         }

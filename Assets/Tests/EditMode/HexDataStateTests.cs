@@ -21,40 +21,40 @@ namespace HexGame.Tests
         [Test]
         public void AddState_UpdatesSet_AndFiresEvent()
         {
-            data.AddState(HexState.Selected);
+            data.AddState("Selected");
             
-            Assert.IsTrue(data.States.Contains(HexState.Selected));
+            Assert.IsTrue(data.States.Contains("Selected"));
             Assert.IsTrue(eventFired);
         }
 
         [Test]
         public void RemoveState_UpdatesSet_AndFiresEvent()
         {
-            data.AddState(HexState.Selected);
+            data.AddState("Selected");
             eventFired = false; // Reset for removal check
             
-            data.RemoveState(HexState.Selected);
+            data.RemoveState("Selected");
             
-            Assert.IsFalse(data.States.Contains(HexState.Selected));
+            Assert.IsFalse(data.States.Contains("Selected"));
             Assert.IsTrue(eventFired);
         }
 
         [Test]
         public void UpdateStates_Batched_CorrectlyModifiesSet_AndFiresSingleEvent()
         {
-            data.AddState(HexState.Hovered);
+            data.AddState("Hovered");
             int callCount = 0;
             data.OnStateChanged += () => callCount++; // Additional listener to count calls
             
             // Batch: Remove Hovered, Add Selected and Path
             data.UpdateStates(
-                new[] { HexState.Selected, HexState.Path }, 
-                new[] { HexState.Hovered }
+                new[] { "Selected", "Path" }, 
+                new[] { "Hovered" }
             );
 
-            Assert.IsFalse(data.States.Contains(HexState.Hovered), "Hovered should be removed");
-            Assert.IsTrue(data.States.Contains(HexState.Selected), "Selected should be added");
-            Assert.IsTrue(data.States.Contains(HexState.Path), "Path should be added");
+            Assert.IsFalse(data.States.Contains("Hovered"), "Hovered should be removed");
+            Assert.IsTrue(data.States.Contains("Selected"), "Selected should be added");
+            Assert.IsTrue(data.States.Contains("Path"), "Path should be added");
             
             // Setup call + 1 batch call = 1 (we ignore the SetUp event because we added the listener after)
             Assert.AreEqual(1, callCount, "Event should only fire once for the batch operation");
@@ -63,12 +63,12 @@ namespace HexGame.Tests
         [Test]
         public void UpdateStates_NoActualChange_DoesNotFireEvent()
         {
-            data.AddState(HexState.Selected);
+            data.AddState("Selected");
             int callCount = 0;
             data.OnStateChanged += () => callCount++;
 
             // Re-add existing, remove non-existent
-            data.UpdateStates(new[] { HexState.Selected }, new[] { HexState.Hovered });
+            data.UpdateStates(new[] { "Selected" }, new[] { "Hovered" });
 
             Assert.AreEqual(0, callCount, "Event should not fire if the set remains logically identical");
         }

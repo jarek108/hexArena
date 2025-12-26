@@ -47,12 +47,12 @@ namespace HexGame
         
         public Unit Unit;
 
-        private HashSet<HexState> _states;
-        public HashSet<HexState> States 
+        private HashSet<string> _states;
+        public HashSet<string> States 
         { 
             get
             {
-                if (_states == null) _states = new HashSet<HexState>();
+                if (_states == null) _states = new HashSet<string>();
                 return _states;
             }
         }
@@ -68,7 +68,7 @@ namespace HexGame
             this.S = -q - r;
         }
 
-        public void AddState(HexState state)
+        public void AddState(string state)
         {
             if (States.Add(state))
             {
@@ -76,7 +76,7 @@ namespace HexGame
             }
         }
 
-        public void RemoveState(HexState state)
+        public void RemoveState(string state)
         {
             if (States.Remove(state))
             {
@@ -84,7 +84,7 @@ namespace HexGame
             }
         }
 
-        public void UpdateStates(IEnumerable<HexState> toAdd, IEnumerable<HexState> toRemove)
+        public void UpdateStates(IEnumerable<string> toAdd, IEnumerable<string> toRemove)
         {
             bool changed = false;
 

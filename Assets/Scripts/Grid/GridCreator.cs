@@ -56,7 +56,6 @@ namespace HexGame
         {
             if (gridManager == null)
             {
-                Debug.LogError("GridCreator: GridVisualizationManager component not found on the same GameObject!");
                 return;
             }
 
@@ -132,7 +131,6 @@ namespace HexGame
             // We save the Current Grid state from the Manager
             if (gridManager.Grid == null)
             {
-                Debug.LogError("No grid to save!");
                 return;
             }
 

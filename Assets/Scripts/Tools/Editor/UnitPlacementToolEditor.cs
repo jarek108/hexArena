@@ -48,6 +48,12 @@ namespace HexGame.Editor
                 EditorGUILayout.PropertyField(brushSizeProp);
             }
 
+            SerializedProperty maxBrushSizeProp = serializedObject.FindProperty("maxBrushSize");
+            if (maxBrushSizeProp != null)
+            {
+                EditorGUILayout.PropertyField(maxBrushSizeProp);
+            }
+
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("Ghost Visuals", EditorStyles.boldLabel);
             EditorGUILayout.PropertyField(serializedObject.FindProperty("ghostTransparency"));

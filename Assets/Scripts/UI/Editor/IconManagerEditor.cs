@@ -114,7 +114,6 @@ namespace HexGame.Editor
                 toolManager = iconManager.GetComponent<ToolManager>();
                 if (toolManager == null)
                 {
-                    Debug.LogError("IconManagerEditor: Could not find ToolManager in the scene.");
                     return;
                 }
             }
@@ -159,7 +158,6 @@ namespace HexGame.Editor
                 );
 
                 iconManager.icons.Add(newData);
-                Debug.Log($"Added icon for {toolTypeName} with hotkey '{newData.hotkey}' and sprite '{(newData.iconSprite != null ? newData.iconSprite.name : "None")}'");
             }
 
             if (dirty)
