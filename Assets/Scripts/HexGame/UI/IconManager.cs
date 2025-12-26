@@ -46,8 +46,15 @@ namespace HexGame.UI
         [SerializeField] [Range(8, 72)]
         public int hotkeySize = 14;
 
+        [Header("Selection Visuals")]
+        [SerializeField] public Color activeIconColor = Color.yellow;
+        [SerializeField] public Color inactiveIconColor = Color.white;
+
+        private ToolManager toolManager;
+
         private void Start()
         {
+            toolManager = FindFirstObjectByType<ToolManager>();
             if (Application.isPlaying)
             {
                 RefreshUI();
@@ -68,6 +75,27 @@ namespace HexGame.UI
                         data.onClick.Invoke();
                     }
                 }
+            }
+
+            UpdateSelectionHighlights();
+        }
+
+        private void UpdateSelectionHighlights()
+        {
+            if (toolManager == null || toolManager.ActiveTool == null) return;
+
+            string activeToolTypeName = toolManager.ActiveTool.GetType().Name;
+
+            foreach (Transform child in transform)
+            {
+                // Assuming iconName in data matches the Tool class name or is contained in GameObject name
+                // In our setup, Go name is "Icon_" + data.iconName
+                // We should find the data associated with this child
+                Image bg = child.GetComponent<Image>();
+                if (bg == null) continue;
+
+                bool isActive = child.name.Contains(activeToolTypeName);
+                bg.color = isActive ? activeIconColor : backgroundColor;
             }
         }
 

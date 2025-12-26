@@ -12,21 +12,17 @@ namespace HexGame.Editor
         {
             serializedObject.Update();
 
-            SerializedProperty visualizationProp = serializedObject.FindProperty("unitVisualizationPrefab");
-            SerializedProperty unitSetProp = serializedObject.FindProperty("activeUnitSet");
             SerializedProperty indexProp = serializedObject.FindProperty("selectedUnitIndex");
             SerializedProperty teamProp = serializedObject.FindProperty("selectedTeamId");
 
-            EditorGUILayout.PropertyField(visualizationProp);
-            EditorGUILayout.PropertyField(unitSetProp);
             EditorGUILayout.PropertyField(teamProp);
 
             UnitPlacementTool tool = (UnitPlacementTool)target;
-            
-            var unitSet = unitSetProp.objectReferenceValue as HexGame.Units.UnitSet;
+            var unitManager = UnitManager.Instance;
 
-            if (unitSet != null && unitSet.units != null && unitSet.units.Count > 0)
+            if (unitManager != null && unitManager.ActiveUnitSet != null && unitManager.ActiveUnitSet.units != null && unitManager.ActiveUnitSet.units.Count > 0)
             {
+                var unitSet = unitManager.ActiveUnitSet;
                 string[] unitNames = unitSet.units.Select((u, i) => $"[{i}] {u.Name}").ToArray();
                 
                 int currentIndex = indexProp.intValue;
@@ -43,6 +39,7 @@ namespace HexGame.Editor
                 GUI.enabled = false;
                 EditorGUILayout.Popup("Selected Unit", 0, new string[] { "No units available" });
                 GUI.enabled = true;
+                EditorGUILayout.HelpBox("Ensure UnitManager has an active UnitSet.", MessageType.Info);
             }
 
             SerializedProperty brushSizeProp = serializedObject.FindProperty("brushSize");

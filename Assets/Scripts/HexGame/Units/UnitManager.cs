@@ -10,6 +10,12 @@ namespace HexGame
     {
         public static UnitManager Instance { get; private set; }
 
+        [Header("Setup")]
+        public UnitVisualization unitVisualizationPrefab;
+        public UnitSet activeUnitSet;
+
+        public UnitSet ActiveUnitSet => activeUnitSet;
+
         private void OnEnable()
         {
             Instance = this;
@@ -18,6 +24,11 @@ namespace HexGame
         private void OnDisable()
         {
             if (Instance == this) Instance = null;
+        }
+
+        public void SpawnUnit(int index, int teamId, Hex targetHex)
+        {
+            SpawnUnit(activeUnitSet, index, teamId, targetHex, unitVisualizationPrefab);
         }
 
         public void SpawnUnit(UnitSet set, int index, int teamId, Hex targetHex, UnitVisualization prefab)
@@ -67,7 +78,6 @@ namespace HexGame
                 else DestroyImmediate(child.gameObject);
             }
             
-            // Also clear references in data just in case
             var gridManager = FindFirstObjectByType<GridVisualizationManager>();
             if (gridManager != null && gridManager.Grid != null)
             {
@@ -105,8 +115,7 @@ namespace HexGame
         public void SaveUnits(string path)
         {
             UnitSaveBatch batch = new UnitSaveBatch();
-            Unit firstUnit = GetComponentInChildren<Unit>();
-            batch.unitSetName = firstUnit != null && firstUnit.unitSet != null ? firstUnit.unitSet.name : "";
+            batch.unitSetName = activeUnitSet != null ? activeUnitSet.name : "";
 
             foreach (Transform child in transform)
             {
@@ -121,6 +130,11 @@ namespace HexGame
             string json = JsonUtility.ToJson(batch, true);
             System.IO.File.WriteAllText(path, json);
             Debug.Log($"Saved {batch.units.Count} units to {path}");
+        }
+
+        public void LoadUnits(string path)
+        {
+            LoadUnits(path, activeUnitSet, unitVisualizationPrefab);
         }
 
         public void LoadUnits(string path, UnitSet fallbackSet, UnitVisualization visualizationPrefab)

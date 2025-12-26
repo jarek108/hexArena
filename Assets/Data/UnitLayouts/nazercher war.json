@@ -1,0 +1,59 @@
+{
+    "unitSetName": "BattleBrothers_Core",
+    "units": [
+        {
+            "q": 11,
+            "r": 5,
+            "unitIndex": 0,
+            "teamId": 0
+        },
+        {
+            "q": 10,
+            "r": 6,
+            "unitIndex": 0,
+            "teamId": 0
+        },
+        {
+            "q": 9,
+            "r": 6,
+            "unitIndex": 0,
+            "teamId": 0
+        },
+        {
+            "q": 13,
+            "r": 5,
+            "unitIndex": 7,
+            "teamId": 1
+        },
+        {
+            "q": 14,
+            "r": 4,
+            "unitIndex": 7,
+            "teamId": 1
+        },
+        {
+            "q": 14,
+            "r": 5,
+            "unitIndex": 7,
+            "teamId": 1
+        },
+        {
+            "q": 14,
+            "r": 3,
+            "unitIndex": 7,
+            "teamId": 1
+        },
+        {
+            "q": 15,
+            "r": 3,
+            "unitIndex": 7,
+            "teamId": 1
+        },
+        {
+            "q": 15,
+            "r": 4,
+            "unitIndex": 7,
+            "teamId": 1
+        }
+    ]
+}

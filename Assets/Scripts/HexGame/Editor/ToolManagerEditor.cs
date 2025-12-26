@@ -1,7 +1,7 @@
 using UnityEditor;
 using UnityEngine;
 using System.Linq;
-using HexGame.Tools; // Ensure this is present for ITool and other tool scripts
+using HexGame.Tools;
 
 namespace HexGame.Editor
 {
@@ -10,46 +10,25 @@ namespace HexGame.Editor
     {
         private ToolManager toolManager;
         private string[] toolNames;
-        private int selectedToolIndex;
+        private ITool[] attachedTools;
 
         private void OnEnable()
         {
             toolManager = (ToolManager)target;
-            // Initialize the toolManager's internal list if it hasn't been already
-            // This is important for editor-time reflection of tools
-            toolManager.SetUpForTesting(); 
+            toolManager.Initialize(); 
             UpdateToolList();
-            
-            // Set initial selected index based on active tool
-            if (toolManager.ActiveTool != null)
-            {
-                selectedToolIndex = System.Array.IndexOf(toolNames, toolManager.ActiveTool.GetType().Name);
-            }
-            else
-            {
-                selectedToolIndex = 0; // "None" or first available
-            }
         }
 
         private void UpdateToolList()
         {
-            // Get all ITool components attached to the GameObject
-            var attachedTools = toolManager.GetComponents<ITool>();
+            attachedTools = toolManager.GetComponents<ITool>();
             toolNames = attachedTools.Select(t => t.GetType().Name).ToArray();
-
-            // If no tool is active, ensure we can still show a reasonable state
-            if (toolManager.ActiveTool == null && toolNames.Length > 0)
-            {
-                toolManager.SetActiveTool(attachedTools.FirstOrDefault());
-                selectedToolIndex = 0;
-            }
         }
 
         public override void OnInspectorGUI()
         {
             serializedObject.Update();
 
-            // Ensure the tool list is up-to-date in case new tools were added/removed
             UpdateToolList(); 
 
             if (toolNames.Length == 0)
@@ -59,30 +38,35 @@ namespace HexGame.Editor
                 return;
             }
 
-            // Dropdown to select tool and display current
-            EditorGUILayout.BeginHorizontal();
-            int newSelectedToolIndex = EditorGUILayout.Popup("Switch Tool", selectedToolIndex, toolNames);
-            if (newSelectedToolIndex != selectedToolIndex)
+            // Sync selected index with the current ActiveTool
+            int selectedToolIndex = -1;
+            if (toolManager.ActiveTool != null)
             {
-                selectedToolIndex = newSelectedToolIndex;
-                toolManager.SelectToolByName(toolNames[selectedToolIndex]);
+                selectedToolIndex = System.Array.IndexOf(toolNames, toolManager.ActiveTool.GetType().Name);
+            }
+
+            EditorGUI.BeginChangeCheck();
+            int newSelectedToolIndex = EditorGUILayout.Popup("Switch Tool", selectedToolIndex, toolNames);
+            if (EditorGUI.EndChangeCheck())
+            {
+                toolManager.SetActiveTool(attachedTools[newSelectedToolIndex]);
+                // If it was a toggle tool, ActiveTool won't change, 
+                // so the index will naturally revert on the next layout pass.
             }
             
+            EditorGUILayout.BeginVertical("box");
+            EditorGUILayout.LabelField("Current Active Tool", EditorStyles.miniBoldLabel);
             GUI.enabled = false;
-            EditorGUILayout.TextField(toolManager.ActiveTool != null ? toolManager.ActiveTool.GetType().Name : "None", GUILayout.Width(100));
+            EditorGUILayout.TextField(toolManager.ActiveTool != null ? toolManager.ActiveTool.GetType().Name : "None");
             GUI.enabled = true;
-            EditorGUILayout.EndHorizontal();
+            EditorGUILayout.EndVertical();
 
-            EditorGUILayout.Space();
-            if (GUILayout.Button("Force Refresh Tool List"))
+            if (GUILayout.Button("Force Re-Initialize"))
             {
-                UpdateToolList();
+                toolManager.Initialize();
             }
 
-            if (serializedObject.ApplyModifiedProperties())
-            {
-                EditorUtility.SetDirty(toolManager);
-            }
+            serializedObject.ApplyModifiedProperties();
         }
     }
 }

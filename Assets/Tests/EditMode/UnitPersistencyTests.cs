@@ -46,9 +46,9 @@ namespace HexGame.Tests
             testVizGO = new GameObject("TestVizPrefab");
             testViz = testVizGO.AddComponent<SimpleUnitVisualization>();
 
-            // Assign via reflection
-            unitTool.GetType().GetField("activeUnitSet", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).SetValue(unitTool, testSet);
-            unitTool.GetType().GetField("unitVisualizationPrefab", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).SetValue(unitTool, testViz);
+            // Setup Manager
+            unitManager.activeUnitSet = testSet;
+            unitManager.unitVisualizationPrefab = testViz;
 
             testPath = Path.Combine(Application.temporaryCachePath, "test_units.json");
         }
@@ -70,7 +70,7 @@ namespace HexGame.Tests
             Hex targetHex = manager.GetHexView(manager.Grid.GetHexAt(1, 1));
             Assert.IsNotNull(targetHex, "Target hex view should exist.");
 
-            unitManager.SpawnUnit(testSet, 0, 0, targetHex, testViz);
+            unitManager.SpawnUnit(0, 0, targetHex);
             Assert.IsNotNull(targetHex.Data.Unit, "Unit should be assigned to hex data.");
 
             // Act: Save and Load
@@ -81,7 +81,7 @@ namespace HexGame.Tests
             unitManager.EraseAllUnits();
             Assert.IsNull(targetHex.Data.Unit, "Hex unit should be null after erase.");
 
-            unitManager.LoadUnits(testPath, testSet, testViz);
+            unitManager.LoadUnits(testPath);
 
             // Assert
             Assert.IsNotNull(targetHex.Data.Unit, "Unit should be restored after load.");
@@ -94,7 +94,7 @@ namespace HexGame.Tests
             // 1. Place unit at (2, 2)
             HexData dataAt22 = manager.Grid.GetHexAt(2, 2);
             Hex hexAt22 = manager.GetHexView(dataAt22);
-            unitManager.SpawnUnit(testSet, 0, 0, hexAt22, testViz);
+            unitManager.SpawnUnit(0, 0, hexAt22);
             
             Vector3 originalPos = hexAt22.transform.position;
             Assert.AreEqual(originalPos.x, hexAt22.Data.Unit.transform.position.x, 0.01f);
@@ -103,15 +103,14 @@ namespace HexGame.Tests
             GridCreator creator = managerGO.GetComponent<GridCreator>();
             creator.GenerateGrid(); // This clears hexes and rebuilds them
 
-            // 3. Check position - BUG: Should be at (2,2) world pos, but will be at (0,0)
+            // 3. Check position
             Unit unit = unitManager.GetComponentInChildren<Unit>();
             Assert.IsNotNull(unit, "Unit should still exist.");
-            
+
             // Get new hex at (2,2)
             Hex newHexAt22 = manager.GetHexView(manager.Grid.GetHexAt(2, 2));
             Vector3 expectedPos = newHexAt22.transform.position;
-            
-            // This assertion is expected to FAIL to confirm the bug
+
             Assert.AreEqual(expectedPos.x, unit.transform.position.x, 0.01f, "Unit should be at its correct hex position after regeneration.");
         }
     }

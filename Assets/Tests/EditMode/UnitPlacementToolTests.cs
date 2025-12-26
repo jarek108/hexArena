@@ -51,14 +51,9 @@ namespace HexGame.Tests
             testVizGO = new GameObject("TestViz");
             testViz = testVizGO.AddComponent<SimpleUnitVisualization>();
            
-            // Assign via reflection for private fields
-            var toolType = unitTool.GetType();
-            
-            var setField = toolType.GetField("activeUnitSet", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            setField.SetValue(unitTool, testSet);
-
-            var vizField = toolType.GetField("unitVisualizationPrefab", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            vizField.SetValue(unitTool, testViz);
+            // Assign Setup to Manager
+            unitManager.activeUnitSet = testSet;
+            unitManager.unitVisualizationPrefab = testViz;
 
             yield return null;
         }

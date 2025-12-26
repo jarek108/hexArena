@@ -3,69 +3,63 @@ using System.Collections.Generic;
 
 namespace HexGame.Tools
 {
-    public abstract class BrushTool : BaseTool
+    public abstract class BrushTool : MonoBehaviour, IActiveTool
     {
-        [SerializeField] [Range(1, 10)] protected int brushSize = 1;
-        protected List<HexData> lastHighlightedHexes = new List<HexData>();
+        public bool IsEnabled { get; set; }
 
-        public override void OnDeactivate()
+        [SerializeField] [Range(1, 5)] protected int brushSize = 1;
+
+        public virtual bool CheckRequirements(out string reason)
         {
-            base.OnDeactivate();
-            ClearHighlights();
+            reason = string.Empty;
+            return true;
         }
 
-        public override void HandleInput(Hex hoveredHex)
+        public virtual void OnActivate()
         {
-            base.HandleInput(hoveredHex);
+            IsEnabled = true;
+        }
+
+        public virtual void OnDeactivate()
+        {
+            IsEnabled = false;
+        }
+
+        public virtual void HandleInput(Hex hoveredHex)
+        {
             if (!IsEnabled || hoveredHex == null) return;
-
-            // Handle Brush Size adjustment via InputManager
-            int scrollStep = InputManager.Instance.GetScrollStep();
-            if (scrollStep != 0)
-            {
-                int oldSize = brushSize;
-                brushSize = Mathf.Clamp(brushSize + scrollStep, 1, 10);
-
-                if (oldSize != brushSize)
-                {
-                    // Refresh visuals for the new size
-                    HandleHighlighting(hoveredHex, hoveredHex);
-                }
-            }
         }
 
-        public override void HandleHighlighting(Hex oldHex, Hex newHex)
+        public virtual void HandleHighlighting(Hex oldHex, Hex newHex)
         {
             if (!IsEnabled) return;
 
-            ClearHighlights();
+            // Simple highlighting logic
+            var manager = FindFirstObjectByType<GridVisualizationManager>() ?? GridVisualizationManager.Instance;
+            if (manager == null || manager.Grid == null) return;
 
-            if (newHex != null && newHex.Data != null)
+            if (oldHex != null)
             {
-                var manager = FindFirstObjectByType<GridVisualizationManager>() ?? GridVisualizationManager.Instance;
-                if (manager == null || manager.Grid == null) return;
-
-                lastHighlightedHexes = manager.Grid.GetHexesInRange(newHex.Data, brushSize - 1);
-                foreach (var hexData in lastHighlightedHexes)
+                var lastHighlightedHexes = manager.Grid.GetHexesInRange(oldHex.Data, brushSize - 1);
+                foreach (var hData in lastHighlightedHexes)
                 {
-                    hexData.AddState(HexState.Hovered);
+                    hData.RemoveState(HexState.Hovered);
                 }
             }
-        }
 
-        protected virtual void ClearHighlights()
-        {
-            foreach (var hexData in lastHighlightedHexes)
+            if (newHex != null)
             {
-                if (hexData != null) hexData.RemoveState(HexState.Hovered);
+                var currentHighlightedHexes = manager.Grid.GetHexesInRange(newHex.Data, brushSize - 1);
+                foreach (var hData in currentHighlightedHexes)
+                {
+                    hData.AddState(HexState.Hovered);
+                }
             }
-            lastHighlightedHexes.Clear();
         }
 
         protected List<HexData> GetAffectedHexes(Hex center)
         {
-            if (center == null || center.Data == null) return new List<HexData>();
-
+            if (center == null) return new List<HexData>();
             var manager = FindFirstObjectByType<GridVisualizationManager>() ?? GridVisualizationManager.Instance;
             if (manager == null || manager.Grid == null) return new List<HexData>();
 

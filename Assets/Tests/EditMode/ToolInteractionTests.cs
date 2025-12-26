@@ -49,6 +49,7 @@ namespace HexGame.Tests
             Hex hexA = manager.GetHexView(manager.Grid.GetHexAt(1, 1));
             Hex hexB = manager.GetHexView(manager.Grid.GetHexAt(2, 2));
             
+            // Note: ManualUpdate calls HandleHighlighting, which doesn't check Input System
             toolManager.ManualUpdate(hexA); 
             yield return null;
 

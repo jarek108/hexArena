@@ -8,8 +8,9 @@ namespace HexGame
 {
     public class ToolManager : MonoBehaviour
     {
-        private List<ITool> tools;
+        private List<ITool> tools = new List<ITool>();
         public ITool ActiveTool { get; private set; }
+        private ITool lastOngoingTool;
 
         [SerializeField] public string activeToolName; // For inspector visibility
 
@@ -50,44 +51,54 @@ namespace HexGame
             if (Mouse.current == null) return;
             if (ActiveTool == null) return;
 
-            // Lazy load if missing (e.g. created after ToolManager)
             if (hexRaycaster == null) hexRaycaster = FindFirstObjectByType<HexRaycaster>();
             if (hexRaycaster == null) return;
 
             ManualUpdate(hexRaycaster.currentHex);
         }
 
-        // Exposed for testing and manual overrides
         public void ManualUpdate(Hex hoveredHex)
         {
             if (ActiveTool == null) return;
 
-            // Handle Highlighting transitions
             if (hoveredHex != lastHoveredHex)
             {
-                (ActiveTool as IHighlightingTool)?.HandleHighlighting(lastHoveredHex, hoveredHex);
+                (ActiveTool as IActiveTool)?.HandleHighlighting(lastHoveredHex, hoveredHex);
                 lastHoveredHex = hoveredHex;
             }
 
-            // Pass input to the active tool
             ActiveTool.HandleInput(hoveredHex);
         }
 
         public void SetActiveTool(ITool tool)
         {
+            if (tool == null) return;
+
+            if (!tool.CheckRequirements(out string reason))
+            {
+                Debug.LogWarning($"ToolManager: Cannot activate tool '{tool.GetType().Name}'. Reason: {reason}");
+                return;
+            }
+
+            if (tool is IToggleTool)
+            {
+                tool.OnActivate();
+                return;
+            }
+
             if (ActiveTool != null)
             {
-                // Ensure we clean up highlights from the previous tool
                 if (lastHoveredHex != null)
                 {
-                    (ActiveTool as IHighlightingTool)?.HandleHighlighting(lastHoveredHex, null);
+                    (ActiveTool as IActiveTool)?.HandleHighlighting(lastHoveredHex, null);
                 }
                 
                 ActiveTool.OnDeactivate();
             }
             
             ActiveTool = tool;
-            lastHoveredHex = null; // Reset tracked hover for the new tool
+            lastOngoingTool = tool;
+            lastHoveredHex = null;
 
             if (ActiveTool != null)
             {

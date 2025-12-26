@@ -36,6 +36,15 @@ namespace HexGame.Editor
             serializedObject.Update();
             UnitManager manager = (UnitManager)target;
 
+            // --- Setup Section ---
+            EditorGUILayout.BeginVertical("box");
+            EditorGUILayout.LabelField("Unit Setup", EditorStyles.boldLabel);
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("unitVisualizationPrefab"));
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("activeUnitSet"));
+            EditorGUILayout.EndVertical();
+
+            EditorGUILayout.Space(5);
+
             // --- Persistence Section ---
             EditorGUILayout.BeginVertical("box");
             EditorGUILayout.LabelField("Persistence", EditorStyles.boldLabel);
@@ -49,7 +58,7 @@ namespace HexGame.Editor
                 selectedLayoutIndex = EditorGUILayout.Popup(selectedLayoutIndex, availableLayouts);
                 if (GUILayout.Button("Load", GUILayout.Width(60)))
                 {
-                    LoadUnitsInternal(manager, Path.Combine(defaultDir, availableLayouts[selectedLayoutIndex]));
+                    manager.LoadUnits(Path.Combine(defaultDir, availableLayouts[selectedLayoutIndex]));
                 }
             }
             else
@@ -76,7 +85,7 @@ namespace HexGame.Editor
                 string path = EditorUtility.OpenFilePanel("Load Units", defaultDir, "json");
                 if (!string.IsNullOrEmpty(path)) 
                 {
-                    LoadUnitsInternal(manager, path);
+                    manager.LoadUnits(path);
                     GUIUtility.ExitGUI();
                 }
             }
@@ -103,23 +112,6 @@ namespace HexGame.Editor
             EditorGUILayout.EndVertical();
 
             serializedObject.ApplyModifiedProperties();
-        }
-
-        private void LoadUnitsInternal(UnitManager manager, string path)
-        {
-            var tool = Object.FindFirstObjectByType<Tools.UnitPlacementTool>();
-            UnitSet set = null;
-            UnitVisualization viz = null;
-
-            if (tool != null)
-            {
-                var toolSO = new SerializedObject(tool);
-                var setProp = toolSO.FindProperty("activeUnitSet");
-                var vizProp = toolSO.FindProperty("unitVisualizationPrefab");
-                if (setProp != null) set = setProp.objectReferenceValue as UnitSet;
-                if (vizProp != null) viz = vizProp.objectReferenceValue as UnitVisualization;
-            }
-            manager.LoadUnits(path, set, viz);
         }
     }
 }

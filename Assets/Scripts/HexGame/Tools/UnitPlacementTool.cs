@@ -7,11 +7,20 @@ namespace HexGame.Tools
 {
     public class UnitPlacementTool : BrushTool
     {
-        [Header("Unit Placement Settings")]
-        [SerializeField] private UnitVisualization unitVisualizationPrefab;
-        [SerializeField] private UnitSet activeUnitSet;
+        [Header("Selection Settings")]
         [SerializeField] private int selectedUnitIndex = 0;
         [SerializeField] private int selectedTeamId = 0;
+
+        public override bool CheckRequirements(out string reason)
+        {
+            if (UnitManager.Instance == null || UnitManager.Instance.ActiveUnitSet == null || UnitManager.Instance.ActiveUnitSet.units.Count == 0)
+            {
+                reason = "UnitManager has no active UnitSet. Assign a set before placing units.";
+                return false;
+            }
+            reason = string.Empty;
+            return true;
+        }
 
         [Header("Ghost Visuals")]
         [SerializeField, Range(0f, 1f)] private float ghostTransparency = 0.5f;
@@ -63,7 +72,8 @@ namespace HexGame.Tools
 
         private void RotateUnitSelection(Hex hoveredHex)
         {
-            if (Keyboard.current == null || activeUnitSet == null || activeUnitSet.units.Count == 0) return;
+            var unitManager = UnitManager.Instance;
+            if (Keyboard.current == null || unitManager == null || unitManager.ActiveUnitSet == null || unitManager.ActiveUnitSet.units.Count == 0) return;
 
             int direction = 0;
             if (Keyboard.current.numpadPlusKey.wasPressedThisFrame || Keyboard.current.equalsKey.wasPressedThisFrame) direction = 1;
@@ -71,7 +81,7 @@ namespace HexGame.Tools
 
             if (direction != 0)
             {
-                int count = activeUnitSet.units.Count;
+                int count = unitManager.ActiveUnitSet.units.Count;
                 selectedUnitIndex = (selectedUnitIndex + direction + count) % count;
                 
                 RefreshGhostPool();
@@ -85,7 +95,7 @@ namespace HexGame.Tools
 
         private void EraseUnits(Hex centerHex)
         {
-            var unitManager = FindFirstObjectByType<UnitManager>();
+            var unitManager = UnitManager.Instance;
             if (unitManager == null) return;
 
             List<HexData> affectedHexes = GetAffectedHexes(centerHex);
@@ -133,17 +143,18 @@ namespace HexGame.Tools
 
         private void RefreshGhostPool()
         {
-            if (unitVisualizationPrefab == null || activeUnitSet == null || selectedUnitIndex < 0 || selectedUnitIndex >= activeUnitSet.units.Count)
+            var unitManager = UnitManager.Instance;
+            if (unitManager == null || unitManager.unitVisualizationPrefab == null || unitManager.ActiveUnitSet == null || selectedUnitIndex < 0 || selectedUnitIndex >= unitManager.ActiveUnitSet.units.Count)
             {
                 ClearGhostPool();
                 return;
             }
 
-            if (lastGhostIndex != selectedUnitIndex || lastGhostPrefab != unitVisualizationPrefab)
+            if (lastGhostIndex != selectedUnitIndex || lastGhostPrefab != unitManager.unitVisualizationPrefab)
             {
                 ClearGhostPool();
                 lastGhostIndex = selectedUnitIndex;
-                lastGhostPrefab = unitVisualizationPrefab;
+                lastGhostPrefab = unitManager.unitVisualizationPrefab;
             }
         }
 
@@ -172,18 +183,16 @@ namespace HexGame.Tools
 
         private void CreateNewGhostInstance()
         {
-            if (unitVisualizationPrefab == null) return;
+            var unitManager = UnitManager.Instance;
+            if (unitManager == null || unitManager.unitVisualizationPrefab == null) return;
 
-            var unitManager = FindFirstObjectByType<UnitManager>();
-            Transform container = unitManager != null ? unitManager.transform : transform;
-
-            UnitVisualization ghost = Instantiate(unitVisualizationPrefab, container);
+            UnitVisualization ghost = Instantiate(unitManager.unitVisualizationPrefab, unitManager.transform);
             ghost.gameObject.name = "UnitPlacement_PreviewGhost";
             ghost.gameObject.SetActive(false);
             
-            if (activeUnitSet != null && selectedUnitIndex >= 0 && selectedUnitIndex < activeUnitSet.units.Count)
+            if (unitManager.ActiveUnitSet != null && selectedUnitIndex >= 0 && selectedUnitIndex < unitManager.ActiveUnitSet.units.Count)
             {
-                ghost.SetPreviewIdentity(activeUnitSet.units[selectedUnitIndex].Name);
+                ghost.SetPreviewIdentity(unitManager.ActiveUnitSet.units[selectedUnitIndex].Name);
             }
 
             ApplyGhostVisuals(ghost.gameObject);
@@ -219,7 +228,7 @@ namespace HexGame.Tools
 
         private void PlaceUnits(Hex centerHex)
         {
-            var unitManager = FindFirstObjectByType<UnitManager>();
+            var unitManager = UnitManager.Instance;
             if (unitManager == null) return;
 
             List<HexData> affectedHexes = GetAffectedHexes(centerHex);
@@ -228,7 +237,7 @@ namespace HexGame.Tools
             foreach (var hexData in affectedHexes)
             {
                 Hex targetHex = manager.GetHexView(hexData);
-                unitManager.SpawnUnit(activeUnitSet, selectedUnitIndex, selectedTeamId, targetHex, unitVisualizationPrefab);
+                unitManager.SpawnUnit(selectedUnitIndex, selectedTeamId, targetHex);
             }
         }
     }
