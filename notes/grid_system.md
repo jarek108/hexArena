@@ -4,7 +4,7 @@
 The Grid System is the foundation of the game, designed with a strict separation between logical data and visual representation. This **Data-Driven Architecture** ensures that gameplay logic remains testable and decoupled from the Unity Engine's visual layer.
 
 ## Core Principles
-1.  **Logic First:** The "truth" of the game state lives in pure C# classes (`HexData`, `HexGrid`). Unity `GameObjects` are merely visual puppets that reflect this state.
+1.  **Logic First:** The "truth" of the game state lives in pure C# classes (`HexData`, `Grid`). Unity `GameObjects` are merely visual puppets that reflect this state.
 2.  **Reactive Views:** Visual components (`Hex` MonoBehaviour) listen for state changes on the data layer and update themselves. They do not drive logic.
 3.  **Visual Authority:** Styling rules (colors, rims, highlighting) are centralized in the `HexStateVisualizer`, avoiding scattered visual logic.
 4.  **Tool-Based Interaction:** Interaction is handled by dedicated tools (`SelectionTool`, `GridCreator`) rather than the core manager, keeping classes focused (Single Responsibility Principle).
@@ -21,7 +21,7 @@ This layer manages the raw data and rules of the hex grid. It has no dependencie
     *   **Events**: Exposes `OnStateChanged` events that the View layer subscribes to.
     *   **Serialization**: Marked `[Serializable]` for JSON persistence via `GridSaveData`.
 
-*   **`HexGrid`**: The container logic.
+*   **`Grid`**: The container logic.
     *   Manages the collection of `HexData`.
     *   Provides spatial queries (e.g., `GetHexAt(q, r)`).
     *   Handles grid boundaries and dimensions.
@@ -42,9 +42,9 @@ This layer handles the visual representation in the scene.
     *   **Editor Synchronization**: In Editor mode, changes to the "Default" settings immediately propagate to the shared Material, ensuring the scene looks correct even without active play mode overrides.
 
 ### 3. Management & Creation Layer
-*   **`HexGridManager`**:
+*   **`GridVisualizationManager`**:
     *   **Pure Visualizer**: Responsible for the physical layout (Mesh generation/instantiation) and coordinate math (`HexToWorld`).
-    *   **Lifecycle**: It initializes the visual scene based on a `HexGrid` object passed to `VisualizeGrid`.
+    *   **Lifecycle**: It initializes the visual scene based on a `Grid` object passed to `VisualizeGrid`.
     *   **Resource Holder**: Holds references to shared Materials (`HexSurfaceMaterial`, `HexSideMaterial`) and Meshes.
 
 *   **`GridCreator`**:

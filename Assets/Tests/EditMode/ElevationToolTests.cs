@@ -23,7 +23,7 @@ namespace HexGame.Tests
             elevationTool = managerGO.AddComponent<ElevationTool>();
             
             // Create a small grid and get a hex from it
-            HexGrid grid = new HexGrid(5, 5);
+            Grid grid = new Grid(5, 5);
             for (int r = 0; r < 5; r++)
                 for (int q = 0; q < 5; q++)
                     grid.AddHex(new HexData(q, r));

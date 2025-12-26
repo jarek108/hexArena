@@ -28,7 +28,7 @@ namespace HexGame.Tests
             var caster = managerGO.AddComponent<HexRaycaster>();
             
             // Create a small grid
-            HexGrid grid = new HexGrid(5, 5);
+            Grid grid = new Grid(5, 5);
             for (int r = 0; r < 5; r++)
                 for (int q = 0; q < 5; q++)
                     grid.AddHex(new HexData(q, r));

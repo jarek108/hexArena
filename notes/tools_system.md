@@ -47,7 +47,7 @@ The central hub for interaction.
 *   **`BrushTool`**: Base class or utility for tools requiring variable brush sizes.
 
 #### Utilities (IToggleTool)
-*   **`HexGridTool`**: Toggles the visibility of the grid overlay.
+*   **`GridTool`**: Toggles the visibility of the grid overlay.
 
 ## UI Integration
 *   **`IconManager`:**

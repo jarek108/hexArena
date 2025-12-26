@@ -71,6 +71,38 @@ namespace HexGame.Tests
         }
 
         [Test]
+        public void RefreshUI_WithoutClearing_CreatesDuplicates()
+        {
+            // Arrange
+            iconManager.icons.Add(new IconData { iconName = "Test1" });
+            
+            // Act
+            iconManager.RefreshUI();
+            iconManager.RefreshUI(); // Calling it again
+
+            // Assert
+            // Currently, IconManager.RefreshUI only clears children if Application.isPlaying is true.
+            // In EditMode (tests), it should currently duplicate.
+            Assert.AreNotEqual(1, iconManager.transform.childCount, "Expected duplication because RefreshUI doesn't clear in EditMode.");
+        }
+
+        [Test]
+        public void RefreshUI_WithClear_DoesNotCreateDuplicates()
+        {
+            // Arrange
+            iconManager.icons.Add(new IconData { iconName = "Test1" });
+            
+            // Act
+            iconManager.ClearUIImmediate();
+            iconManager.RefreshUI();
+            iconManager.ClearUIImmediate();
+            iconManager.RefreshUI();
+
+            // Assert
+            Assert.AreEqual(1, iconManager.transform.childCount, "Should only have 1 child object after manual clearing.");
+        }
+
+        [Test]
         public void RefreshUI_Assigns_Sprites_To_Images()
         {
             // Arrange

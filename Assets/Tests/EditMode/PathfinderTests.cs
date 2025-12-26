@@ -2,18 +2,19 @@ using System.Collections.Generic;
 using NUnit.Framework;
 using UnityEngine;
 using HexGame;
+using Grid = HexGame.Grid;
 
 namespace HexGame.Tests
 {
     [TestFixture]
     public class PathfinderTests
     {
-        private HexGrid grid;
+        private Grid grid;
 
         [SetUp]
         public void SetUp()
         {
-            grid = new HexGrid(10, 10);
+            grid = new Grid(10, 10);
             for (int q = 0; q < 10; q++)
             {
                 for (int r = 0; r < 10; r++)
@@ -65,7 +66,7 @@ namespace HexGame.Tests
         [Test]
         public void FindPath_DisconnectedGrid_ReturnsFailure()
         {
-            HexGrid smallGrid = new HexGrid(2, 2);
+            Grid smallGrid = new Grid(2, 2);
             HexData start = new HexData(0, 0);
             HexData target = new HexData(5, 5); // Target not in grid
             smallGrid.AddHex(start);
