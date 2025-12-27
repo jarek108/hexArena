@@ -6,24 +6,33 @@
 
 ## Architecture
 
-We follow a **Data-Driven Architecture** prioritizing strict Logic/View separation. High-level summaries are below; for detailed architectural breakdowns, refer to the specific system notes in the `notes/` folder.
+We follow a **Data-Driven Architecture** prioritizing strict Logic/View separation. High-level summaries are below; for detailed architectural breakdowns, refer to the specific system notes in the `designs/` folder.
 
 ### Systems
-*   **Grid System** (Detailed in `notes/grid_system.md`):
+*   **Grid System** (Detailed in `designs/grid_system.md`):
     *   **Logic**: `HexData` & `Grid` (Pure C#).
     *   **View**: `Hex`, `GridVisualizationManager`.
-    *   **Interaction**: `ToolManager` (Central Hub), `PathfindingTool` (Selection/Pathing), & various Editor Tools (`TerrainTool`, `ElevationTool`, etc.).
-    *   **Principle**: Logic dictates state; View reacts. `GridVisualizationManager` is the sole authority on hex styling (rims/colors) based on abstract state priorities (strings) loaded from JSON.
+    *   **Principle**: Logic dictates state; View reacts. `GridVisualizationManager` resolves styling (rims/colors) based on string-based state priorities. Visibility is gated by a `priority > 0` check (negative priorities hide states while preserving data).
+*   **Unit System** (Detailed in `designs/unit_system.md`):
+    *   **Data**: `UnitSet`, `UnitSchema` (ScriptableObjects).
+    *   **Logic**: `Unit` (Unique `Id`, stats, team affiliation).
+    *   **View**: `UnitVisualization` (Models/Anims).
+    *   **Principle**: Units are grid-aware agents that link to `HexData`. Inspector changes trigger real-time re-initialization and grid synchronization.
+*   **Ruleset & Game Logic** (Detailed in `designs/grid_system.md` & `unit_system.md`):
+    *   **Logic**: `Ruleset` (Abstract SO), `BattleBrothersRuleset`.
+    *   **Management**: `GameMaster` (Persistent Singleton).
+    *   **Principle**: The Ruleset is the game's "brain," dictating movement costs and grid-state side effects (e.g., Zone of Control). The `Pathfinder` and `Unit` systems query the `GameMaster` to execute specific gameplay rules.
+*   **Interaction**: `ToolManager` (Central Hub), `PathfindingTool` (Real-time pathing), `ToggleTool` (Base for utility triggers like `GridTool` and `ZoCTool`), and various Editor Tools.
 
 # Workflow and coding standards
 
 ## Documentation workflow
 *   **Central Hub**: `GEMINI.md` contains high-level context, environment details, and the active session log.
-*   **System Documentation**: Detailed architecture, decision logs, and structures for specific systems live in `notes/<system_name>.md`.
+*   **System Documentation**: Detailed architecture, decision logs, and structures for specific systems live in `designs/<system_name>.md`.
 *   **Policy**:
-    *   Always keep documentation high-level in the root file and detailed in the notes.
+    *   Always keep documentation high-level in the root file and detailed in the designs.
     *   **User Confirmation**: Never delete or significantly restructure documentation without explicit user confirmation.
-    *   Update `notes/` files as features are completed and verified.
+    *   Update `designs/` files as features are completed and verified.
 
 ## TDD Feature introduction workflow
 1.  **Understand & Strategize:** Analyze the required feature, propose options, select approach with the user.

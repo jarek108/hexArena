@@ -14,7 +14,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: HexGame::HexGame.Units.UnitSet
   setName: Core
   schema: {fileID: 11400000, guid: 91f62f7907962be4aa29d1d56e7e015b, type: 2}
-  cachedSchemaHash: HP|FAT|RES|INI|MAT|RAT|MDF|RDF|AP|VIS|MRNG|RRNG
   units:
   - Name: Shielded Warrior
     Stats:
@@ -105,7 +104,7 @@ MonoBehaviour:
     - id: INI
       value: 110
     - id: MAT
-      value: 40
+      value: 0
     - id: RAT
       value: 70
     - id: MDF
@@ -117,7 +116,7 @@ MonoBehaviour:
     - id: VIS
       value: 8
     - id: MRNG
-      value: 1
+      value: 0
     - id: RRNG
       value: 6
   - Name: Skeleton
