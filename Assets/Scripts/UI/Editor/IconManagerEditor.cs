@@ -39,6 +39,7 @@ namespace HexGame.Editor
 
             EditorGUILayout.LabelField("Settings", EditorStyles.boldLabel);
             EditorGUILayout.PropertyField(serializedObject.FindProperty("iconPrefab"));
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("iconFolder"));
             EditorGUILayout.PropertyField(serializedObject.FindProperty("iconSize"));
             EditorGUILayout.PropertyField(serializedObject.FindProperty("backgroundBorderSize"));
             EditorGUILayout.PropertyField(serializedObject.FindProperty("backgroundColor"));
@@ -140,7 +141,7 @@ namespace HexGame.Editor
                 newData.onClick = new UnityEngine.Events.UnityEvent();
                 
                 // Assign Sprite
-                newData.iconSprite = FindSpriteForTool(cleanName);
+                newData.iconSprite = FindSpriteForTool(cleanName, iconManager.iconFolder);
 
                 // Assign Hotkey
                 string hotkey = AssignHotkey(toolTypeName, usedHotkeys);
@@ -168,14 +169,14 @@ namespace HexGame.Editor
             }
         }
 
-        private Sprite FindSpriteForTool(string name)
+        private Sprite FindSpriteForTool(string name, string iconFolder)
         {
             string[] searchNames = { $"Icon_{name}", "Icon_Select" };
             if (name == "Pathfinding") searchNames = new[] { "Icon_Pathfinding", "Icon_Select" };
 
             foreach (var searchName in searchNames)
             {
-                string[] guids = AssetDatabase.FindAssets($"{searchName} t:Sprite", new[] { "Assets/Art/ToolIcons" });
+                string[] guids = AssetDatabase.FindAssets($"{searchName} t:Sprite", new[] { iconFolder });
                 if (guids.Length > 0)
                 {
                     string path = AssetDatabase.GUIDToAssetPath(guids[0]);

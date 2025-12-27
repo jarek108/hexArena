@@ -21,11 +21,28 @@ namespace HexGame.Editor
             EditorGUILayout.LabelField("Unit Identity", EditorStyles.boldLabel);
 
             GUI.enabled = false;
-            EditorGUILayout.TextField("Unit Name", unit.unitName);
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("unitSet"));
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("unitIndex"));
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("teamId"));
+            EditorGUILayout.IntField("Id", unit.Id);
+            EditorGUILayout.TextField("Type", unit.unitName);
             GUI.enabled = true;
+
+            EditorGUI.BeginChangeCheck();
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("unitSet"));
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("unitIndex"), new GUIContent("Type Index"));
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("teamId"));
+            
+            if (EditorGUI.EndChangeCheck())
+            {
+                serializedObject.ApplyModifiedProperties();
+                
+                // Re-initialize logic and refresh links
+                unit.Initialize(unit.unitSet, (int)serializedObject.FindProperty("unitIndex").intValue, unit.teamId);
+                if (unit.CurrentHex != null)
+                {
+                    unit.SetHex(unit.CurrentHex);
+                }
+                
+                EditorUtility.SetDirty(unit);
+            }
 
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("Status", EditorStyles.boldLabel);

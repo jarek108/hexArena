@@ -50,12 +50,42 @@ namespace HexGame
 
         public override void OnEntry(Unit unit, HexData hex)
         {
-            // Future: Apply terrain effects or trigger traps
+            if (unit == null || hex == null) return;
+            
+            hex.AddState("Occupied_" + unit.teamId);
+
+            // Add Zone of Control to neighbors
+            var grid = GridVisualizationManager.Instance?.Grid;
+            if (grid != null)
+            {
+                string teamZocState = "ZoC_" + unit.teamId;
+                string unitZocState = $"ZoC_{unit.teamId}_{unit.Id}";
+                foreach (var neighbor in grid.GetNeighbors(hex))
+                {
+                    neighbor.AddState(teamZocState);
+                    neighbor.AddState(unitZocState);
+                }
+            }
         }
 
         public override void OnDeparture(Unit unit, HexData hex)
         {
-            // Future: Check Zone of Control (ZoC) or hidden enemies
+            if (unit == null || hex == null) return;
+
+            hex.RemoveState("Occupied_" + unit.teamId);
+
+            // Remove Zone of Control from neighbors
+            var grid = GridVisualizationManager.Instance?.Grid;
+            if (grid != null)
+            {
+                string teamZocState = "ZoC_" + unit.teamId;
+                string unitZocState = $"ZoC_{unit.teamId}_{unit.Id}";
+                foreach (var neighbor in grid.GetNeighbors(hex))
+                {
+                    neighbor.RemoveState(teamZocState);
+                    neighbor.RemoveState(unitZocState);
+                }
+            }
         }
     }
 }

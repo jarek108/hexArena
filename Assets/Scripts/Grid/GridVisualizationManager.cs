@@ -69,6 +69,17 @@ namespace HexGame
             RefreshVisuals();
         }
 
+        public void SortSettings()
+        {
+            if (stateSettings != null)
+            {
+                // Order by priority descending, keeping Default at the very bottom (0)
+                stateSettings = stateSettings
+                    .OrderByDescending(s => s.priority)
+                    .ToList();
+            }
+        }
+
         public void LoadStateSettings(string explicitPath = null)
         {
             string path = explicitPath;
@@ -134,6 +145,16 @@ namespace HexGame
             }
         }
 
+        public RimSettings GetDefaultRimSettings()
+        {
+            var setting = stateSettings.FirstOrDefault(s => s.state == "Default");
+            if (string.IsNullOrEmpty(setting.state))
+            {
+                return new RimSettings { color = Color.black, width = showGrid ? gridWidth : 0f, pulsation = 0f };
+            }
+            return setting.visuals;
+        }
+
         public void RefreshVisuals(Hex hex)
         {
             if (hex == null || hex.Data == null || stateSettings == null || hex.Data.States == null) return;
@@ -141,35 +162,39 @@ namespace HexGame
             // Apply base color based on terrain
             SetHexColor(hex, GetDefaultHexColor(hex));
 
-            // Find settings for all active states that are defined in our settings
-            var activeDefinedSettings = stateSettings
-                .Where(s => s.state != "Default" && hex.Data.States.Contains(s.state))
+            // 1. Get all active states on this hex
+            // 2. Filter for those defined in settings with priority > 0
+            // 3. Exclude unit-specific ZoC (e.g., ZoC_0_123) which has 2 underscores
+            var bestSetting = stateSettings
+                .Where(s => s.priority > 0 && 
+                            hex.Data.States.Contains(s.state) && 
+                            !IsUnitSpecificZoC(s.state))
                 .OrderByDescending(s => s.priority)
-                .ToList();
+                .FirstOrDefault();
 
-            StateSetting bestSetting;
-            if (activeDefinedSettings.Count > 0)
+            // Fallback to Default if no positive-priority state is found
+            if (string.IsNullOrEmpty(bestSetting.state))
             {
-                bestSetting = activeDefinedSettings[0];
+                SetHexRim(hex, GetDefaultRimSettings());
             }
             else
             {
-                // Fallback to Default
-                bestSetting = stateSettings.FirstOrDefault(s => s.state == "Default");
-                // If even Default is missing, use an empty setting
-                if (string.IsNullOrEmpty(bestSetting.state))
-                {
-                    bestSetting = new StateSetting { state = "Default", visuals = new RimSettings { color = Color.black, width = 0f } };
-                }
+                SetHexRim(hex, bestSetting.visuals);
             }
+        }
 
-            SetHexRim(hex, bestSetting.visuals);
+        private bool IsUnitSpecificZoC(string state)
+        {
+            if (!state.StartsWith("ZoC_")) return false;
+            int underscoreCount = 0;
+            foreach (char c in state) if (c == '_') underscoreCount++;
+            return underscoreCount >= 2;
         }
 
         private void UpdateGridVisibility()
         {
-            if (stateSettings == null) return;
-            var defaultIndex = stateSettings.FindIndex(s => s.state == "Default");
+            // If Default is in the list, update its width
+            int defaultIndex = stateSettings.FindIndex(s => s.state == "Default");
             if (defaultIndex != -1)
             {
                 var setting = stateSettings[defaultIndex];
@@ -181,11 +206,11 @@ namespace HexGame
         public void SyncMaterialWithDefault()
         {
             if (hexSurfaceMaterial == null) return;
-            var defaultSetting = stateSettings.FirstOrDefault(s => s.state == "Default");
+            var visuals = GetDefaultRimSettings();
             
-            hexSurfaceMaterial.SetColor("_RimColor", defaultSetting.visuals.color);
-            hexSurfaceMaterial.SetFloat("_RimWidth", defaultSetting.visuals.width);
-            hexSurfaceMaterial.SetFloat("_RimPulsationSpeed", defaultSetting.visuals.pulsation);
+            hexSurfaceMaterial.SetColor("_RimColor", visuals.color);
+            hexSurfaceMaterial.SetFloat("_RimWidth", visuals.width);
+            hexSurfaceMaterial.SetFloat("_RimPulsationSpeed", visuals.pulsation);
             
             #if UNITY_EDITOR
             if (!Application.isPlaying) EditorUtility.SetDirty(hexSurfaceMaterial);
@@ -470,12 +495,6 @@ namespace HexGame
                 case TerrainType.Desert: return colorDesert;
                 default: return Color.white;
             }
-        }
-
-        public RimSettings GetDefaultRimSettings() {
-            if (stateSettings == null || stateSettings.Count == 0) 
-                return new RimSettings { color = Color.black, width = 0f };
-            return stateSettings.FirstOrDefault(s => s.state == "Default").visuals;
         }
     }
 }

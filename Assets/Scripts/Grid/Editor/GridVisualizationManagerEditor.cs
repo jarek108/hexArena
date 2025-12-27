@@ -215,6 +215,21 @@ namespace HexGame.Editor
                     if (isDefault) gridWidthProp.floatValue = EditorGUILayout.Slider(gridWidthProp.floatValue, 0f, 1f);
                     else widthProp.floatValue = EditorGUILayout.Slider(widthProp.floatValue, 0f, 1f);
 
+                    // Move Buttons
+                    GUI.enabled = i > 0;
+                    if (GUILayout.Button("▲", GUILayout.Width(20)))
+                    {
+                        stateSettingsProp.MoveArrayElement(i, i - 1);
+                        break;
+                    }
+                    GUI.enabled = i < stateSettingsProp.arraySize - 1;
+                    if (GUILayout.Button("▼", GUILayout.Width(20)))
+                    {
+                        stateSettingsProp.MoveArrayElement(i, i + 1);
+                        break;
+                    }
+                    GUI.enabled = true;
+
                     if (GUILayout.Button("X", GUILayout.Width(20)))
                     {
                         stateSettingsProp.DeleteArrayElementAtIndex(i);

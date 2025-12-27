@@ -7,6 +7,8 @@ namespace HexGame
     [ExecuteAlways]
     public class Unit : MonoBehaviour
     {
+        public int Id => gameObject.GetInstanceID();
+
         public UnitSet unitSet;
         [SerializeField] private int unitIndex;
         public int teamId;
@@ -61,20 +63,21 @@ namespace HexGame
 
         public void SetHex(Hex hex)
         {
+            // 1. Departure from old hex
+            if (CurrentHex != null)
+            {
+                GameMaster.Instance?.ruleset?.OnDeparture(this, CurrentHex.Data);
+                // Only clear reference if we are actually changing to a new hex or null
+                if (CurrentHex != hex) CurrentHex.Unit = null;
+            }
+
             if (hex == null)
             {
-                if (CurrentHex != null) CurrentHex.Unit = null;
                 CurrentHex = null;
                 return;
             }
 
-            // If it's a different hex, clear the old one
-            if (CurrentHex != null && CurrentHex != hex)
-            {
-                GameMaster.Instance?.ruleset?.OnDeparture(this, CurrentHex.Data);
-                CurrentHex.Unit = null;
-            }
-
+            // 2. Entry to new hex
             CurrentHex = hex;
             CurrentHex.Unit = this;
             lastQ = hex.Q;

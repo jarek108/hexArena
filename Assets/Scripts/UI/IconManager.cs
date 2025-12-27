@@ -4,6 +4,8 @@ using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
 using UnityEngine.InputSystem;
+using HexGame.Tools;
+using System.Linq;
 
 namespace HexGame.UI
 {
@@ -24,6 +26,9 @@ namespace HexGame.UI
 
         [SerializeField]
         public GameObject iconPrefab;
+
+        [SerializeField]
+        public string iconFolder = "Assets/Art/ToolIcons";
         
         [SerializeField] [Range(16, 256)]
         public float iconSize = 64f;
@@ -82,20 +87,37 @@ namespace HexGame.UI
 
         private void UpdateSelectionHighlights()
         {
-            if (toolManager == null || toolManager.ActiveTool == null) return;
+            if (toolManager == null) return;
 
-            string activeToolTypeName = toolManager.ActiveTool.GetType().Name;
+            string activeToolTypeName = toolManager.ActiveTool != null ? toolManager.ActiveTool.GetType().Name : "None";
+
+            var allTools = toolManager.GetComponents<ITool>();
 
             foreach (Transform child in transform)
             {
-                // Assuming iconName in data matches the Tool class name or is contained in GameObject name
-                // In our setup, Go name is "Icon_" + data.iconName
-                // We should find the data associated with this child
                 Image bg = child.GetComponent<Image>();
                 if (bg == null) continue;
 
-                bool isActive = child.name.Contains(activeToolTypeName);
-                bg.color = isActive ? activeIconColor : backgroundColor;
+                // 1. Find the tool associated with this icon name
+                string toolName = child.name.Replace("Icon_", "");
+                var tool = allTools.FirstOrDefault(t => t.GetType().Name == toolName);
+
+                if (tool == null) continue;
+
+                bool shouldHighlight = false;
+
+                if (tool is ToggleTool toggle)
+                {
+                    // Toggles are highlighted if they are ON
+                    shouldHighlight = toggle.isActive;
+                }
+                else
+                {
+                    // Active tools are highlighted if they are CURRENTLY SELECTED
+                    shouldHighlight = (tool.GetType().Name == activeToolTypeName);
+                }
+
+                bg.color = shouldHighlight ? activeIconColor : backgroundColor;
             }
         }
 
@@ -202,6 +224,7 @@ namespace HexGame.UI
                         txt.text = data.hotkey?.ToUpper();
                         txt.color = hotkeyColor;
                         txt.fontSize = hotkeySize;
+                        txt.fontStyle = FontStyle.Bold;
                     }
                 }
             }

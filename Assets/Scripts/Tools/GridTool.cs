@@ -2,25 +2,25 @@ using UnityEngine;
 
 namespace HexGame.Tools
 {
-    public class GridTool : MonoBehaviour, IToggleTool
+    public class GridTool : ToggleTool
     {
-        public bool CheckRequirements(out string reason)
+        private void Start()
         {
-            reason = string.Empty;
-            return true;
-        }
-
-        public void OnActivate()
-        {
-            var gridManager = FindFirstObjectByType<GridVisualizationManager>() ?? GridVisualizationManager.Instance;
+            var gridManager = GridVisualizationManager.Instance ?? FindFirstObjectByType<GridVisualizationManager>();
             if (gridManager != null)
             {
-                gridManager.ToggleShowGrid();
+                isActive = gridManager.showGrid;
             }
         }
 
-        public void OnDeactivate() { }
-
-        public void HandleInput(Hex hoveredHex) { }
+        public override void OnToggle(bool newState)
+        {
+            var gridManager = GridVisualizationManager.Instance ?? FindFirstObjectByType<GridVisualizationManager>();
+            if (gridManager != null)
+            {
+                gridManager.ToggleShowGrid(); 
+                isActive = gridManager.showGrid;
+            }
+        }
     }
 }
