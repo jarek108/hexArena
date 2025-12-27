@@ -24,16 +24,36 @@ namespace HexGame
             float delta = Mathf.Abs(toHex.Elevation - fromHex.Elevation);
             if (delta > maxElevationDelta) return float.PositiveInfinity;
 
-            // 2. Base Cost from Terrain
+            // 2. Occupation Check (Teams)
+            // Cannot move into a hex occupied by another team.
+            if (unit != null)
+            {
+                foreach (var state in toHex.States)
+                {
+                    if (state.StartsWith("Occupied_"))
+                    {
+                        var parts = state.Split('_');
+                        if (parts.Length >= 2 && int.TryParse(parts[1], out int occupiedTeamId))
+                        {
+                            if (occupiedTeamId != unit.teamId)
+                            {
+                                return float.PositiveInfinity;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 3. Base Cost from Terrain
             float cost = GetTerrainCost(toHex.TerrainType);
 
-            // 3. Uphill Penalty
+            // 4. Uphill Penalty
             if (toHex.Elevation > fromHex.Elevation)
             {
                 cost += uphillPenalty;
             }
 
-            // 4. Zone of Control Penalty
+            // 5. Zone of Control Penalty
             // Only applied if a unit is moving (unit != null)
             // and enters a hex with an enemy ZoC state.
             if (unit != null)

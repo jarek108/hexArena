@@ -141,5 +141,39 @@ namespace HexGame.Tests
             // Assert
             Assert.IsFalse(hex2.Data.States.Contains("ZoC_1"), "ZoC should be removed on departure");
         }
+
+        [Test]
+        public void GetMoveCost_EnemyOccupiedHex_ReturnsInfinity()
+        {
+            // Arrange
+            // Simulate enemy occupation on hex2
+            hex2.Data.AddState("Occupied_2"); // Team 2 (different from test unit's Team 1)
+
+            // Act
+            float cost = ruleset.GetMoveCost(unit, hex1.Data, hex2.Data);
+
+            // Assert
+            Assert.AreEqual(float.PositiveInfinity, cost, "Movement into enemy occupied hex should be infinite cost.");
+        }
+
+        [Test]
+        public void GetMoveCost_FriendlyOccupiedHex_ReturnsStandardCost()
+        {
+            // Arrange
+            // Simulate friendly occupation on hex2
+            hex2.Data.AddState("Occupied_1"); // Team 1 (same as test unit)
+            // Ruleset default costs: Plains=2, Uphill=1. Hex2 is at 0 elevation same as Hex1.
+            // But verify elevation is 0
+            hex1.Data.Elevation = 0;
+            hex2.Data.Elevation = 0;
+            ruleset.plainsCost = 2.0f;
+            hex2.Data.TerrainType = TerrainType.Plains;
+
+            // Act
+            float cost = ruleset.GetMoveCost(unit, hex1.Data, hex2.Data);
+
+            // Assert
+            Assert.AreEqual(2.0f, cost, "Movement into friendly occupied hex should NOT be infinite.");
+        }
     }
 }
