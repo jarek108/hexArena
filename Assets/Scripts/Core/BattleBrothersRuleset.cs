@@ -10,6 +10,8 @@ namespace HexGame
         public float maxElevationDelta = 1.0f;
         public float uphillPenalty = 1.0f;
         public float zocPenalty = 50.0f;
+        public float transitionSpeed = 5.0f;
+        public float transitionPause = 0.1f;
 
         [Header("Terrain Costs")]
         public float plainsCost = 2.0f;

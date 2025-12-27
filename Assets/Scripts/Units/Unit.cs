@@ -31,10 +31,63 @@ namespace HexGame
         
         public Dictionary<string, int> Stats = new Dictionary<string, int>();
         private UnitVisualization currentView;
+        private Coroutine moveCoroutine;
 
         private void Start()
         {
             if (unitSet != null) Initialize(unitSet, unitIndex, teamId);
+        }
+
+        public bool IsMoving => moveCoroutine != null;
+
+        public void MoveAlongPath(List<HexData> path)
+        {
+            if (moveCoroutine != null) StopCoroutine(moveCoroutine);
+            moveCoroutine = StartCoroutine(MoveCoroutine(path));
+        }
+
+        private System.Collections.IEnumerator MoveCoroutine(List<HexData> path)
+        {
+            var ruleset = GameMaster.Instance?.ruleset as BattleBrothersRuleset;
+            float speed = ruleset != null ? ruleset.transitionSpeed : 5f;
+            float pause = ruleset != null ? ruleset.transitionPause : 0.1f;
+
+            // path[0] is current position usually, so we skip it or handle it.
+            // Pathfinder returns path including start.
+            for (int i = 1; i < path.Count; i++)
+            {
+                HexData targetData = path[i];
+                var manager = GridVisualizationManager.Instance;
+                Hex targetHex = manager.GetHex(targetData.Q, targetData.R);
+
+                Debug.Log($"[Unit] Moving to step {i}: {targetData.Q},{targetData.R}");
+
+                if (targetHex != null)
+                {
+                    // Visual movement
+                    Vector3 startPos = transform.position;
+                    Vector3 endPos = targetHex.transform.position;
+                    if (currentView != null) endPos.y += currentView.yOffset;
+
+                    float journey = 0f;
+                    float duration = Vector3.Distance(startPos, endPos) / speed;
+
+                    while (journey < 1f && duration > 0)
+                    {
+                        journey += Time.deltaTime / duration;
+                        transform.position = Vector3.Lerp(startPos, endPos, journey);
+                        yield return null;
+                    }
+                    transform.position = endPos;
+
+                    // Logical update (Entry/Departure rules)
+                    SetHex(targetHex);
+
+                    if (pause > 0) yield return new WaitForSeconds(pause);
+                }
+            }
+
+            moveCoroutine = null;
         }
 
         public void Initialize(UnitSet set, int index, int team)

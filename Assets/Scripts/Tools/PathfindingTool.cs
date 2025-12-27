@@ -36,6 +36,9 @@ namespace HexGame.Tools
         {
             if (!IsEnabled) return;
 
+            // Prevent input if a unit is currently moving
+            if (SourceHex != null && SourceHex.Unit != null && SourceHex.Unit.IsMoving) return;
+
             if (Mouse.current != null)
             {
                 if (Mouse.current.leftButton.wasPressedThisFrame)
@@ -81,15 +84,28 @@ namespace HexGame.Tools
                 return;
             }
 
-            if (TargetHex != null)
+            // Pathfinding to target
+            var manager = GridVisualizationManager.Instance ?? FindFirstObjectByType<GridVisualizationManager>();
+            PathResult result = Pathfinder.FindPath(manager.Grid, SourceHex.Unit, SourceHex.Data, hex.Data);
+
+            if (result.Success)
             {
-                TargetHex.Data.RemoveState("Target");
+                if (SourceHex.Unit != null)
+                {
+                    // Trigger sequential movement
+                    SourceHex.Unit.MoveAlongPath(result.Path);
+                    // Clear tool state as unit has moved
+                    ClearAll();
+                }
+                else
+                {
+                    // Fallback visual highlight if no unit
+                    if (TargetHex != null) TargetHex.Data.RemoveState("Target");
+                    TargetHex = hex;
+                    TargetHex.Data.AddState("Target");
+                    CalculateAndShowPath(TargetHex);
+                }
             }
-
-            TargetHex = hex;
-            TargetHex.Data.AddState("Target");
-
-            CalculateAndShowPath(TargetHex);
         }
 
         private void ClearAll()

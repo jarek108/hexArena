@@ -14,6 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: HexGame::HexGame.BattleBrothersRuleset
   maxElevationDelta: 1
   uphillPenalty: 1
+  zocPenalty: 50
+  transitionSpeed: 5
+  transitionPause: 0.1
   plainsCost: 2
   waterCost: 100000000
   mountainCost: 5

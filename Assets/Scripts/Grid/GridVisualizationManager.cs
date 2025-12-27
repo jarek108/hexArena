@@ -377,6 +377,12 @@ namespace HexGame
             return null;
         }
 
+        public Hex GetHex(int q, int r)
+        {
+            if (Grid == null) return null;
+            return GetHexView(Grid.GetHexAt(q, r));
+        }
+
         public Hex WorldToHex(Vector3 worldPos) {
             Vector3 localPos = transform.InverseTransformPoint(worldPos);
             float q_float, r_float;
