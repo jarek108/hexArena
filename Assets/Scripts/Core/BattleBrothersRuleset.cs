@@ -55,15 +55,24 @@ namespace HexGame
             hex.AddState("Occupied_" + unit.teamId);
 
             // Add Zone of Control to neighbors
-            var grid = GridVisualizationManager.Instance?.Grid;
-            if (grid != null)
+            // 1. Must have Melee Range
+            if (unit.GetStat("MRNG") > 0)
             {
-                string teamZocState = "ZoC_" + unit.teamId;
-                string unitZocState = $"ZoC_{unit.teamId}_{unit.Id}";
-                foreach (var neighbor in grid.GetNeighbors(hex))
+                var grid = GridVisualizationManager.Instance?.Grid;
+                if (grid != null)
                 {
-                    neighbor.AddState(teamZocState);
-                    neighbor.AddState(unitZocState);
+                    string teamZocState = "ZoC_" + unit.teamId;
+                    string unitZocState = $"ZoC_{unit.teamId}_{unit.Id}";
+                    foreach (var neighbor in grid.GetNeighbors(hex))
+                    {
+                        // 2. Must be reachable (Elevation)
+                        float delta = Mathf.Abs(neighbor.Elevation - hex.Elevation);
+                        if (delta <= maxElevationDelta)
+                        {
+                            neighbor.AddState(teamZocState);
+                            neighbor.AddState(unitZocState);
+                        }
+                    }
                 }
             }
         }
@@ -75,15 +84,21 @@ namespace HexGame
             hex.RemoveState("Occupied_" + unit.teamId);
 
             // Remove Zone of Control from neighbors
-            var grid = GridVisualizationManager.Instance?.Grid;
-            if (grid != null)
+            // Only if unit actually exerts ZoC
+            if (unit.GetStat("MRNG") > 0)
             {
-                string teamZocState = "ZoC_" + unit.teamId;
-                string unitZocState = $"ZoC_{unit.teamId}_{unit.Id}";
-                foreach (var neighbor in grid.GetNeighbors(hex))
+                var grid = GridVisualizationManager.Instance?.Grid;
+                if (grid != null)
                 {
-                    neighbor.RemoveState(teamZocState);
-                    neighbor.RemoveState(unitZocState);
+                    string teamZocState = "ZoC_" + unit.teamId;
+                    string unitZocState = $"ZoC_{unit.teamId}_{unit.Id}";
+                    foreach (var neighbor in grid.GetNeighbors(hex))
+                    {
+                        // We can blindly remove; if it wasn't added due to elevation, 
+                        // removing it does nothing.
+                        neighbor.RemoveState(teamZocState);
+                        neighbor.RemoveState(unitZocState);
+                    }
                 }
             }
         }
