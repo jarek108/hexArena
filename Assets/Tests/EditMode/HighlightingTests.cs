@@ -269,5 +269,71 @@ namespace HexGame.Tests
             yield return null;
             Assert.AreEqual(newDefaultColor, manager.GetHexRimColor(testHex), "Neutral hexes should reflect Default setting changes.");
         }
+
+        [UnityTest]
+        public IEnumerator Continuous_ON_ShowsPathOnHover()
+        {
+            // 1. Set Source
+            pathfindingTool.SetSource(testHex);
+            
+            // 2. Hover a hex further away (2, 0) so (1, 0) becomes an intermediate path hex
+            Hex neighbor = manager.GetHexView(manager.Grid.GetHexAt(1, 0));
+            Hex target = manager.GetHexView(manager.Grid.GetHexAt(2, 0));
+            pathfindingTool.HandleHighlighting(testHex, target);
+            
+            yield return null;
+            
+            // Assert: intermediate hex should be part of path
+            Assert.IsTrue(neighbor.Data.States.Contains("Path"), "Intermediate hex (1, 0) should have Path state when continuous is ON.");
+        }
+
+        [UnityTest]
+        public IEnumerator Continuous_OFF_IgnoresHover()
+        {
+            // Disable continuous via reflection
+            var field = typeof(PathfindingTool).GetField("continuous", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            field.SetValue(pathfindingTool, false);
+
+            pathfindingTool.SetSource(testHex);
+            Hex target = manager.GetHexView(manager.Grid.GetHexAt(2, 0));
+            pathfindingTool.HandleHighlighting(testHex, target);
+            
+            yield return null;
+            Hex neighbor = manager.GetHexView(manager.Grid.GetHexAt(1, 0));
+            Assert.IsFalse(neighbor.Data.States.Contains("Path"), "Neighbor should NOT have Path state when continuous is OFF.");
+        }
+
+        [UnityTest]
+        public IEnumerator LockedTarget_IgnoresHover()
+        {
+            pathfindingTool.SetSource(testHex);
+            Hex target = manager.GetHexView(manager.Grid.GetHexAt(2, 0));
+            pathfindingTool.SetTarget(target); // Lock target
+            
+            // Hover elsewhere
+            Hex other = manager.GetHexView(manager.Grid.GetHexAt(0, 1));
+            pathfindingTool.HandleHighlighting(target, other);
+            
+            yield return null;
+            
+            Assert.IsTrue(target.Data.States.Contains("Target"), "Locked target should remain Target.");
+            Assert.IsFalse(other.Data.States.Contains("Path"), "Path should not follow mouse when a target is locked.");
+        }
+
+        [UnityTest]
+        public IEnumerator ClearingLock_ResumesContinuous()
+        {
+            pathfindingTool.SetSource(testHex);
+            Hex target = manager.GetHexView(manager.Grid.GetHexAt(2, 0));
+            pathfindingTool.SetTarget(target); // Lock
+            pathfindingTool.SetTarget(target); // Unlock (clicking same target again clears it)
+            
+            Hex target2 = manager.GetHexView(manager.Grid.GetHexAt(3, 0));
+            Hex neighbor = manager.GetHexView(manager.Grid.GetHexAt(1, 0));
+            pathfindingTool.HandleHighlighting(target, target2);
+            
+            yield return null;
+            Assert.IsTrue(neighbor.Data.States.Contains("Path"), "Path should resume following mouse after lock is cleared.");
+        }
     }
 }

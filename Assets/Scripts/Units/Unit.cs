@@ -71,6 +71,7 @@ namespace HexGame
             // If it's a different hex, clear the old one
             if (CurrentHex != null && CurrentHex != hex)
             {
+                GameMaster.Instance?.ruleset?.OnDeparture(this, CurrentHex.Data);
                 CurrentHex.Unit = null;
             }
 
@@ -78,6 +79,8 @@ namespace HexGame
             CurrentHex.Unit = this;
             lastQ = hex.Q;
             lastR = hex.R;
+            
+            GameMaster.Instance?.ruleset?.OnEntry(this, hex.Data);
             
             UpdateVisualPosition();
         }

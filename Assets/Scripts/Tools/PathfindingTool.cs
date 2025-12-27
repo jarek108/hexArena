@@ -13,6 +13,7 @@ namespace HexGame.Tools
         public Hex TargetHex { get; private set; }
 
         [SerializeField] private float maxElevationChange = 1.0f;
+        [SerializeField] private bool continuous = true;
 
         public virtual bool CheckRequirements(out string reason)
         {
@@ -28,7 +29,7 @@ namespace HexGame.Tools
         public void OnDeactivate()
         {
             IsEnabled = false;
-            ClearPath();
+            ClearAll();
         }
 
         public void HandleInput(Hex hoveredHex)
@@ -88,7 +89,7 @@ namespace HexGame.Tools
             TargetHex = hex;
             TargetHex.Data.AddState("Target");
 
-            CalculateAndShowPath();
+            CalculateAndShowPath(TargetHex);
         }
 
         private void ClearAll()
@@ -113,7 +114,7 @@ namespace HexGame.Tools
 
         private void ClearPathVisuals()
         {
-            var manager = FindFirstObjectByType<GridVisualizationManager>() ?? GridVisualizationManager.Instance;
+            var manager = GridVisualizationManager.Instance ?? FindFirstObjectByType<GridVisualizationManager>();
             if (manager != null && manager.Grid != null)
             {
                 foreach (var hexData in manager.Grid.GetAllHexes())
@@ -139,25 +140,31 @@ namespace HexGame.Tools
             if (newHex != null)
             {
                 newHex.Data.AddState("Hovered");
+                
+                // Continuous pathfinding logic
+                if (continuous && SourceHex != null && TargetHex == null && newHex != SourceHex)
+                {
+                    CalculateAndShowPath(newHex);
+                }
             }
         }
 
-        private void CalculateAndShowPath()
+        private void CalculateAndShowPath(Hex target)
         {
-            if (SourceHex == null || TargetHex == null) return;
+            if (SourceHex == null || target == null) return;
 
-            var manager = FindFirstObjectByType<GridVisualizationManager>() ?? GridVisualizationManager.Instance;
+            var manager = GridVisualizationManager.Instance ?? FindFirstObjectByType<GridVisualizationManager>();
             if (manager == null || manager.Grid == null) return;
 
             ClearPathVisuals();
 
-            PathResult result = Pathfinder.FindPath(manager.Grid, SourceHex.Data, TargetHex.Data, maxElevationChange);
+            PathResult result = Pathfinder.FindPath(manager.Grid, SourceHex.Unit, SourceHex.Data, target.Data);
 
             if (result.Success)
             {
                 foreach (var hexData in result.Path)
                 {
-                    if (hexData != SourceHex.Data && hexData != TargetHex.Data)
+                    if (hexData != SourceHex.Data && hexData != target.Data)
                     {
                         hexData.AddState("Path");
                     }

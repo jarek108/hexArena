@@ -30,13 +30,15 @@ namespace HexGame
             }
         }
 
-        public static PathResult FindPath(Grid grid, HexData start, HexData target, float maxElevationChange = 1f)
+        public static PathResult FindPath(Grid grid, Unit unit, HexData start, HexData target)
         {
             if (grid == null || start == null || target == null)
                 return new PathResult { Success = false };
 
             if (start == target)
                 return new PathResult { Path = new List<HexData> { start }, TotalCost = 0, Success = true };
+
+            Ruleset ruleset = GameMaster.Instance != null ? GameMaster.Instance.ruleset : null;
 
             var openSet = new List<Node>();
             var closedSet = new HashSet<HexData>();
@@ -60,11 +62,19 @@ namespace HexGame
                 {
                     if (closedSet.Contains(neighbor)) continue;
 
-                    // Elevation Constraint
-                    if (Mathf.Abs(neighbor.Elevation - current.Data.Elevation) > maxElevationChange)
-                        continue;
+                    // --- RULESET LOGIC ---
+                    float moveCost = 1.0f; // Default fallback
+                    if (ruleset != null)
+                    {
+                        moveCost = ruleset.GetMoveCost(unit, current.Data, neighbor);
+                    }
+                    else
+                    {
+                        // Fallback logic if no ruleset exists
+                        if (Mathf.Abs(neighbor.Elevation - current.Data.Elevation) > 1.0f) continue;
+                        moveCost = neighbor.GetMovementCost();
+                    }
 
-                    float moveCost = neighbor.GetMovementCost();
                     if (float.IsInfinity(moveCost) || moveCost > 1000000) continue;
 
                     float newG = current.G + moveCost;
