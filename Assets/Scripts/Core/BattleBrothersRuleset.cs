@@ -9,6 +9,7 @@ namespace HexGame
         [Header("Movement Constraints")]
         public float maxElevationDelta = 1.0f;
         public float uphillPenalty = 1.0f;
+        public float zocPenalty = 50.0f;
 
         [Header("Terrain Costs")]
         public float plainsCost = 2.0f;
@@ -30,6 +31,35 @@ namespace HexGame
             if (toHex.Elevation > fromHex.Elevation)
             {
                 cost += uphillPenalty;
+            }
+
+            // 4. Zone of Control Penalty
+            // Only applied if a unit is moving (unit != null)
+            // and enters a hex with an enemy ZoC state.
+            if (unit != null)
+            {
+                foreach (var state in toHex.States)
+                {
+                    // Check if state is a ZoC state (starts with "ZoC_")
+                    if (state.StartsWith("ZoC_"))
+                    {
+                        // Extract team ID from "ZoC_X" or "ZoC_X_Y"
+                        // The format is always ZoC_{teamId} or ZoC_{teamId}_{unitId}
+                        // simpler check: "ZoC_{teamId}" string presence isn't enough because we need to know IF it is enemy.
+                        
+                        // Let's parse the team ID.
+                        // Format: "ZoC_1", "ZoC_1_102"
+                        var parts = state.Split('_');
+                        if (parts.Length >= 2 && int.TryParse(parts[1], out int zocTeamId))
+                        {
+                            if (zocTeamId != unit.teamId)
+                            {
+                                cost += zocPenalty;
+                                break; // Apply penalty once per hex max (or per enemy team? Usually just "in ZoC")
+                            }
+                        }
+                    }
+                }
             }
 
             return cost;
