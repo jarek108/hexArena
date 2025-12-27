@@ -160,6 +160,7 @@ namespace HexGame.Tests
         public void GetMoveCost_FriendlyOccupiedHex_ReturnsStandardCost()
         {
             // Arrange
+            SetupUnitWithRange(1); // Team 1
             // Simulate friendly occupation on hex2
             hex2.Data.AddState("Occupied_1"); // Team 1 (same as test unit)
             // Ruleset default costs: Plains=2, Uphill=1. Hex2 is at 0 elevation same as Hex1.
