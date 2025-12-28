@@ -29,6 +29,7 @@ namespace HexGame
         public float longWeaponProximityPenalty = 15f;
         public float rangedHighGroundBonus = 10f;
         public float rangedDistancePenalty = 2f;
+        public float unitOcclusionPenalty = 15f;
 
         public AttackType currentAttackType = AttackType.None;
 
@@ -128,19 +129,44 @@ namespace HexGame
             int rdef = target.GetStat("RDEF", 0);
             float score = rskl - rdef;
 
-            // 2. Elevation Bonus (Ranged only gets bonus, no penalty for being low?)
-            // BB usually gives +10% for high ground.
+            // 2. Elevation Bonus
             if (attackerHex.Elevation > targetHex.Elevation)
             {
                 score += rangedHighGroundBonus;
             }
 
             // 3. Distance Penalty
-            // BB has a penalty per tile of distance. 
-            // Often -2% or -3% per tile.
             score -= dist * rangedDistancePenalty;
 
+            // 4. Occlusion Penalty
+            score -= GetOcclusionPenalty(attacker, target, attackerHex, targetHex);
+
             return Mathf.Clamp(score / 100f, 0f, 1f);
+        }
+
+        private float GetOcclusionPenalty(Unit attacker, Unit target, HexData start, HexData end)
+        {
+            float penalty = 0;
+            var grid = GridVisualizationManager.Instance?.Grid;
+            if (grid == null) return 0;
+
+            var line = HexMath.GetLine(new Vector3Int(start.Q, start.R, start.S), new Vector3Int(end.Q, end.R, end.S));
+
+            // line[0] is start, line[last] is end
+            for (int i = 1; i < line.Count - 1; i++)
+            {
+                var coords = line[i];
+                // Skip Distance 1 from attacker
+                if (i == 1) continue;
+
+                HexData h = grid.GetHexAt(coords.x, coords.y);
+                if (h != null && h.Unit != null)
+                {
+                    penalty += unitOcclusionPenalty;
+                }
+            }
+
+            return penalty;
         }
 
         public override void OnFinishPathfinding(Unit unit, List<HexData> path, bool success)

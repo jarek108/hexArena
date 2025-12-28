@@ -42,6 +42,9 @@ This layer defines "what a unit is" before it enters the scene.
         *   **Elevation**: `elevationBonus` for high ground, `elevationPenalty` for low ground.
         *   **Surround (Backstabber)**: Cumulative `surroundBonus` based on the number of ally Zone of Control states on the target hex (formula: `(AllyZoCCount - 1) * bonus`).
         *   **Proximity Penalty**: `longWeaponProximityPenalty` applied when a Range-2 melee unit attacks an adjacent (Distance 1) target.
+        *   **Occlusion**: `unitOcclusionPenalty` applied cumulatively for every unit on the line of fire.
+            *   **Shoot-over**: Units at Distance 1 from the attacker do not block the shot.
+            *   **Line Scanning**: Uses `HexMath.GetLine` to identify all potential obstacles between shooter and target.
         *   **Ranged Units**: Only melee units (`MRNG > 0`) produce ZoC, meaning ranged-only units do not contribute to surround bonuses.
 
 ## Key Interactions
