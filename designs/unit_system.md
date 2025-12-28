@@ -42,9 +42,11 @@ This layer defines "what a unit is" before it enters the scene.
         *   **Elevation**: `elevationBonus` for high ground, `elevationPenalty` for low ground.
         *   **Surround (Backstabber)**: Cumulative `surroundBonus` based on the number of ally Zone of Control states on the target hex (formula: `(AllyZoCCount - 1) * bonus`).
         *   **Proximity Penalty**: `longWeaponProximityPenalty` applied when a Range-2 melee unit attacks an adjacent (Distance 1) target.
-        *   **Occlusion**: `unitOcclusionPenalty` applied cumulatively for every unit on the line of fire.
-            *   **Shoot-over**: Units at Distance 1 from the attacker do not block the shot.
-            *   **Line Scanning**: Uses `HexMath.GetLine` to identify all potential obstacles between shooter and target.
+        *   **Cover & Scattering**: Implements a 3-stage ranged combat resolution:
+            1.  **Cover Check**: Targets at Distance 3+ with adjacent obstacles (Units/Mountains) have a `coverMissChance` (default 75%). Failure triggers a **Scatter Shot** against the cover unit.
+            2.  **Main Roll**: Standard RSKL vs RDEF check.
+            3.  **Miss Scattering**: Missed shots at Distance 3+ target the hex behind (Dist 3) or a random adjacent hex (Dist 4+), triggering a **Scatter Shot** if a unit is present.
+        *   **Scatter Mechanics**: Secondary attacks take a -15% hit penalty and -25% damage penalty. Scatter shots cannot scatter further.
         *   **Ranged Units**: Only melee units (`MRNG > 0`) produce ZoC, meaning ranged-only units do not contribute to surround bonuses.
 
 ## Key Interactions

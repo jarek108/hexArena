@@ -29,7 +29,9 @@ namespace HexGame
         public float longWeaponProximityPenalty = 15f;
         public float rangedHighGroundBonus = 10f;
         public float rangedDistancePenalty = 2f;
-        public float unitOcclusionPenalty = 15f;
+        public float coverMissChance = 0.75f;
+        public float scatterHitPenalty = 15f;
+        public float scatterDamagePenalty = 0.25f;
 
         public AttackType currentAttackType = AttackType.None;
 
@@ -72,17 +74,178 @@ namespace HexGame
             int mrng = attacker.GetStat("MRNG", 1);
             int rrng = attacker.GetStat("RRNG", 0);
 
-            // Determine which formula to use
             if (dist <= mrng)
             {
                 return MeleeHitChance(attacker, target, attackerHex, targetHex, dist);
             }
             else if (dist <= rrng)
             {
-                return RangedHitChance(attacker, target, attackerHex, targetHex, dist);
+                float baseChance = GetBaseRangedHitChance(attacker, target, attackerHex, targetHex, dist);
+                
+                // Effective chance for tooltip
+                if (dist >= 3)
+                {
+                    HexData coverHex = GetCoverHex(attackerHex, targetHex);
+                    if (IsOccluding(coverHex))
+                    {
+                        baseChance *= (1.0f - coverMissChance);
+                    }
+                }
+                return baseChance;
             }
 
             return 0f;
+        }
+
+        private HexData GetCoverHex(HexData start, HexData end)
+        {
+            var line = HexMath.GetLine(new Vector3Int(start.Q, start.R, start.S), new Vector3Int(end.Q, end.R, end.S));
+            if (line.Count < 2) return null;
+            return GridVisualizationManager.Instance?.Grid?.GetHexAt(line[line.Count - 2].x, line[line.Count - 2].y);
+        }
+
+        private bool IsOccluding(HexData hex)
+        {
+            if (hex == null) return false;
+            return hex.Unit != null || hex.TerrainType == TerrainType.Mountains;
+        }
+
+        private void PerformAttack(Unit attacker, Unit target)
+        {
+            if (attacker == null || target == null) return;
+            attacker.FacePosition(target.transform.position);
+
+            HexData attackerHex = attacker.CurrentHex?.Data;
+            HexData targetHex = target.CurrentHex?.Data;
+            if (attackerHex == null || targetHex == null) return;
+
+            int dist = HexMath.Distance(attackerHex, targetHex);
+
+            // Handle Ranged specifically for Cover/Scatter
+            if (currentAttackType == AttackType.Ranged && dist >= 3)
+            {
+                // Stage 1: Cover Check
+                HexData coverHex = GetCoverHex(attackerHex, targetHex);
+                if (IsOccluding(coverHex))
+                {
+                    if (Random.value < coverMissChance)
+                    {
+                        Debug.Log($"[Ruleset] Ranged Attack: <color=orange>BLOCKED BY COVER</color>");
+                        if (coverHex.Unit != null)
+                        {
+                            PerformScatterShot(attacker, coverHex.Unit, "Cover");
+                        }
+                        else
+                        {
+                            // Blocked by terrain, still trigger animation
+                            var viz = attacker.GetComponent<HexGame.Units.UnitVisualization>();
+                            if (viz != null) viz.OnAttack(target);
+                        }
+                        return; 
+                    }
+                }
+            }
+
+            // Stage 2: Main Roll
+            float chance = currentAttackType == AttackType.Ranged ? 
+                GetBaseRangedHitChance(attacker, target, attackerHex, targetHex, dist) : 
+                MeleeHitChance(attacker, target, attackerHex, targetHex, dist);
+            
+            float roll = Random.value;
+            bool isHit = roll <= chance;
+
+            string typeStr = currentAttackType == AttackType.Ranged ? "Ranged" : "Melee";
+            string outcomeStr = isHit ? "<color=green>HIT</color>" : "<color=red>MISS</color>";
+            Debug.Log($"[Ruleset] {typeStr} Attack: Chance {chance:P1}, Roll {roll:P1} -> {outcomeStr}");
+
+            var attackerViz = attacker.GetComponent<HexGame.Units.UnitVisualization>();
+            if (attackerViz != null) attackerViz.OnAttack(target);
+
+            if (isHit)
+            {
+                ApplyAttackSuccess(attacker, target, 10f);
+            }
+            else if (currentAttackType == AttackType.Ranged && dist >= 3)
+            {
+                // Stage 3: Miss Scatter
+                ResolveMissScatter(attacker, target, attackerHex, targetHex, dist);
+            }
+        }
+
+        private void ResolveMissScatter(Unit attacker, Unit target, HexData start, HexData end, int dist)
+        {
+            var grid = GridVisualizationManager.Instance?.Grid;
+            if (grid == null) return;
+
+            HexData scatterHex = null;
+            if (dist == 3)
+            {
+                // Tile behind target
+                var line = HexMath.GetLine(new Vector3Int(start.Q, start.R, start.S), new Vector3Int(end.Q, end.R, end.S));
+                Vector3Int last = line[line.Count - 1];
+                Vector3Int prev = line[line.Count - 2];
+                Vector3Int dir = last - prev;
+                Vector3Int behindPos = last + dir;
+                scatterHex = grid.GetHexAt(behindPos.x, behindPos.y);
+            }
+            else
+            {
+                // Random adjacent
+                var neighbors = grid.GetNeighbors(end);
+                if (neighbors.Count > 0) scatterHex = neighbors[Random.Range(0, neighbors.Count)];
+            }
+
+            if (scatterHex != null && scatterHex.Unit != null)
+            {
+                // Elevation check: within 1 level
+                if (Mathf.Abs(scatterHex.Elevation - end.Elevation) <= 1.0f)
+                {
+                    PerformScatterShot(attacker, scatterHex.Unit, "Miss");
+                }
+            }
+        }
+
+        private void PerformScatterShot(Unit attacker, Unit target, string reason)
+        {
+            HexData attackerHex = attacker.CurrentHex?.Data;
+            HexData targetHex = target.CurrentHex?.Data;
+            if (attackerHex == null || targetHex == null) return;
+
+            int dist = HexMath.Distance(attackerHex, targetHex);
+            float baseChance = GetBaseRangedHitChance(attacker, target, attackerHex, targetHex, dist);
+            
+            // Scatter Penalties
+            float chance = Mathf.Clamp(baseChance - (scatterHitPenalty / 100f), 0f, 1f);
+            float roll = Random.value;
+            bool isHit = roll <= chance;
+
+            string outcomeStr = isHit ? "<color=green>HIT</color>" : "<color=red>MISS</color>";
+            Debug.Log($"[Ruleset] SCATTER ({reason}): Chance {chance:P1}, Roll {roll:P1} -> {outcomeStr}");
+
+            if (isHit)
+            {
+                ApplyAttackSuccess(attacker, target, 10f * (1.0f - scatterDamagePenalty));
+            }
+        }
+
+        private void ApplyAttackSuccess(Unit attacker, Unit target, float damage)
+        {
+            OnAttack(attacker, target);
+            OnBeingAttacked(attacker, target);
+            var targetViz = target.GetComponent<HexGame.Units.UnitVisualization>();
+            if (targetViz != null) targetViz.OnTakeDamage((int)damage);
+        }
+
+        private float GetBaseRangedHitChance(Unit attacker, Unit target, HexData attackerHex, HexData targetHex, int dist)
+        {
+            int rskl = attacker.GetStat("RSKL", 30);
+            int rdef = target.GetStat("RDEF", 0);
+            float score = rskl - rdef;
+
+            if (attackerHex.Elevation > targetHex.Elevation) score += rangedHighGroundBonus;
+            score -= dist * rangedDistancePenalty;
+
+            return Mathf.Clamp(score / 100f, 0f, 1f);
         }
 
         private float MeleeHitChance(Unit attacker, Unit target, HexData attackerHex, HexData targetHex, int dist)
@@ -122,195 +285,6 @@ namespace HexGame
             return Mathf.Clamp(score / 100f, 0f, 1f);
         }
 
-        private float RangedHitChance(Unit attacker, Unit target, HexData attackerHex, HexData targetHex, int dist)
-        {
-            // 1. Base Stats
-            int rskl = attacker.GetStat("RSKL", 30);
-            int rdef = target.GetStat("RDEF", 0);
-            float score = rskl - rdef;
-
-            // 2. Elevation Bonus
-            if (attackerHex.Elevation > targetHex.Elevation)
-            {
-                score += rangedHighGroundBonus;
-            }
-
-            // 3. Distance Penalty
-            score -= dist * rangedDistancePenalty;
-
-            // 4. Occlusion Penalty
-            score -= GetOcclusionPenalty(attacker, target, attackerHex, targetHex);
-
-            return Mathf.Clamp(score / 100f, 0f, 1f);
-        }
-
-        private float GetOcclusionPenalty(Unit attacker, Unit target, HexData start, HexData end)
-        {
-            float penalty = 0;
-            var grid = GridVisualizationManager.Instance?.Grid;
-            if (grid == null) return 0;
-
-            var line = HexMath.GetLine(new Vector3Int(start.Q, start.R, start.S), new Vector3Int(end.Q, end.R, end.S));
-
-            // line[0] is start, line[last] is end
-            for (int i = 1; i < line.Count - 1; i++)
-            {
-                var coords = line[i];
-                // Skip Distance 1 from attacker
-                if (i == 1) continue;
-
-                HexData h = grid.GetHexAt(coords.x, coords.y);
-                if (h != null && h.Unit != null)
-                {
-                    penalty += unitOcclusionPenalty;
-                }
-            }
-
-            return penalty;
-        }
-
-        public override void OnFinishPathfinding(Unit unit, List<HexData> path, bool success)
-        {
-            if (!success || unit == null || path == null)
-            {
-                OnClearPathfindingVisuals();
-                return;
-            }
-
-            // Sync ghost instance
-            if (pathGhost == null || lastGhostSource != unit)
-            {
-                OnClearPathfindingVisuals();
-                SpawnGhost(unit);
-            }
-
-            if (pathGhost != null)
-            {
-                int stopIndex = GetMoveStopIndex(unit, path);
-                if (stopIndex > 0)
-                {
-                    HexData ghostHex = path[stopIndex - 1];
-                    var manager = GridVisualizationManager.Instance;
-                    Hex hexView = manager.GetHex(ghostHex.Q, ghostHex.R);
-                    if (hexView != null)
-                    {
-                        Vector3 pos = hexView.transform.position;
-                        pos.y += pathGhost.yOffset;
-                        pathGhost.transform.position = pos;
-                        pathGhost.gameObject.SetActive(true);
-
-                        // Calculate and show AoA
-                        ShowAoA(unit, ghostHex);
-                    }
-                }
-                else
-                {
-                    pathGhost.gameObject.SetActive(false);
-                }
-            }
-        }
-
-        private void ShowAoA(Unit unit, HexData stopHex)
-        {
-            ClearAoA();
-
-            var grid = GridVisualizationManager.Instance?.Grid;
-            if (grid == null) return;
-
-            int mrng = unit.GetStat("MRNG", 1);
-            int rrng = unit.GetStat("RRNG", 0);
-            int range = Mathf.Max(mrng, rrng);
-            bool isMelee = mrng >= rrng;
-
-            string aoaState = $"AoA{unit.teamId}_{unit.Id}";
-            var inRange = grid.GetHexesInRange(stopHex, range);
-
-            foreach (var h in inRange)
-            {
-                if (h == stopHex) continue;
-
-                // Melee AoA respects elevation
-                if (isMelee)
-                {
-                    if (Mathf.Abs(h.Elevation - stopHex.Elevation) > maxElevationDelta) continue;
-                }
-
-                h.AddState(aoaState);
-                currentAoAHexes.Add(h);
-            }
-        }
-
-        private void ClearAoA()
-        {
-            if (currentAoAHexes.Count == 0) return;
-
-            // We need to know the unit ID to clear the specific state
-            // But since this is transient during pathfinding, we can just clear all AoA states from tracked hexes
-            foreach (var h in currentAoAHexes)
-            {
-                // Remove any state starting with AoA
-                var toRemove = new List<string>();
-                foreach (var s in h.States)
-                {
-                    if (s.StartsWith("AoA")) toRemove.Add(s);
-                }
-                foreach (var s in toRemove) h.RemoveState(s);
-            }
-            currentAoAHexes.Clear();
-        }
-
-        public override void OnClearPathfindingVisuals()
-        {
-            ClearAoA();
-            if (pathGhost != null)
-            {
-                if (Application.isPlaying) Destroy(pathGhost.gameObject);
-                else DestroyImmediate(pathGhost.gameObject);
-                pathGhost = null;
-            }
-            lastGhostSource = null;
-        }
-
-        private void SpawnGhost(Unit sourceUnit)
-        {
-            var sourceViz = sourceUnit.GetComponentInChildren<HexGame.Units.UnitVisualization>();
-            if (sourceViz == null) return;
-
-            var unitManager = UnitManager.Instance;
-            if (unitManager == null) return;
-
-            pathGhost = Instantiate(sourceViz, unitManager.transform);
-            pathGhost.gameObject.name = "Pathfinding_PreviewGhost_BB";
-            
-            // Ensure preview identity is synced (in case simple viz logic changes)
-            pathGhost.SetPreviewIdentity(sourceUnit.UnitName);
-            lastGhostSource = sourceUnit;
-
-            ApplyGhostVisuals(pathGhost.gameObject);
-        }
-
-        private void ApplyGhostVisuals(GameObject ghostObj)
-        {
-            Renderer[] renderers = ghostObj.GetComponentsInChildren<Renderer>();
-            foreach (var r in renderers)
-            {
-                r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-
-                MaterialPropertyBlock mpb = new MaterialPropertyBlock();
-                r.GetPropertyBlock(mpb);
-                
-                Color color = Color.white;
-                if (r.sharedMaterial.HasProperty("_BaseColor"))
-                {
-                    color = r.sharedMaterial.GetColor("_BaseColor");
-                }
-
-                color.a = 0.5f; 
-                mpb.SetColor("_BaseColor", color);
-                r.SetPropertyBlock(mpb);
-            }
-        }
-
         public override void ExecutePath(Unit unit, List<HexData> path, Hex targetHex)
         {
             if (unit == null || path == null) return;
@@ -322,44 +296,6 @@ namespace HexGame
                     PerformAttack(unit, targetHex.Unit);
                 }
             });
-        }
-
-        private void PerformAttack(Unit attacker, Unit target)
-        {
-            if (attacker == null || target == null) return;
-
-            // 1. Logic: Facing
-            attacker.FacePosition(target.transform.position);
-
-            // 2. Logic: Roll for Success
-            float chance = HitChance(attacker, target);
-            float roll = Random.value;
-            bool isHit = roll <= chance;
-
-            string typeStr = currentAttackType == AttackType.Ranged ? "Ranged" : "Melee";
-            string outcomeStr = isHit ? "<color=green>HIT</color>" : "<color=red>MISS</color>";
-            Debug.Log($"[Ruleset] {typeStr} Attack: Chance {chance:P1}, Roll {roll:P1} -> {outcomeStr}");
-
-            if (isHit)
-            {
-                // 3. Logic: Hooks
-                OnAttack(attacker, target);
-                OnBeingAttacked(attacker, target);
-
-                // 4. View: Triggers
-                var attackerViz = attacker.GetComponent<HexGame.Units.UnitVisualization>();
-                if (attackerViz != null) attackerViz.OnAttack(target);
-
-                var targetViz = target.GetComponent<HexGame.Units.UnitVisualization>();
-                if (targetViz != null) targetViz.OnTakeDamage(10); // Dummy
-            }
-            else
-            {
-                // Visual feedback for a miss? Maybe a different anim later.
-                // For now, still trigger attacker's attack anim so they don't just stand there.
-                var attackerViz = attacker.GetComponent<HexGame.Units.UnitVisualization>();
-                if (attackerViz != null) attackerViz.OnAttack(target);
-            }
         }
 
         public override float GetMoveCost(Unit unit, HexData fromHex, HexData toHex)
@@ -556,6 +492,144 @@ namespace HexGame
                 }
             }
             return true;
+        }
+
+        public override void OnFinishPathfinding(Unit unit, List<HexData> path, bool success)
+        {
+            if (!success || unit == null || path == null)
+            {
+                OnClearPathfindingVisuals();
+                return;
+            }
+
+            // Sync ghost instance
+            if (pathGhost == null || lastGhostSource != unit)
+            {
+                OnClearPathfindingVisuals();
+                SpawnGhost(unit);
+            }
+
+            if (pathGhost != null)
+            {
+                int stopIndex = GetMoveStopIndex(unit, path);
+                if (stopIndex > 0)
+                {
+                    HexData ghostHex = path[stopIndex - 1];
+                    var manager = GridVisualizationManager.Instance;
+                    Hex hexView = manager.GetHex(ghostHex.Q, ghostHex.R);
+                    if (hexView != null)
+                    {
+                        Vector3 pos = hexView.transform.position;
+                        pos.y += pathGhost.yOffset;
+                        pathGhost.transform.position = pos;
+                        pathGhost.gameObject.SetActive(true);
+
+                        // Calculate and show AoA
+                        ShowAoA(unit, ghostHex);
+                    }
+                }
+                else
+                {
+                    pathGhost.gameObject.SetActive(false);
+                }
+            }
+        }
+
+        private void ShowAoA(Unit unit, HexData stopHex)
+        {
+            ClearAoA();
+
+            var grid = GridVisualizationManager.Instance?.Grid;
+            if (grid == null) return;
+
+            int mrng = unit.GetStat("MRNG", 1);
+            int rrng = unit.GetStat("RRNG", 0);
+            int range = Mathf.Max(mrng, rrng);
+            bool isMelee = mrng >= rrng;
+
+            string aoaState = $"AoA{unit.teamId}_{unit.Id}";
+            var inRange = grid.GetHexesInRange(stopHex, range);
+
+            foreach (var h in inRange)
+            {
+                if (h == stopHex) continue;
+
+                // Melee AoA respects elevation
+                if (isMelee)
+                {
+                    if (Mathf.Abs(h.Elevation - stopHex.Elevation) > maxElevationDelta) continue;
+                }
+
+                h.AddState(aoaState);
+                currentAoAHexes.Add(h);
+            }
+        }
+
+        private void ClearAoA()
+        {
+            if (currentAoAHexes.Count == 0) return;
+
+            foreach (var h in currentAoAHexes)
+            {
+                var toRemove = new List<string>();
+                foreach (var s in h.States)
+                {
+                    if (s.StartsWith("AoA")) toRemove.Add(s);
+                }
+                foreach (var s in toRemove) h.RemoveState(s);
+            }
+            currentAoAHexes.Clear();
+        }
+
+        public override void OnClearPathfindingVisuals()
+        {
+            ClearAoA();
+            if (pathGhost != null)
+            {
+                if (Application.isPlaying) Destroy(pathGhost.gameObject);
+                else DestroyImmediate(pathGhost.gameObject);
+                pathGhost = null;
+            }
+            lastGhostSource = null;
+        }
+
+        private void SpawnGhost(Unit sourceUnit)
+        {
+            var sourceViz = sourceUnit.GetComponentInChildren<HexGame.Units.UnitVisualization>();
+            if (sourceViz == null) return;
+
+            var unitManager = UnitManager.Instance;
+            if (unitManager == null) return;
+
+            pathGhost = Instantiate(sourceViz, unitManager.transform);
+            pathGhost.gameObject.name = "Pathfinding_PreviewGhost_BB";
+            
+            pathGhost.SetPreviewIdentity(sourceUnit.UnitName);
+            lastGhostSource = sourceUnit;
+
+            ApplyGhostVisuals(pathGhost.gameObject);
+        }
+
+        private void ApplyGhostVisuals(GameObject ghostObj)
+        {
+            Renderer[] renderers = ghostObj.GetComponentsInChildren<Renderer>();
+            foreach (var r in renderers)
+            {
+                r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+
+                MaterialPropertyBlock mpb = new MaterialPropertyBlock();
+                r.GetPropertyBlock(mpb);
+                
+                Color color = Color.white;
+                if (r.sharedMaterial.HasProperty("_BaseColor"))
+                {
+                    color = r.sharedMaterial.GetColor("_BaseColor");
+                }
+
+                color.a = 0.5f; 
+                mpb.SetColor("_BaseColor", color);
+                r.SetPropertyBlock(mpb);
+            }
         }
     }
 }

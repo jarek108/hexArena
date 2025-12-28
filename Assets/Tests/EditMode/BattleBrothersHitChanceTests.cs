@@ -250,34 +250,32 @@ namespace HexGame.Tests
         }
 
         [Test]
-        public void HitChance_RangedOcclusion_AppliesPenalty()
+        public void HitChance_RangedCover_AppliesReduction()
         {
             // Archer (RSKL 60) vs Target (RDEF 0) at Dist 3
-            // Obstacle 1: Dist 1 (Neighbor) -> No Penalty
-            // Obstacle 2: Dist 2 -> 15% Penalty
-            // Score = 60 - (3 * 2) - 15 = 60 - 6 - 15 = 39%
+            // Base Chance = 60 - (3 * 2) = 54%
+            // Cover exists at Dist 2 (Adjacent to target)
+            // Effective Chance = 54% * (1.0 - 0.75) = 54% * 0.25 = 13.5%
             Unit archer = CreateUnit("Archer", 1, 50, 0);
             archer.Stats["RSKL"] = 60;
             archer.Stats["RRNG"] = 5;
             archer.Stats["MRNG"] = 0;
 
             Unit blocker = CreateUnit("Blocker", 2, 50, 0);
-            Unit shoulderAlly = CreateUnit("Ally", 1, 50, 0);
 
             Hex hAttacker = SetupHex(0, 0, 0, archer);
-            Hex hShoulder = SetupHex(1, 0, 0, shoulderAlly);
-            Hex hBlocker = SetupHex(2, 0, 0, blocker);
-            Hex hTarget = SetupHex(3, 0, 0, target); // Target has RDEF 0 from Setup
+            Hex hBlocker = SetupHex(2, 0, 0, blocker); // Adjacent to target
+            Hex hTarget = SetupHex(3, 0, 0, target);
 
-            ruleset.unitOcclusionPenalty = 15f;
+            ruleset.coverMissChance = 0.75f;
             ruleset.rangedDistancePenalty = 2f;
 
             float chance = ruleset.HitChance(archer, target);
-            Assert.AreEqual(0.39f, chance, "Occlusion should ignore adjacent units but penalize further ones");
+            // 0.54 * 0.25 = 0.135
+            Assert.AreEqual(0.135f, chance, 0.001f, "Cover should apply a flat 75% reduction to the base hit chance");
             
             Object.DestroyImmediate(archer.gameObject);
             Object.DestroyImmediate(blocker.gameObject);
-            Object.DestroyImmediate(shoulderAlly.gameObject);
         }
 
         [Test]
