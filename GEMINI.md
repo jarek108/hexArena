@@ -51,6 +51,7 @@ We follow a **Data-Driven Architecture** prioritizing strict Logic/View separati
 *   **Headers**: Never use `[Header("...")]` attributes in MonoBehaviours. All section labeling and organization must be handled within the custom editor.
 
 # Tool Usage
+0. **Shell Commands**: NEVER use `&&` to chain multiple shell commands (e.g., `git status && git diff`). This syntax is often rejected by the shell parser. Always execute each command independently in its own tool call.
 1. **Game Screenshots** - run `python tools/unityGameScreenshot.py` without any arguments to capture screenshots (and not unity-mcp). NEVER provide a custom filename. You MUST use the filename provided in the tool's stdout output when referring to the screenshot. *Note: This script automatically moves the screenshot outside the Assets folder to `Screenshots`. Captures Game View only. Edit Mode screenshots are ok, but Play Mode may be unreliable; ask user for manual verification if needed.*
 2. **Waiting** - in interactions where you suspect some ongoing process needs to finish use `python tools/waitFewSeconds.py`. It accepts a single integer - the number of seconds to wait before returning. Useful in interactions where a delay is needed, for example, to allow Unity to recompile scripts or process asset changes.
 3. **Window Activation** - run `python tools/windowActivator.py "<title_substring>"` to bring windows containing the substring in their title to the foreground. Useful for switching back to Unity or the Game view.
@@ -63,7 +64,7 @@ We follow a **Data-Driven Architecture** prioritizing strict Logic/View separati
     *   You may propose commit msgs after a major feature/bug fix is verified and CONFIRMED BY THE USER. Never commit changes without user confirmation.
     *   Prepare commit messages based on conversation context and a list of modified files. Do not do long git diff HEAD analysis etc.
     *   Use simple language and list all areas of change
-    *   Run each git command independently, do not chain them with &&
+    *   **Independent Commands**: Run each git command independently. NEVER chain them with `&&`.
     *   Make sure you push after each commit
 5.  **Scene inspection/Management:** - Use use unity-mcp's `manage_gameobject` (action: `get_components`) or `manage_scene` (action: `get_hierarchy`) to inspect scene
 6. **Editing** - while using edit replacing 'old_string' with new always break long edits into smaller to avoid tool issues due to the errors in the replaced strings ('The exact text in old_string was not found')
