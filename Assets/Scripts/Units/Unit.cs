@@ -70,12 +70,24 @@ namespace HexGame
         {
             var ruleset = GameMaster.Instance?.ruleset;
 
+            // Logical "unoccupy" from start hex while in transit to prevent collisions
+            if (CurrentHex != null && CurrentHex.Data.Unit == this)
+            {
+                CurrentHex.Data.Unit = null;
+            }
+
             // Determine stop index from ruleset
             int stopIndex = ruleset != null ? ruleset.GetMoveStopIndex(this, path) : path.Count;
 
-            // path[0] is current position usually, so we skip it or handle it.
+            // path[0] is current position usually
             for (int i = 1; i < stopIndex; i++)
             {
+                // 1. Departure Check
+                if (ruleset != null && CurrentHex != null)
+                {
+                    if (!ruleset.OnDeparture(this, CurrentHex.Data)) break;
+                }
+
                 HexData targetData = path[i];
                 var manager = GridVisualizationManager.Instance;
                 Hex targetHex = manager.GetHex(targetData.Q, targetData.R);
@@ -84,26 +96,44 @@ namespace HexGame
 
                 if (targetHex != null)
                 {
-                    // Visual movement
                     Vector3 startPos = transform.position;
                     Vector3 endPos = targetHex.transform.position;
-                    if (currentView != null) endPos.y += currentView.yOffset;
+                    endPos.y += currentView != null ? currentView.yOffset : 0;
 
-                    float journey = 0f;
-                    float duration = Vector3.Distance(startPos, endPos) / speed;
-
-                    while (journey < 1f && duration > 0)
+                    float t = 0;
+                    while (t < 1f)
                     {
-                        journey += Time.deltaTime / duration;
-                        transform.position = Vector3.Lerp(startPos, endPos, journey);
+                        t += Time.deltaTime * speed;
+                        transform.position = Vector3.Lerp(startPos, endPos, t);
                         yield return null;
                     }
                     transform.position = endPos;
 
-                    // Logical update (Entry/Departure rules)
-                    SetHex(targetHex);
+                    // 2. Update Reference (Traversal)
+                    CurrentHex = targetHex;
+                    lastQ = CurrentHex.Q;
+                    lastR = CurrentHex.R;
+
+                    // 3. Entry Check
+                    if (ruleset != null)
+                    {
+                        if (!ruleset.OnEntry(this, CurrentHex.Data)) break;
+                    }
 
                     if (pause > 0) yield return new WaitForSeconds(pause);
+                }
+            }
+
+            // Logical "re-occupy" the final landing hex
+            if (CurrentHex != null)
+            {
+                if (CurrentHex.Data.Unit == null)
+                {
+                    CurrentHex.Data.Unit = this;
+                }
+                else if (CurrentHex.Data.Unit != this)
+                {
+                    Debug.LogWarning($"[Unit] {UnitName} ended move on occupied hex {CurrentHex.Q},{CurrentHex.R}!");
                 }
             }
 
@@ -151,29 +181,37 @@ namespace HexGame
 
         public void SetHex(Hex hex)
         {
-            // 1. Departure from old hex
+            // Only clear the old hex if WE are the one logically occupying it.
+            if (CurrentHex != null && CurrentHex.Data.Unit == this)
+            {
+                CurrentHex.Data.Unit = null;
+            }
+
+            var ruleset = GameMaster.Instance?.ruleset;
+            if (CurrentHex != null && ruleset != null)
+            {
+                ruleset.OnDeparture(this, CurrentHex.Data);
+            }
+
+            CurrentHex = hex;
+
             if (CurrentHex != null)
             {
-                GameMaster.Instance?.ruleset?.OnDeparture(this, CurrentHex.Data);
-                // Only clear reference if we are actually changing to a new hex or null
-                if (CurrentHex != hex) CurrentHex.Unit = null;
-            }
+                // Only claim the new hex if it's empty.
+                if (CurrentHex.Data.Unit == null)
+                {
+                    CurrentHex.Data.Unit = this;
+                }
 
-            if (hex == null)
-            {
-                CurrentHex = null;
-                return;
-            }
+                if (ruleset != null)
+                {
+                    ruleset.OnEntry(this, CurrentHex.Data);
+                }
 
-            // 2. Entry to new hex
-            CurrentHex = hex;
-            CurrentHex.Unit = this;
-            lastQ = hex.Q;
-            lastR = hex.R;
-            
-            GameMaster.Instance?.ruleset?.OnEntry(this, hex.Data);
-            
-            UpdateVisualPosition();
+                transform.position = CurrentHex.transform.position + new Vector3(0, currentView != null ? currentView.yOffset : 0, 0);
+                lastQ = CurrentHex.Q;
+                lastR = CurrentHex.R;
+            }
         }
 
         public void UpdateVisualPosition()

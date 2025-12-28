@@ -90,7 +90,7 @@ namespace HexGame.Tests
         public void GetMoveCost_EnemyZoC_AppliesPenalty()
         {
             // Enemy Team 1 ZoC
-            hexEnd.Data.AddState("ZoC_1");
+            hexEnd.Data.AddState("ZoC1_999");
             
             float cost = ruleset.GetMoveCost(unit, hexStart.Data, hexEnd.Data);
             Assert.AreEqual(52.0f, cost, "Cost should be base (2) + penalty (50).");
@@ -100,7 +100,7 @@ namespace HexGame.Tests
         public void GetMoveCost_FriendlyZoC_NoPenalty()
         {
             // Friendly Team 0 ZoC
-            hexEnd.Data.AddState("ZoC_0");
+            hexEnd.Data.AddState("ZoC0_999");
 
             float cost = ruleset.GetMoveCost(unit, hexStart.Data, hexEnd.Data);
             Assert.AreEqual(2.0f, cost, "Friendly ZoC should not penalize movement.");
@@ -110,7 +110,7 @@ namespace HexGame.Tests
         public void GetMoveCost_NoUnit_IgnoresZoC()
         {
             // Enemy Team 1 ZoC
-            hexEnd.Data.AddState("ZoC_1");
+            hexEnd.Data.AddState("ZoC1_999");
 
             // Passing null as unit (Pathfinding without unit)
             float cost = ruleset.GetMoveCost(null, hexStart.Data, hexEnd.Data);

@@ -71,7 +71,7 @@
             }
         },
         {
-            "state": "ZoC_0",
+            "state": "ZoC0",
             "priority": -8,
             "visuals": {
                 "color": {
@@ -81,11 +81,11 @@
                     "a": 1.0
                 },
                 "width": 0.15000000596046449,
-                "pulsation": 6.0
+                "pulsation": 3.5
             }
         },
         {
-            "state": "ZoC_1",
+            "state": "ZoC1",
             "priority": -9,
             "visuals": {
                 "color": {
@@ -95,7 +95,7 @@
                     "a": 1.0
                 },
                 "width": 0.10000000149011612,
-                "pulsation": 7.0
+                "pulsation": 3.5999999046325685
             }
         }
     ]

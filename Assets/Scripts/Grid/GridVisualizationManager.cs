@@ -162,15 +162,16 @@ namespace HexGame
             // Apply base color based on terrain
             SetHexColor(hex, GetDefaultHexColor(hex));
 
-            // 1. Get all active states on this hex
-            // 2. Filter for those defined in settings with priority > 0
-            // 3. Exclude unit-specific ZoC (e.g., ZoC_0_123) which has 2 underscores
+            // Find the highest priority setting where the hex has a matching state.
+            // A match is either an exact string match OR a prefix match followed by '_'
+            // (e.g., rule "ZoC_0" matches state "ZoC_0_123").
             var bestSetting = stateSettings
-                .Where(s => s.priority > 0 && 
-                            hex.Data.States.Contains(s.state) && 
-                            !IsUnitSpecificZoC(s.state))
                 .OrderByDescending(s => s.priority)
-                .FirstOrDefault();
+                .FirstOrDefault(s => s.priority > 0 && 
+                    hex.Data.States.Any(activeState => 
+                        activeState == s.state || activeState.StartsWith(s.state + "_")
+                    )
+                );
 
             // Fallback to Default if no positive-priority state is found
             if (string.IsNullOrEmpty(bestSetting.state))
@@ -181,14 +182,6 @@ namespace HexGame
             {
                 SetHexRim(hex, bestSetting.visuals);
             }
-        }
-
-        private bool IsUnitSpecificZoC(string state)
-        {
-            if (!state.StartsWith("ZoC_")) return false;
-            int underscoreCount = 0;
-            foreach (char c in state) if (c == '_') underscoreCount++;
-            return underscoreCount >= 2;
         }
 
         private void UpdateGridVisibility()

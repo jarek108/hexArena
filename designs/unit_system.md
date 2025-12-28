@@ -34,7 +34,7 @@ This layer defines "what a unit is" before it enters the scene.
 ### 4. Management & Rules Layer
 *   **`UnitManager`**: Handles spawning, erasing, and persistence.
 *   **`GameMaster`**: A singleton that holds the active `Ruleset` asset.
-*   **`Ruleset` (Abstract SO)**: The "brain" of the game. Handles movement costs, combat execution, and pathfinding lifecycle events.
+*   **`Ruleset` (Abstract SO)**: The "brain" of the game. Handles movement costs, combat execution, and pathfinding lifecycle events. `OnEntry` and `OnDeparture` return booleans to allow interrupting movement.
 *   **`BattleBrothersRuleset`**: Manages terrain costs, Zone of Control, and attack-range aware pathfinding.
 
 ## Key Interactions
@@ -44,12 +44,16 @@ This layer defines "what a unit is" before it enters the scene.
 2.  **Hover**: Ruleset receives `OnStartPathfinding`. It determines if the target is an enemy and calculates the appropriate `AttackType` (Melee/Ranged).
 3.  **Pathing**: `Pathfinder` calculates the raw path. The Ruleset evaluates costs, allowing pass-through for friendly units but forbidding ending moves on occupied hexes.
 4.  **Preview**: Ruleset receives `OnFinishPathfinding`. It uses `GetMoveStopIndex` to truncate the path (stopping at attack range) and spawns a **Ghost** at the stop position.
-5.  **Execution**: On click, the tool calls `ruleset.ExecutePath`. The unit moves, and if the target was an enemy, performs an `OnAttack` sequence (facing the target, triggering animations).
+5.  **Execution**: On click, the tool calls `ruleset.ExecutePath`. 
+    *   The unit "unoccupies" its start hex.
+    *   At each step, `OnDeparture` and `OnEntry` are called. If either returns `false`, movement stops immediately.
+    *   Upon completion or interruption, the unit "occupies" its current hex.
+    *   If the target was an enemy, performs an `OnAttack` sequence (facing the target, triggering animations).
 
 ### Spawning & Relinking
 1.  **Placement**: `Unit.SetHex(hex)` is called.
 2.  **Departure**: Previous hex is notified via `ruleset.OnDeparture(this, oldHex)`.
-3.  **Entry**: New hex is notified via `ruleset.OnEntry(this, newHex)`. In `BattleBrothersRuleset`, this adds `"Occupied_T"`. If the unit has `MRNG > 0` (Melee Range), it also adds `"ZoC_T_U"` states to reachable neighbors (checking elevation).
+3.  **Entry**: New hex is notified via `ruleset.OnEntry(this, newHex)`. In `BattleBrothersRuleset`, this adds a unit-unique state (e.g., `Occupied0_123`). If the unit has `MRNG > 0` (Melee Range), it also adds `ZoCT_U` states to reachable neighbors.
 4.  **Visualization**: Unit snaps to world position + `yOffset`.
 
 ### Real-Time Refresh

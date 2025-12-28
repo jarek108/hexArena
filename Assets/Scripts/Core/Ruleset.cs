@@ -13,8 +13,8 @@ namespace HexGame
         }
 
         public abstract float GetMoveCost(Unit unit, HexData fromHex, HexData toHex);
-        public abstract void OnEntry(Unit unit, HexData hex);
-        public abstract void OnDeparture(Unit unit, HexData hex);
+        public abstract bool OnEntry(Unit unit, HexData hex);
+        public abstract bool OnDeparture(Unit unit, HexData hex);
 
         public abstract void OnAttack(Unit attacker, Unit target);
         public abstract void OnBeingAttacked(Unit attacker, Unit target);

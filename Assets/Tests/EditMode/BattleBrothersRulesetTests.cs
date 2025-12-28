@@ -96,8 +96,7 @@ namespace HexGame.Tests
             unit.SetHex(hex1);
 
             // Assert
-            Assert.IsTrue(hex2.Data.States.Contains("ZoC_1"), "Neighbor should have ZoC_1");
-            Assert.IsTrue(hex2.Data.States.Contains($"ZoC_1_{unit.Id}"), "Neighbor should have Unit ZoC");
+            Assert.IsTrue(hex2.Data.States.Contains($"ZoC1_{unit.Id}"), "Neighbor should have Unit ZoC");
         }
 
         [Test]
@@ -109,7 +108,7 @@ namespace HexGame.Tests
             unit.SetHex(hex1);
 
             // Assert
-            Assert.IsFalse(hex2.Data.States.Contains("ZoC_1"), "Neighbor should NOT have ZoC_1");
+            Assert.IsFalse(hex2.Data.States.Contains($"ZoC1_{unit.Id}"), "Neighbor should NOT have ZoC state");
         }
 
         [Test]
@@ -125,7 +124,7 @@ namespace HexGame.Tests
             unit.SetHex(hex1);
 
             // Assert
-            Assert.IsFalse(hex2.Data.States.Contains("ZoC_1"), "Unreachable neighbor should NOT have ZoC_1");
+            Assert.IsFalse(hex2.Data.States.Contains($"ZoC1_{unit.Id}"), "Unreachable neighbor should NOT have ZoC state");
         }
 
         [Test]
@@ -133,21 +132,21 @@ namespace HexGame.Tests
         {
             SetupUnitWithRange(1);
             unit.SetHex(hex1);
-            Assert.IsTrue(hex2.Data.States.Contains("ZoC_1"));
+            Assert.IsTrue(hex2.Data.States.Contains($"ZoC1_{unit.Id}"));
 
             // Act
             unit.SetHex(null); // Leave
 
             // Assert
-            Assert.IsFalse(hex2.Data.States.Contains("ZoC_1"), "ZoC should be removed on departure");
+            Assert.IsFalse(hex2.Data.States.Contains($"ZoC1_{unit.Id}"), "ZoC should be removed on departure");
         }
 
         [Test]
         public void GetMoveCost_EnemyOccupiedHex_ReturnsInfinity()
         {
             // Arrange
-            // Simulate enemy occupation on hex2
-            hex2.Data.AddState("Occupied_2"); // Team 2 (different from test unit's Team 1)
+            // Simulate enemy unit with ID 999 on hex2
+            hex2.Data.AddState("Occupied2_999"); // Team 2
 
             // Act
             float cost = ruleset.GetMoveCost(unit, hex1.Data, hex2.Data);
@@ -162,7 +161,7 @@ namespace HexGame.Tests
             // Arrange
             SetupUnitWithRange(1); // Team 1
             // Simulate friendly occupation on hex2
-            hex2.Data.AddState("Occupied_1"); // Team 1 (same as test unit)
+            hex2.Data.AddState("Occupied1_999"); // Team 1 (same as test unit)
             // Ruleset default costs: Plains=2, Uphill=1. Hex2 is at 0 elevation same as Hex1.
             // But verify elevation is 0
             hex1.Data.Elevation = 0;

@@ -187,40 +187,30 @@ namespace HexGame
             {
                 foreach (var state in toHex.States)
                 {
-                    if (state.StartsWith("Occupied_"))
+                    if (state.StartsWith("Occupied"))
                     {
-                        var parts = state.Split('_');
-                        if (parts.Length >= 2 && int.TryParse(parts[1], out int occupiedTeamId))
+                        // Parse "OccupiedT_U"
+                        int underscoreIndex = state.IndexOf('_');
+                        if (underscoreIndex > 8)
                         {
-                            // Enemy occupation is always impassable
-                            if (occupiedTeamId != unit.teamId)
+                            string teamPart = state.Substring(8, underscoreIndex - 8);
+                            if (int.TryParse(teamPart, out int occupiedTeamId))
                             {
-                                return float.PositiveInfinity;
-                            }
-                            else
-                            {
-                                // Friendly occupation: 
-                                // Allowed to pass through, but FORBIDDEN to end move there.
-                                
-                                // Case A: Direct move to this hex
-                                if (toHex == currentSearchTarget)
-                                    return float.PositiveInfinity;
-
-                                // Case B: Stopping here to attack an enemy
-                                if (currentSearchTarget != null && currentSearchTarget.Unit != null)
+                                // Enemy occupation is always impassable
+                                if (occupiedTeamId != unit.teamId)
                                 {
-                                    int mrng = unit.GetStat("MRNG", 1);
-                                    int rrng = unit.GetStat("RRNG", 0);
-                                    int range = Mathf.Max(mrng, rrng);
+                                    return float.PositiveInfinity;
+                                }
+                                else
+                                {
+                                    // Friendly occupation: Allowed pass through, forbidden ending there
+                                    if (toHex == currentSearchTarget) return float.PositiveInfinity;
 
-                                    int dist = HexMath.Distance(toHex, currentSearchTarget);
-                                    if (dist <= range)
+                                    if (currentSearchTarget != null && currentSearchTarget.Unit != null)
                                     {
-                                        // This hex is within attack range.
-                                        // Since A* evaluates steps, if we reach a hex within range,
-                                        // the pathfinder will stop the search there (via GetMoveStopIndex logic later).
-                                        // Therefore, if it's occupied, we can't 'use' it as a strike position.
-                                        return float.PositiveInfinity;
+                                        int range = Mathf.Max(unit.GetStat("MRNG", 1), unit.GetStat("RRNG", 0));
+                                        if (HexMath.Distance(toHex, currentSearchTarget) <= range)
+                                            return float.PositiveInfinity;
                                     }
                                 }
                             }
@@ -239,22 +229,24 @@ namespace HexGame
             }
 
             // 5. Zone of Control Penalty
-            // Only applied if a unit is moving (unit != null)
-            // and enters a hex with an enemy ZoC state.
             if (unit != null)
             {
                 foreach (var state in toHex.States)
                 {
-                    // Check if state is a ZoC state (starts with "ZoC_")
-                    if (state.StartsWith("ZoC_"))
+                    if (state.StartsWith("ZoC"))
                     {
-                        var parts = state.Split('_');
-                        if (parts.Length >= 2 && int.TryParse(parts[1], out int zocTeamId))
+                        // Parse "ZoCT_U"
+                        int underscoreIndex = state.IndexOf('_');
+                        if (underscoreIndex > 3)
                         {
-                            if (zocTeamId != unit.teamId)
+                            string teamPart = state.Substring(3, underscoreIndex - 3);
+                            if (int.TryParse(teamPart, out int zocTeamId))
                             {
-                                cost += zocPenalty;
-                                break; 
+                                if (zocTeamId != unit.teamId)
+                                {
+                                    cost += zocPenalty;
+                                    break; 
+                                }
                             }
                         }
                     }
@@ -310,11 +302,11 @@ namespace HexGame
             }
         }
 
-        public override void OnEntry(Unit unit, HexData hex)
+        public override bool OnEntry(Unit unit, HexData hex)
         {
-            if (unit == null || hex == null) return;
+            if (unit == null || hex == null) return true;
             
-            hex.AddState("Occupied_" + unit.teamId);
+            hex.AddState($"Occupied{unit.teamId}_{unit.Id}");
 
             // Add Zone of Control to neighbors
             // 1. Must have Melee Range
@@ -323,46 +315,41 @@ namespace HexGame
                 var grid = GridVisualizationManager.Instance?.Grid;
                 if (grid != null)
                 {
-                    string teamZocState = "ZoC_" + unit.teamId;
-                    string unitZocState = $"ZoC_{unit.teamId}_{unit.Id}";
+                    string unitZocState = $"ZoC{unit.teamId}_{unit.Id}";
                     foreach (var neighbor in grid.GetNeighbors(hex))
                     {
                         // 2. Must be reachable (Elevation)
                         float delta = Mathf.Abs(neighbor.Elevation - hex.Elevation);
                         if (delta <= maxElevationDelta)
                         {
-                            neighbor.AddState(teamZocState);
                             neighbor.AddState(unitZocState);
                         }
                     }
                 }
             }
+            return true;
         }
 
-        public override void OnDeparture(Unit unit, HexData hex)
+        public override bool OnDeparture(Unit unit, HexData hex)
         {
-            if (unit == null || hex == null) return;
+            if (unit == null || hex == null) return true;
 
-            hex.RemoveState("Occupied_" + unit.teamId);
+            hex.RemoveState($"Occupied{unit.teamId}_{unit.Id}");
 
             // Remove Zone of Control from neighbors
-            // Only if unit actually exerts ZoC
             if (unit.GetStat("MRNG") > 0)
             {
                 var grid = GridVisualizationManager.Instance?.Grid;
                 if (grid != null)
                 {
-                    string teamZocState = "ZoC_" + unit.teamId;
-                    string unitZocState = $"ZoC_{unit.teamId}_{unit.Id}";
+                    string unitZocState = $"ZoC{unit.teamId}_{unit.Id}";
                     foreach (var neighbor in grid.GetNeighbors(hex))
                     {
-                        // We can blindly remove; if it wasn't added due to elevation, 
-                        // removing it does nothing.
-                        neighbor.RemoveState(teamZocState);
                         neighbor.RemoveState(unitZocState);
                     }
                 }
             }
+            return true;
         }
     }
 }

@@ -73,7 +73,7 @@ namespace HexGame.Tests
         public void MoveThroughFriendly_ToEmptyHex_Allowed()
         {
             // Arrange: Hex1 occupied by friendly Team 1
-            hex1.AddState("Occupied_1");
+            hex1.AddState($"Occupied1_{unit.Id}");
             
             // Simulating pathfinding to Hex2
             ruleset.OnStartPathfinding(hex2, unit); 
@@ -90,7 +90,7 @@ namespace HexGame.Tests
         public void MoveToFriendly_OccupiedHex_Forbidden()
         {
             // Arrange: Hex1 occupied by friendly Team 1
-            hex1.AddState("Occupied_1");
+            hex1.AddState($"Occupied1_{unit.Id}");
 
             // Simulating pathfinding TO Hex1
             ruleset.OnStartPathfinding(hex1, unit);
@@ -111,10 +111,10 @@ namespace HexGame.Tests
             var enemy = enemyGO.AddComponent<Unit>();
             enemy.Initialize(unitSet, 0, 2);
             hex2.Unit = enemy;
-            hex2.AddState("Occupied_2");
+            hex2.AddState($"Occupied2_{enemy.Id}");
 
             // Hex1 has Friendly (Team 1) - BLOCKING the only direct path
-            hex1.AddState("Occupied_1");
+            hex1.AddState($"Occupied1_{unit.Id}");
 
             // Simulating Attack Pathfinding to Hex2 (Enemy)
             // Logic: Pathfinding will try to route. 

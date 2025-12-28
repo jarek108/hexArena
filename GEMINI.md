@@ -53,12 +53,12 @@ We follow a **Data-Driven Architecture** prioritizing strict Logic/View separati
 # Tool Usage
 0. **Shell Commands**: NEVER use `&&` to chain multiple shell commands (e.g., `git status && git diff`). This syntax is often rejected by the shell parser. Always execute each command independently in its own tool call.
 1. **Game Screenshots** - run `python tools/unityGameScreenshot.py` without any arguments to capture screenshots (and not unity-mcp). NEVER provide a custom filename. You MUST use the filename provided in the tool's stdout output when referring to the screenshot. *Note: This script automatically moves the screenshot outside the Assets folder to `Screenshots`. Captures Game View only. Edit Mode screenshots are ok, but Play Mode may be unreliable; ask user for manual verification if needed.*
-2. **Waiting** - in interactions where you suspect some ongoing process needs to finish use `python tools/waitFewSeconds.py`. It accepts a single integer - the number of seconds to wait before returning. Useful in interactions where a delay is needed, for example, to allow Unity to recompile scripts or process asset changes.
+2. **Waiting** - in interactions where you suspect some ongoing process needs to finish use `python tools/waitFewSeconds.py`. It accepts a single integer - the number of seconds to wait before returning. Useful in interactions where a delay is needed, for example, to allow Unity to recompile scripts or process asset changes. Wait minimum 40 seconds before testing.
 3. **Window Activation** - run `python tools/windowActivator.py "<title_substring>"` to bring windows containing the substring in their title to the foreground. Useful for switching back to Unity or the Game view.
 4. **Testing** Prefer `EditMode` over `PlayMode` testing. Always follow this testing sequence:
     *   **Activate Unity**: ALWAYS run `python tools/windowActivator.py "Unity 6.2"` before running any tests or commands that require Unity's attention.
     *   **Initial Console Check** BEFORE ruining the tests always use unity-mcp's `read_console` (types: `['error', 'warning']`). In case of any console errors abandon testing till they are resolved.
-    *   **Test run** always use unity-mcp's `run_tests`. *Troubleshooting: If 'No Unity plugins connected' error occurs, try waiting 20s or more for recompilation.*
+    *   **Test run** always use unity-mcp's `run_tests`. *Troubleshooting: If 'No Unity plugins connected' error occurs, try waiting 60s or more for recompilation.*
     *   **Post-test Console Check** BEFORE reporting test results further, check the console again. In Unity errors may indicate unreliable tests results
 4.  **Git Usage:** 
     *   You may propose commit msgs after a major feature/bug fix is verified and CONFIRMED BY THE USER. Never commit changes without user confirmation.

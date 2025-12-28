@@ -92,5 +92,32 @@ namespace HexGame.Tests
 
             yield return null;
         }
+
+        [UnityTest]
+        public IEnumerator Visualizer_ResolvesPrefixMatching()
+        {
+            manager.stateSettings = new List<GridVisualizationManager.StateSetting>
+            {
+                new GridVisualizationManager.StateSetting { 
+                    state = "ZoC0", 
+                    priority = 10, 
+                    visuals = new GridVisualizationManager.RimSettings { color = Color.blue } 
+                }
+            };
+
+            var data = new HexData(0, 0);
+            var hexGO = new GameObject("Hex");
+            var hex = hexGO.AddComponent<Hex>();
+            var mr = hexGO.AddComponent<MeshRenderer>();
+            mr.sharedMaterials = new Material[] { manager.hexSurfaceMaterial, manager.hexMaterialSides };
+            hex.AssignData(data);
+
+            // Match prefix ZoC0_
+            data.AddState("ZoC0_123");
+            manager.RefreshVisuals(hex);
+            Assert.AreEqual(Color.blue, manager.GetHexRimColor(hex), "Prefix matching ZoC0_ should trigger visual rule for ZoC0.");
+
+            yield return null;
+        }
     }
 }
