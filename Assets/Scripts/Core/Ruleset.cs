@@ -3,6 +3,27 @@ using System.Collections.Generic;
 
 namespace HexGame
 {
+    [System.Serializable]
+    public struct PotentialHit
+    {
+        public Unit target;
+        public float min;
+        public float max;
+        public int drawIndex;
+        public float damageMultiplier;
+        public string logInfo;
+
+        public PotentialHit(Unit target, float min, float max, int drawIndex, float damageMultiplier = 1f, string logInfo = "")
+        {
+            this.target = target;
+            this.min = min;
+            this.max = max;
+            this.drawIndex = drawIndex;
+            this.damageMultiplier = damageMultiplier;
+            this.logInfo = logInfo;
+        }
+    }
+
     public abstract class Ruleset : ScriptableObject 
     {
         [HideInInspector] public HexData currentSearchTarget;
@@ -24,7 +45,7 @@ namespace HexGame
         public virtual void OnUnitSelected(Unit unit) { }
         public virtual void OnUnitDeselected(Unit unit) { }
 
-        public virtual float HitChance(Unit attacker, Unit target) { return 0f; }
+        public virtual List<PotentialHit> GetPotentialHits(Unit attacker, Unit target) { return new List<PotentialHit>(); }
 
         public virtual void OnFinishPathfinding(Unit unit, List<HexData> path, bool success) { }
         public virtual void OnClearPathfindingVisuals() { }

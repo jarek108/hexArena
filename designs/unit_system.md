@@ -36,17 +36,18 @@ This layer defines "what a unit is" before it enters the scene.
 *   **`GameMaster`**: A singleton that holds the active `Ruleset` asset.
 *   **`Ruleset` (Abstract SO)**: The "brain" of the game. Handles movement costs, combat execution, and pathfinding lifecycle events.
     *   **Hooks**: `OnEntry`, `OnDeparture` (return booleans to allow movement interruption), `OnUnitSelected`, `OnUnitDeselected`.
-    *   **Combat Probability**: `HitChance(attacker, target)` returns a value between 0 and 1.
+    *   **Combat Probability (Probability Map)**: `GetPotentialHits(attacker, target)` returns a `List<PotentialHit>`.
+        *   **`PotentialHit`**: Defines a target, probability range (`min` to `max`), `drawIndex` (correlating or isolating rolls), and `damageMultiplier`.
 *   **`BattleBrothersRuleset`**: Manages terrain costs, Zone of Control, and attack-range aware pathfinding.
-    *   **Hit Chance Logic**: Uses base stats (`MSKL` vs `MDEF`) and applies configurable modifiers:
-        *   **Elevation**: `elevationBonus` for high ground, `elevationPenalty` for low ground.
-        *   **Surround (Backstabber)**: Cumulative `surroundBonus` based on the number of ally Zone of Control states on the target hex (formula: `(AllyZoCCount - 1) * bonus`).
-        *   **Proximity Penalty**: `longWeaponProximityPenalty` applied when a Range-2 melee unit attacks an adjacent (Distance 1) target.
-        *   **Cover & Scattering**: Implements a 3-stage ranged combat resolution:
-            1.  **Cover Check**: Targets at Distance 3+ with adjacent obstacles (Units/Mountains) have a `coverMissChance` (default 75%). Failure triggers a **Scatter Shot** against the cover unit.
-            2.  **Main Roll**: Standard RSKL vs RDEF check.
-            3.  **Miss Scattering**: Missed shots at Distance 3+ target the hex behind (Dist 3) or a random adjacent hex (Dist 4+), triggering a **Scatter Shot** if a unit is present.
-        *   **Scatter Mechanics**: Secondary attacks take a -15% hit penalty and -25% damage penalty. Scatter shots cannot scatter further.
+    *   **Probability Engine**: Unifies all combat logic into a shared data structure:
+        *   **Exclusive Outcomes**: Shared `drawIndex` with non-overlapping ranges (e.g., Target vs Cover Interception).
+        *   **Conditional Outcomes**: Conditioned on previous draws (e.g., Stray shots triggered only if the trajectory draw misses).
+        *   **Independent Outcomes**: Unique `drawIndex` values (e.g., multi-target cleaves).
+    *   **Combat Modifiers**: Uses base stats (`MSKL` vs `MDEF`, `RSKL` vs `RDEF`) and applies configurable modifiers:
+        *   **Elevation**: `elevationBonus`, `elevationPenalty`, `rangedHighGroundBonus`.
+        *   **Surround (Backstabber)**: Cumulative `surroundBonus` based on ally Zone of Control states on the target hex.
+        *   **Proximity Penalty**: `longWeaponProximityPenalty` for Range-2 melee weapons at Distance 1.
+        *   **Cover & Scattering**: Uses the probability map to model the 75% cover interception and miss scattering (behind/adjacent tiles).
         *   **Ranged Units**: Only melee units (`MRNG > 0`) produce ZoC, meaning ranged-only units do not contribute to surround bonuses.
 
 ## Key Interactions
