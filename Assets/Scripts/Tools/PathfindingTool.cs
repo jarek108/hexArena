@@ -12,6 +12,7 @@ namespace HexGame.Tools
 
         public Hex SourceHex { get; private set; }
         public Hex TargetHex { get; private set; }
+        public List<PotentialHit> PotentialHits { get; private set; } = new List<PotentialHit>();
 
         [SerializeField] private bool continuous = true;
         [SerializeField] private bool showGhost = true;
@@ -214,16 +215,17 @@ namespace HexGame.Tools
             if (manager == null || manager.Grid == null) return;
 
             ClearPathVisuals();
+            PotentialHits.Clear();
 
             var ruleset = GameMaster.Instance?.ruleset;
-            if (ruleset != null)
+            if (ruleset != null && SourceHex.Unit != null)
             {
                 ruleset.OnStartPathfinding(target.Data, SourceHex.Unit);
             }
 
             PathResult result = Pathfinder.FindPath(manager.Grid, SourceHex.Unit, SourceHex.Data, target.Data);
 
-            if (ruleset != null)
+            if (ruleset != null && SourceHex.Unit != null)
             {
                 // Ruleset handles ghost drawing
                 if (showGhost) ruleset.OnFinishPathfinding(SourceHex.Unit, result.Path, result.Success);
@@ -233,9 +235,11 @@ namespace HexGame.Tools
             if (result.Success)
             {
                 // Truncate visualization if ruleset dictates
-                int showCount = ruleset != null ? ruleset.GetMoveStopIndex(SourceHex.Unit, result.Path) : result.Path.Count;
+                int stopIndex = (ruleset != null && SourceHex.Unit != null) ? 
+                    ruleset.GetMoveStopIndex(SourceHex.Unit, result.Path) : 
+                    result.Path.Count;
 
-                for (int i = 0; i < showCount; i++)
+                for (int i = 0; i < stopIndex; i++)
                 {
                     var hexData = result.Path[i];
                     if (hexData == SourceHex.Data) continue;
@@ -244,6 +248,26 @@ namespace HexGame.Tools
                     if (hexData == target.Data && target.Unit != null) continue;
 
                     hexData.AddState("Path");
+                }
+
+                // If targeting an enemy, show hit chance preview
+                if (SourceHex.Unit != null && target.Unit != null && target.Unit.teamId != SourceHex.Unit.teamId && ruleset != null && result.Path != null && result.Path.Count > 0)
+                {
+                    HexData stopHexData = result.Path[stopIndex - 1];
+                    PotentialHits = ruleset.GetPotentialHits(SourceHex.Unit, target.Unit, stopHexData) ?? new List<PotentialHit>();
+
+                    // Condensed single-line log
+                    if (PotentialHits.Count > 0)
+                    {
+                        string logMsg = "[Preview] ";
+                        for (int i = 0; i < PotentialHits.Count; i++)
+                        {
+                            var h = PotentialHits[i];
+                            logMsg += $"{h.logInfo}#{h.target.Id} ({(h.max - h.min):P0})";
+                            if (i < PotentialHits.Count - 1) logMsg += ", ";
+                        }
+                        Debug.Log(logMsg);
+                    }
                 }
             }
         }

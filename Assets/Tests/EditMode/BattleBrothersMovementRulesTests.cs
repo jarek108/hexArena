@@ -152,5 +152,33 @@ namespace HexGame.Tests
 
             Object.DestroyImmediate(enemyGO);
         }
+
+        [Test]
+        public void RangedAttack_AlreadyInRange_StopIndexIsOne()
+        {
+            // Archer at (0,0) has range 6. Enemy is at (6,0) (Dist 6).
+            Unit archer = unit; // Stats: MRNG 1
+            archer.Stats["RRNG"] = 6;
+            archer.Stats["MRNG"] = 0;
+
+            var enemyGO = new GameObject("Enemy");
+            var enemy = enemyGO.AddComponent<Unit>();
+            enemy.Initialize(unitSet, 0, 2);
+            
+            HexData enemyHex = new HexData(6, 0);
+            enemyHex.Unit = enemy;
+
+            List<HexData> path = new List<HexData> {
+                new HexData(0,0), new HexData(1,0), new HexData(2,0),
+                new HexData(3,0), new HexData(4,0), new HexData(5,0),
+                enemyHex
+            };
+
+            int stopIndex = ruleset.GetMoveStopIndex(archer, path);
+
+            Assert.AreEqual(1, stopIndex, "Should stop at current hex (index 1) if already in range.");
+
+            Object.DestroyImmediate(enemyGO);
+        }
     }
 }

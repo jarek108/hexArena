@@ -35,38 +35,42 @@ This layer defines "what a unit is" before it enters the scene.
 *   **`UnitManager`**: Handles spawning, erasing, and persistence.
 *   **`GameMaster`**: A singleton that holds the active `Ruleset` asset.
 *   **`Ruleset` (Abstract SO)**: The "brain" of the game. Handles movement costs, combat execution, and pathfinding lifecycle events.
-    *   **Hooks**: `OnEntry`, `OnDeparture` (return booleans to allow movement interruption), `OnUnitSelected`, `OnUnitDeselected`.
-    *   **Combat Probability (Probability Map)**: `GetPotentialHits(attacker, target)` returns a `List<PotentialHit>`.
-        *   **`PotentialHit`**: Defines a target, probability range (`min` to `max`), `drawIndex` (correlating or isolating rolls), and `damageMultiplier`.
+    *   **Hooks**: `OnEntry`, `OnDeparture` (return booleans to allow movement interruption), `OnUnitSelected`, `OnUnitDeselected`, `OnStartPathfinding`, `OnFinishPathfinding`.
+    *   **Combat Probability (Probability Map)**: `GetPotentialHits(attacker, target, fromHex)` returns a `List<PotentialHit>` representing the outcome distribution for a single roll.
+        *   **`PotentialHit`**: Defines a target, probability range (`min` to `max`), `damageMultiplier`, and `logInfo`.
 *   **`BattleBrothersRuleset`**: Manages terrain costs, Zone of Control, and attack-range aware pathfinding.
-    *   **Probability Engine**: Unifies all combat logic into a shared data structure:
-        *   **Exclusive Outcomes**: Shared `drawIndex` with non-overlapping ranges (e.g., Target vs Cover Interception).
-        *   **Conditional Outcomes**: Conditioned on previous draws (e.g., Stray shots triggered only if the trajectory draw misses).
-        *   **Independent Outcomes**: Unique `drawIndex` values (e.g., multi-target cleaves).
+    *   **Bucket-Based Probability Engine**: Unifies all combat logic into a shared [0, 1] range:
+        *   **Bucket A (Target)**: Primary hit chance, reduced by `coverMissChance` (75%) if obstructed.
+        *   **Bucket B (Cover Interception)**: If the primary shot is intercepted by cover, it rolls against the intercepting unit's `RDEF`.
+        *   **Bucket C (Miss Scatter/Stray)**: Missed primary shots (that weren't intercepted) can scatter to neighbors or hexes behind the target (at Distance 3+), rolling against their `RDEF`.
     *   **Combat Modifiers**: Uses base stats (`MSKL` vs `MDEF`, `RSKL` vs `RDEF`) and applies configurable modifiers:
         *   **Elevation**: `elevationBonus`, `elevationPenalty`, `rangedHighGroundBonus`.
-        *   **Surround (Backstabber)**: Cumulative `surroundBonus` based on ally Zone of Control states on the target hex.
-        *   **Proximity Penalty**: `longWeaponProximityPenalty` for Range-2 melee weapons at Distance 1.
-        *   **Cover & Scattering**: Uses the probability map to model the 75% cover interception and miss scattering (behind/adjacent tiles).
-        *   **Ranged Units**: Only melee units (`MRNG > 0`) produce ZoC, meaning ranged-only units do not contribute to surround bonuses.
+        *   **Surround**: Cumulative `surroundBonus` based on the number of unique ally **Zone of Control** states currently active on the target hex.
+        *   **Proximity Penalty**: `longWeaponProximityPenalty` (15%) for Range-2 melee weapons used at Distance 1.
+    *   **Zone of Control (ZoC)**:
+        *   Units with `MRNG > 0` (Melee) exert ZoC on neighbors within `maxElevationDelta`.
+        *   Entering an enemy ZoC adds a significant `zocPenalty` (default 50) to the movement cost, but does not hard-stop movement (unless AP/Fatigue logic, currently implemented as high cost, prevents it).
 
 ## Key Interactions
 
 ### Pathfinding & Combat Flow
 1.  **Selection**: `PathfindingTool` identifies a `SourceHex`.
     *   Triggers `ruleset.OnUnitSelected`.
-    *   Immediately initiates a zero-length pathfinding call to show initial visuals.
-2.  **Hover**: Ruleset receives `OnStartPathfinding`. It determines if the target is an enemy and calculates the appropriate `AttackType` (Melee/Ranged).
-3.  **Pathing**: `Pathfinder` calculates the raw path. The Ruleset evaluates costs, allowing pass-through for friendly units but forbidding ending moves on occupied hexes.
+    *   Immediately initiates a zero-length pathfinding call to show initial visuals (AoA).
+2.  **Hover**: Tool calls `CalculateAndShowPath`. Ruleset's `OnStartPathfinding` determines if the target is an enemy and detects the `AttackType` (Melee/Ranged).
+3.  **Pathing**: `Pathfinder` calculates the raw path. The Ruleset's `GetMoveCost` evaluates costs, applying `zocPenalty` and forbidding pass-through of enemies.
 4.  **Preview**: Ruleset receives `OnFinishPathfinding`.
-    *   Uses `GetMoveStopIndex` to truncate the path (stopping at attack range).
-    *   Spawns a **Ghost** at the stop position.
-    *   Calculates **Area of Attack (AoA)**: Highlights all hexes within the unit's max range from the stopping hex. Melee ranges respect `maxElevationDelta`.
+    *   Uses `GetMoveStopIndex` to truncate the path (stopping at the first hex within attack range).
+    *   Spawns a **Ghost** at the stop position with 50% transparency.
+    *   Calculates **Area of Attack (AoA)**: Highlights all hexes within the unit's max range from the stopping hex.
 5.  **Execution**: On click, the tool calls `ruleset.ExecutePath`. 
-    *   The unit "unoccupies" its start hex.
-    *   At each step, `OnDeparture` and `OnEntry` are called. If either returns `false`, movement stops immediately.
-    *   Upon completion or interruption, the unit "occupies" its current hex.
-    *   If the target was an enemy, performs an `OnAttack` sequence (facing the target, triggering animations).
+    *   The unit calls `MoveAlongPath`.
+    *   At each step, `OnDeparture` and `OnEntry` manage `Occupied` and `ZoC` states.
+    *   If the target was an enemy, the unit performs an `OnAttack` sequence upon reaching the stop position.
+6.  **Attack Resolution**:
+    *   `PerformAttack` generates the probability buckets via `GetPotentialHits`.
+    *   A single `Random.value` roll is matched against the buckets to determine if the target, a cover unit, or a stray unit was hit.
+    *   Animates the attack and applies damage/visuals.
 
 ### Spawning & Relinking
 1.  **Placement**: `Unit.SetHex(hex)` is called.

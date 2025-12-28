@@ -38,7 +38,8 @@ namespace HexGame
             if (start == target)
                 return new PathResult { Path = new List<HexData> { start }, TotalCost = 0, Success = true };
 
-            Ruleset ruleset = GameMaster.Instance != null ? GameMaster.Instance.ruleset : null;
+            Ruleset ruleset = GameMaster.Instance != null ? GameMaster.Instance.ruleset : 
+                Object.FindFirstObjectByType<GameMaster>()?.ruleset;
 
             var openSet = new List<Node>();
             var closedSet = new HashSet<HexData>();

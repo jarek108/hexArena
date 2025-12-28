@@ -16,6 +16,8 @@ namespace HexGame.Tests
         private GridCreator creator;
         private PathfindingTool pathfindingTool;
         private ToolManager toolManager;
+        private GameMaster gameMaster;
+        private BattleBrothersRuleset ruleset;
         private Hex testHex;
 
         private GridVisualizationManager.RimSettings highlightVisuals = new GridVisualizationManager.RimSettings { color = Color.yellow, width = 0.2f, pulsation = 5f };
@@ -33,6 +35,14 @@ namespace HexGame.Tests
             creator = managerGO.GetComponent<GridCreator>();
             toolManager = managerGO.GetComponent<ToolManager>();
             pathfindingTool = managerGO.GetComponent<PathfindingTool>();
+
+            var gmGO = new GameObject("GameMaster");
+            gmGO.transform.SetParent(managerGO.transform);
+            gameMaster = gmGO.AddComponent<GameMaster>();
+            ruleset = ScriptableObject.CreateInstance<BattleBrothersRuleset>();
+            gameMaster.ruleset = ruleset;
+            var instanceProp = typeof(GameMaster).GetProperty("Instance", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+            instanceProp.SetValue(null, gameMaster);
 
             var caster = managerGO.AddComponent<HexRaycaster>();
             toolManager.SetActiveTool(pathfindingTool);

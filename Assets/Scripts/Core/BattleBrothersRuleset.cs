@@ -62,12 +62,12 @@ namespace HexGame
             OnClearPathfindingVisuals();
         }
 
-        public override List<PotentialHit> GetPotentialHits(Unit attacker, Unit target)
+        public override List<PotentialHit> GetPotentialHits(Unit attacker, Unit target, HexData fromHex = null)
         {
             var results = new List<PotentialHit>();
             if (attacker == null || target == null) return results;
 
-            HexData attackerHex = attacker.CurrentHex?.Data;
+            HexData attackerHex = fromHex ?? attacker.CurrentHex?.Data;
             HexData targetHex = target.CurrentHex?.Data;
             if (attackerHex == null || targetHex == null) return results;
 
@@ -75,42 +75,57 @@ namespace HexGame
             int mrng = attacker.GetStat("MRNG", 1);
             int rrng = attacker.GetStat("RRNG", 0);
 
+            float currentMax = 0f;
+
             if (dist <= mrng)
             {
-                float chance = MeleeHitChance(attacker, target, attackerHex, targetHex, dist);
+                float chance = CalculateMeleeHitChance(attacker, target, attackerHex, targetHex, dist);
                 results.Add(new PotentialHit(target, 0, chance, 0, 1f, "Melee"));
             }
             else if (dist <= rrng)
             {
-                float baseChance = GetBaseRangedHitChance(attacker, target, attackerHex, targetHex, dist);
-                float scatterChance = Mathf.Clamp(baseChance - (scatterHitPenalty / 100f), 0f, 1f);
+                // 1. Analyze Surroundings
+                List<Unit> covers, strays;
+                AnalyzeRangedEnvironment(attackerHex, targetHex, dist, out covers, out strays);
+                bool hasCover = covers.Count > 0 && dist >= 3;
 
-                // 1. Cover Logic
-                HexData coverHex = (dist >= 3) ? GetCoverHex(attackerHex, targetHex) : null;
-                bool hasCover = IsOccluding(coverHex);
+                // 2. Calculate Individual Hit Chances
+                float primaryBase = GetBaseRangedHitChance(attacker, target, attackerHex, targetHex, dist);
+                float scatterPenaltyVal = scatterHitPenalty / 100f;
 
+                // Bucket A: Primary Target (Reduced by cover interception chance)
+                float primaryWidth = primaryBase * (hasCover ? (1.0f - coverMissChance) : 1.0f);
+                results.Add(new PotentialHit(target, 0, primaryWidth, 0, 1f, "Target"));
+                currentMax = primaryWidth;
+
+                // Bucket B: Cover Interception (Individual RDEF check)
                 if (hasCover)
                 {
-                    float bypassFactor = (1.0f - coverMissChance);
-                    results.Add(new PotentialHit(target, 0, baseChance * bypassFactor, 0, 1f, "Ranged (Target in Cover)"));
-                    
-                    if (coverHex.Unit != null)
+                    foreach (var c in covers)
                     {
-                        results.Add(new PotentialHit(coverHex.Unit, bypassFactor, bypassFactor + (scatterChance * coverMissChance), 0, 1f - scatterDamagePenalty, "Scatter (Cover Interception)"));
+                        float coverBase = GetBaseRangedHitChance(attacker, c, attackerHex, c.CurrentHex.Data, dist);
+                        float coverHitChance = Mathf.Clamp(coverBase - scatterPenaltyVal, 0f, 1f);
+                        float coverWidth = (coverHitChance * coverMissChance) / covers.Count;
+                        
+                        results.Add(new PotentialHit(c, currentMax, currentMax + coverWidth, 0, 1f - scatterDamagePenalty, "Cover"));
+                        currentMax += coverWidth;
                     }
                 }
-                else
-                {
-                    results.Add(new PotentialHit(target, 0, baseChance, 0, 1f, "Ranged"));
-                }
 
-                // 2. Miss Scatter (Stray Shot)
-                if (dist >= 3)
+                // Bucket C: Miss Scatter (Stray shots with individual RDEF check)
+                if (dist >= 3 && strays.Count > 0)
                 {
-                    Unit strayTarget = GetStrayTarget(attacker, target, attackerHex, targetHex, dist);
-                    if (strayTarget != null)
+                    float missChance = 1.0f - primaryWidth - (hasCover ? (1.0f * coverMissChance) : 0f);
+                    missChance = Mathf.Max(0, missChance);
+
+                    foreach (var s in strays)
                     {
-                        results.Add(new PotentialHit(strayTarget, 0, scatterChance, 1, 1f - scatterDamagePenalty, "Scatter (Stray Shot)"));
+                        float strayBase = GetBaseRangedHitChance(attacker, s, attackerHex, s.CurrentHex.Data, dist);
+                        float strayHitChance = Mathf.Clamp(strayBase - scatterPenaltyVal, 0f, 1f);
+                        float strayWidth = (strayHitChance * missChance) / strays.Count;
+
+                        results.Add(new PotentialHit(s, currentMax, currentMax + strayWidth, 0, 1f - scatterDamagePenalty, "Stray"));
+                        currentMax += strayWidth;
                     }
                 }
             }
@@ -118,51 +133,33 @@ namespace HexGame
             return results;
         }
 
-        private Unit GetStrayTarget(Unit attacker, Unit target, HexData start, HexData end, int dist)
+        private void AnalyzeRangedEnvironment(HexData attackerHex, HexData targetHex, int dist, out List<Unit> covers, out List<Unit> strays)
         {
+            covers = new List<Unit>();
+            strays = new List<Unit>();
             var grid = GridVisualizationManager.Instance?.Grid;
-            if (grid == null) return null;
+            if (grid == null) return;
 
-            HexData scatterHex = null;
+            var neighbors = grid.GetNeighbors(targetHex);
+            HexData hexBehind = null;
             if (dist == 3)
             {
-                var line = HexMath.GetLine(new Vector3Int(start.Q, start.R, start.S), new Vector3Int(end.Q, end.R, end.S));
-                Vector3Int last = line[line.Count - 1];
-                Vector3Int prev = line[line.Count - 2];
-                Vector3Int dir = last - prev;
-                Vector3Int behindPos = last + dir;
-                scatterHex = grid.GetHexAt(behindPos.x, behindPos.y);
-            }
-            else
-            {
-                var neighbors = grid.GetNeighbors(end);
-                if (neighbors.Count > 0)
+                var line = HexMath.GetLine(new Vector3Int(attackerHex.Q, attackerHex.R, attackerHex.S), new Vector3Int(targetHex.Q, targetHex.R, targetHex.S));
+                if (line.Count >= 2)
                 {
-                    foreach (var n in neighbors)
-                    {
-                        if (n.Unit != null && Mathf.Abs(n.Elevation - end.Elevation) <= 1.0f) return n.Unit;
-                    }
+                    Vector3Int dir = line[line.Count - 1] - line[line.Count - 2];
+                    Vector3Int behindPos = line[line.Count - 1] + dir;
+                    hexBehind = grid.GetHexAt(behindPos.x, behindPos.y);
                 }
             }
 
-            if (scatterHex != null && scatterHex.Unit != null)
+            foreach (var n in neighbors)
             {
-                if (Mathf.Abs(scatterHex.Elevation - end.Elevation) <= 1.0f) return scatterHex.Unit;
+                if (n.Unit == null || Mathf.Abs(n.Elevation - targetHex.Elevation) > 1.0f) continue;
+                int d = HexMath.Distance(attackerHex, n);
+                if (d < dist) covers.Add(n.Unit);
+                else if (dist == 3 ? n == hexBehind : dist >= 4) strays.Add(n.Unit);
             }
-            return null;
-        }
-
-        private HexData GetCoverHex(HexData start, HexData end)
-        {
-            var line = HexMath.GetLine(new Vector3Int(start.Q, start.R, start.S), new Vector3Int(end.Q, end.R, end.S));
-            if (line.Count < 2) return null;
-            return GridVisualizationManager.Instance?.Grid?.GetHexAt(line[line.Count - 2].x, line[line.Count - 2].y);
-        }
-
-        private bool IsOccluding(HexData hex)
-        {
-            if (hex == null) return false;
-            return hex.Unit != null || hex.TerrainType == TerrainType.Mountains;
         }
 
         public override void ExecutePath(Unit unit, List<HexData> path, Hex targetHex)
@@ -185,27 +182,23 @@ namespace HexGame
             var hits = GetPotentialHits(attacker, target);
             if (hits.Count == 0) return;
 
-            var drawIndices = new HashSet<int>();
-            foreach (var h in hits) drawIndices.Add(h.drawIndex);
+            float roll = Random.value;
+            bool hitResolved = false;
 
-            var rolls = new Dictionary<int, float>();
-            foreach (int idx in drawIndices) rolls[idx] = Random.value;
-
-            bool primaryHitResolved = false;
             foreach (var hit in hits)
             {
-                float roll = rolls[hit.drawIndex];
                 if (roll >= hit.min && roll < hit.max)
                 {
-                    if (hit.drawIndex == 1 && primaryHitResolved) continue;
-
-                    string outcome = "<color=green>HIT</color>";
-                    Debug.Log($"[Ruleset] {hit.logInfo}: Chance [{hit.min:P0}-{hit.max:P0}], Roll {roll:P1} -> {outcome}");
-                    
+                    Debug.Log($"[Ruleset] {hit.logInfo} HIT: Chance {hit.min:P0}-{hit.max:P0}, Roll {roll:P1}");
                     ApplyAttackSuccess(attacker, hit.target, 10f * hit.damageMultiplier);
-                    
-                    if (hit.drawIndex == 0) primaryHitResolved = true;
+                    hitResolved = true;
+                    break;
                 }
+            }
+
+            if (!hitResolved)
+            {
+                Debug.Log($"[Ruleset] MISS: Roll {roll:P1} fell outside all potential hit ranges.");
             }
 
             var attackerViz = attacker.GetComponent<HexGame.Units.UnitVisualization>();
@@ -220,46 +213,12 @@ namespace HexGame
             if (targetViz != null) targetViz.OnTakeDamage((int)damage);
         }
 
-        private float GetBaseRangedHitChance(Unit attacker, Unit target, HexData attackerHex, HexData targetHex, int dist)
-        {
-            int rskl = attacker.GetStat("RSKL", 30);
-            int rdef = target.GetStat("RDEF", 0);
-            float score = rskl - rdef;
-
-            if (attackerHex.Elevation > targetHex.Elevation) score += rangedHighGroundBonus;
-            score -= dist * rangedDistancePenalty;
-
-            return Mathf.Clamp(score / 100f, 0f, 1f);
-        }
-
-        private float MeleeHitChance(Unit attacker, Unit target, HexData attackerHex, HexData targetHex, int dist)
-        {
-            int mskl = attacker.GetStat("MSKL", 50);
-            int mdef = target.GetStat("MDEF", 0);
-            float score = mskl - mdef;
-
-            if (attackerHex.Elevation > targetHex.Elevation) score += elevationBonus;
-            else if (attackerHex.Elevation < targetHex.Elevation) score -= elevationPenalty;
-
-            int mrng = attacker.GetStat("MRNG", 1);
-            if (mrng == 2 && dist == 1) score -= longWeaponProximityPenalty;
-
-            int allyZoCCount = 0;
-            string allyZoCPrefix = $"ZoC{attacker.teamId}_";
-            foreach (var state in targetHex.States)
-            {
-                if (state.StartsWith(allyZoCPrefix)) allyZoCCount++;
-            }
-            score += Mathf.Max(0, allyZoCCount - 1) * surroundBonus;
-
-            return Mathf.Clamp(score / 100f, 0f, 1f);
-        }
-
         public override float GetMoveCost(Unit unit, HexData fromHex, HexData toHex)
         {
             if (toHex == currentSearchTarget)
             {
                 bool isEnemy = toHex.Unit != null && unit != null && toHex.Unit.teamId != unit.teamId;
+                
                 if (isEnemy)
                 {
                     if (currentAttackType == AttackType.Melee)
@@ -286,10 +245,14 @@ namespace HexGame
                             string teamPart = state.Substring(8, underscoreIndex - 8);
                             if (int.TryParse(teamPart, out int occupiedTeamId))
                             {
-                                if (occupiedTeamId != unit.teamId) return float.PositiveInfinity;
+                                if (occupiedTeamId != unit.teamId)
+                                {
+                                    return float.PositiveInfinity;
+                                }
                                 else
                                 {
                                     if (toHex == currentSearchTarget) return float.PositiveInfinity;
+
                                     if (currentSearchTarget != null && currentSearchTarget.Unit != null)
                                     {
                                         int range = Mathf.Max(unit.GetStat("MRNG", 1), unit.GetStat("RRNG", 0));
@@ -347,12 +310,20 @@ namespace HexGame
         {
             if (path == null || path.Count == 0 || unit == null) return 0;
             HexData lastHex = path[path.Count - 1];
+            
             if (lastHex.Unit != null && lastHex.Unit.teamId != unit.teamId)
             {
                 int mrng = unit.GetStat("MRNG", 1);
                 int rrng = unit.GetStat("RRNG", 0);
                 int range = Mathf.Max(mrng, rrng);
-                return Mathf.Max(1, path.Count - range);
+
+                for (int i = 0; i < path.Count; i++)
+                {
+                    if (HexMath.Distance(path[i], lastHex) <= range)
+                    {
+                        return i + 1;
+                    }
+                }
             }
             return path.Count;
         }
@@ -373,7 +344,9 @@ namespace HexGame
         public override bool OnEntry(Unit unit, HexData hex)
         {
             if (unit == null || hex == null) return true;
+            
             hex.AddState($"Occupied{unit.teamId}_{unit.Id}");
+
             if (unit.GetStat("MRNG") > 0)
             {
                 var grid = GridVisualizationManager.Instance?.Grid;
@@ -383,7 +356,10 @@ namespace HexGame
                     foreach (var neighbor in grid.GetNeighbors(hex))
                     {
                         float delta = Mathf.Abs(neighbor.Elevation - hex.Elevation);
-                        if (delta <= maxElevationDelta) neighbor.AddState(unitZocState);
+                        if (delta <= maxElevationDelta)
+                        {
+                            neighbor.AddState(unitZocState);
+                        }
                     }
                 }
             }
@@ -393,14 +369,19 @@ namespace HexGame
         public override bool OnDeparture(Unit unit, HexData hex)
         {
             if (unit == null || hex == null) return true;
+
             hex.RemoveState($"Occupied{unit.teamId}_{unit.Id}");
+
             if (unit.GetStat("MRNG") > 0)
             {
                 var grid = GridVisualizationManager.Instance?.Grid;
                 if (grid != null)
                 {
                     string unitZocState = $"ZoC{unit.teamId}_{unit.Id}";
-                    foreach (var neighbor in grid.GetNeighbors(hex)) neighbor.RemoveState(unitZocState);
+                    foreach (var neighbor in grid.GetNeighbors(hex))
+                    {
+                        neighbor.RemoveState(unitZocState);
+                    }
                 }
             }
             return true;
@@ -437,13 +418,17 @@ namespace HexGame
                         ShowAoA(unit, ghostHex);
                     }
                 }
-                else pathGhost.gameObject.SetActive(false);
+                else
+                {
+                    pathGhost.gameObject.SetActive(false);
+                }
             }
         }
 
         private void ShowAoA(Unit unit, HexData stopHex)
         {
             ClearAoA();
+
             var grid = GridVisualizationManager.Instance?.Grid;
             if (grid == null) return;
 
@@ -459,6 +444,7 @@ namespace HexGame
             {
                 if (h == stopHex) continue;
                 if (isMelee && Mathf.Abs(h.Elevation - stopHex.Elevation) > maxElevationDelta) continue;
+
                 h.AddState(aoaState);
                 currentAoAHexes.Add(h);
             }
@@ -470,7 +456,10 @@ namespace HexGame
             foreach (var h in currentAoAHexes)
             {
                 var toRemove = new List<string>();
-                foreach (var s in h.States) if (s.StartsWith("AoA")) toRemove.Add(s);
+                foreach (var s in h.States)
+                {
+                    if (s.StartsWith("AoA")) toRemove.Add(s);
+                }
                 foreach (var s in toRemove) h.RemoveState(s);
             }
             currentAoAHexes.Clear();
@@ -492,6 +481,7 @@ namespace HexGame
         {
             var sourceViz = sourceUnit.GetComponentInChildren<HexGame.Units.UnitVisualization>();
             if (sourceViz == null) return;
+
             var unitManager = UnitManager.Instance;
             if (unitManager == null) return;
 
@@ -499,6 +489,7 @@ namespace HexGame
             pathGhost.gameObject.name = "Pathfinding_PreviewGhost_BB";
             pathGhost.SetPreviewIdentity(sourceUnit.UnitName);
             lastGhostSource = sourceUnit;
+
             ApplyGhostVisuals(pathGhost.gameObject);
         }
 
@@ -508,14 +499,68 @@ namespace HexGame
             foreach (var r in renderers)
             {
                 r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+
                 MaterialPropertyBlock mpb = new MaterialPropertyBlock();
                 r.GetPropertyBlock(mpb);
+                
                 Color color = Color.white;
-                if (r.sharedMaterial.HasProperty("_BaseColor")) color = r.sharedMaterial.GetColor("_BaseColor");
+                if (r.sharedMaterial.HasProperty("_BaseColor"))
+                {
+                    color = r.sharedMaterial.GetColor("_BaseColor");
+                }
+
                 color.a = 0.5f; 
                 mpb.SetColor("_BaseColor", color);
                 r.SetPropertyBlock(mpb);
             }
+        }
+
+        private float GetBaseRangedHitChance(Unit attacker, Unit target, HexData attackerHex, HexData targetHex, int dist)
+        {
+            int rskl = attacker.GetStat("RSKL", 30);
+            int rdef = target.GetStat("RDEF", 0);
+            float score = rskl - rdef;
+
+            if (attackerHex.Elevation > targetHex.Elevation) score += rangedHighGroundBonus;
+            score -= dist * rangedDistancePenalty;
+
+            return Mathf.Clamp(score / 100f, 0f, 1f);
+        }
+
+        private float CalculateMeleeHitChance(Unit attacker, Unit target, HexData attackerHex, HexData targetHex, int dist)
+        {
+            int mskl = attacker.GetStat("MSKL", 50);
+            int mdef = target.GetStat("MDEF", 0);
+            float score = mskl - mdef;
+
+            if (attackerHex.Elevation > targetHex.Elevation) score += elevationBonus;
+            else if (attackerHex.Elevation < targetHex.Elevation) score -= elevationPenalty;
+
+            int mrng = attacker.GetStat("MRNG", 1);
+            if (mrng == 2 && dist == 1)
+            {
+                score -= longWeaponProximityPenalty;
+            }
+
+            int allyZoCCount = 0;
+            string allyZoCPrefix = $"ZoC{attacker.teamId}_";
+            foreach (var state in targetHex.States)
+            {
+                if (state.StartsWith(allyZoCPrefix))
+                {
+                    allyZoCCount++;
+                }
+            }
+            
+            score += Mathf.Max(0, allyZoCCount - 1) * surroundBonus;
+
+            return Mathf.Clamp(score / 100f, 0f, 1f);
+        }
+
+        private bool IsOccluding(HexData hex)
+        {
+            if (hex == null) return false;
+            return hex.Unit != null || hex.TerrainType == TerrainType.Mountains;
         }
     }
 }

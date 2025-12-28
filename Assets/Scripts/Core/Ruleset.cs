@@ -45,7 +45,10 @@ namespace HexGame
         public virtual void OnUnitSelected(Unit unit) { }
         public virtual void OnUnitDeselected(Unit unit) { }
 
-        public virtual List<PotentialHit> GetPotentialHits(Unit attacker, Unit target) { return new List<PotentialHit>(); }
+        public virtual List<PotentialHit> GetPotentialHits(Unit attacker, Unit target, HexData fromHex = null) 
+        { 
+            return new List<PotentialHit>(); 
+        }
 
         public virtual void OnFinishPathfinding(Unit unit, List<HexData> path, bool success) { }
         public virtual void OnClearPathfindingVisuals() { }

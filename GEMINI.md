@@ -25,6 +25,7 @@ We follow a **Data-Driven Architecture** prioritizing strict Logic/View separati
     *   **Logic**: `Ruleset` (Abstract SO), `BattleBrothersRuleset`.
     *   **Management**: `GameMaster` (Persistent Singleton).
     *   **Principle**: The Ruleset is the game's "brain," dictating movement costs and grid-state side effects (e.g., Zone of Control). The `Pathfinder` and `Unit` systems query the `GameMaster` to execute specific gameplay rules.
+    *   **Combat**: `BattleBrothersRuleset` uses a bucket-based probability engine for unified resolution of hits, cover interception, and scatter (stray shots). Pathfinding is attack-aware, stopping units at optimal range and visualizing the Area of Attack (AoA).
 *   **Interaction**: `ToolManager` (Central Hub), `PathfindingTool` (Real-time pathing), `ToggleTool` (Base for utility triggers like `GridTool` and `ZoCTool`), and various Editor Tools.
 
 # Workflow and coding standards
