@@ -229,10 +229,12 @@ namespace HexGame.Tools
                 for (int i = 0; i < showCount; i++)
                 {
                     var hexData = result.Path[i];
-                    if (hexData != SourceHex.Data && (i < showCount - 1 || target.Unit == null))
-                    {
-                        hexData.AddState("Path");
-                    }
+                    if (hexData == SourceHex.Data) continue;
+
+                    // Only skip if this is the actual target hex and it has a unit
+                    if (hexData == target.Data && target.Unit != null) continue;
+
+                    hexData.AddState("Path");
                 }
             }
         }

@@ -91,11 +91,16 @@ namespace HexGame
 
         private void SpawnGhost(Unit sourceUnit)
         {
-            var unitManager = UnitManager.Instance;
-            if (unitManager == null || unitManager.unitVisualizationPrefab == null) return;
+            var sourceViz = sourceUnit.GetComponentInChildren<HexGame.Units.UnitVisualization>();
+            if (sourceViz == null) return;
 
-            pathGhost = Instantiate(unitManager.unitVisualizationPrefab, unitManager.transform);
+            var unitManager = UnitManager.Instance;
+            if (unitManager == null) return;
+
+            pathGhost = Instantiate(sourceViz, unitManager.transform);
             pathGhost.gameObject.name = "Pathfinding_PreviewGhost_BB";
+            
+            // Ensure preview identity is synced (in case simple viz logic changes)
             pathGhost.SetPreviewIdentity(sourceUnit.UnitName);
             lastGhostSource = sourceUnit;
 
