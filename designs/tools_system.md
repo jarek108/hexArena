@@ -27,7 +27,8 @@ The Tools System follows a decoupled, modular design using **Active Tools** (ong
 
 #### Interaction
 *   **`PathfindingTool` (IActiveTool)**: 
-    *   **Continuous Mode**: Calculates paths in real-time on hover if a source is selected.
+    *   **Selection Visuals**: Immediately triggers `OnUnitSelected` and calculates path visuals (Ghost + Area of Attack) when a unit is first clicked.
+    *   **Continuous Mode**: Calculates paths in real-time on hover if a source is selected. Supports snapping visuals back to the unit's feet when hovering over the `SourceHex`.
     *   **Locking**: Right-Click locks a target, ignoring subsequent hovers until cleared.
     *   **Ruleset Integrated**: 
         *   Notifies the Ruleset of pathfinding lifecycle events (`OnStartPathfinding`, `OnFinishPathfinding`).
@@ -43,7 +44,8 @@ The Tools System follows a decoupled, modular design using **Active Tools** (ong
 
 #### Utilities
 *   **`GridTool` (ToggleTool)**: Toggles the hex overlay.
-*   **`ZoCTool` (ToggleTool)**: Toggles the visibility of Zone of Control states by flipping priority signs in the visualizer.
+*   **`ZoCTool` (ToggleTool)**: Toggles the visibility of Zone of Control states.
+*   **`AoATool` (ToggleTool)**: Toggles the visibility of Area of Attack states by flipping priority signs in the visualizer.
 
 ## UI Integration
 *   **`IconManager`:**

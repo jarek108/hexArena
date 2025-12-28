@@ -19,7 +19,7 @@ The Grid System is the foundation of the game, designed with a strict separation
 *   **`Hex` Component**: Syncs GameObject transform with `HexData` elevation and requests visual refreshes.
 *   **`GridVisualizationManager`**:
     *   **Styling Authority**: Maps state strings to visual properties (Rim Color, Width, Pulse).
-    *   **Visual Resolution**: Iterates active states and picks the one with the highest **positive** priority. Matches can be exact or based on a prefix followed by an underscore (e.g., rule "ZoC0" matches state "ZoC0_123").
+    *   **Visual Resolution**: Iterates active states and picks the one with the highest **positive** priority. Matches can be exact or based on a prefix followed by an underscore (e.g., rule "ZoC0" matches state "ZoC0_123", rule "AoA0" matches "AoA0_456").
     *   **Visibility Toggle**: Tools can "hide" a state by flipping its priority sign (e.g., `15` -> `-15`).
     *   **Manual Ordering**: The Inspector provides **Up/Down** buttons to organize state settings manually in the data set.
     *   **Default Fallback**: Hardcoded visuals (priority 0) used when no positive-priority states are active.

@@ -34,16 +34,22 @@ This layer defines "what a unit is" before it enters the scene.
 ### 4. Management & Rules Layer
 *   **`UnitManager`**: Handles spawning, erasing, and persistence.
 *   **`GameMaster`**: A singleton that holds the active `Ruleset` asset.
-*   **`Ruleset` (Abstract SO)**: The "brain" of the game. Handles movement costs, combat execution, and pathfinding lifecycle events. `OnEntry` and `OnDeparture` return booleans to allow interrupting movement.
+*   **`Ruleset` (Abstract SO)**: The "brain" of the game. Handles movement costs, combat execution, and pathfinding lifecycle events.
+    *   **Hooks**: `OnEntry`, `OnDeparture` (return booleans to allow movement interruption), `OnUnitSelected`, `OnUnitDeselected`.
 *   **`BattleBrothersRuleset`**: Manages terrain costs, Zone of Control, and attack-range aware pathfinding.
 
 ## Key Interactions
 
 ### Pathfinding & Combat Flow
 1.  **Selection**: `PathfindingTool` identifies a `SourceHex`.
+    *   Triggers `ruleset.OnUnitSelected`.
+    *   Immediately initiates a zero-length pathfinding call to show initial visuals.
 2.  **Hover**: Ruleset receives `OnStartPathfinding`. It determines if the target is an enemy and calculates the appropriate `AttackType` (Melee/Ranged).
 3.  **Pathing**: `Pathfinder` calculates the raw path. The Ruleset evaluates costs, allowing pass-through for friendly units but forbidding ending moves on occupied hexes.
-4.  **Preview**: Ruleset receives `OnFinishPathfinding`. It uses `GetMoveStopIndex` to truncate the path (stopping at attack range) and spawns a **Ghost** at the stop position.
+4.  **Preview**: Ruleset receives `OnFinishPathfinding`.
+    *   Uses `GetMoveStopIndex` to truncate the path (stopping at attack range).
+    *   Spawns a **Ghost** at the stop position.
+    *   Calculates **Area of Attack (AoA)**: Highlights all hexes within the unit's max range from the stopping hex. Melee ranges respect `maxElevationDelta`.
 5.  **Execution**: On click, the tool calls `ruleset.ExecutePath`. 
     *   The unit "unoccupies" its start hex.
     *   At each step, `OnDeparture` and `OnEntry` are called. If either returns `false`, movement stops immediately.
