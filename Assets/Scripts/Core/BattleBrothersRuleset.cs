@@ -305,16 +305,35 @@ namespace HexGame
             // 1. Logic: Facing
             attacker.FacePosition(target.transform.position);
 
-            // 2. Logic: Hooks
-            OnAttack(attacker, target);
-            OnBeingAttacked(attacker, target);
+            // 2. Logic: Roll for Success
+            float chance = HitChance(attacker, target);
+            float roll = Random.value;
+            bool isHit = roll <= chance;
 
-            // 3. View: Triggers
-            var attackerViz = attacker.GetComponent<HexGame.Units.UnitVisualization>();
-            if (attackerViz != null) attackerViz.OnAttack(target);
+            string typeStr = currentAttackType == AttackType.Ranged ? "Ranged" : "Melee";
+            string outcomeStr = isHit ? "<color=green>HIT</color>" : "<color=red>MISS</color>";
+            Debug.Log($"[Ruleset] {typeStr} Attack: Chance {chance:P1}, Roll {roll:P1} -> {outcomeStr}");
 
-            var targetViz = target.GetComponent<HexGame.Units.UnitVisualization>();
-            if (targetViz != null) targetViz.OnTakeDamage(10); // Dummy
+            if (isHit)
+            {
+                // 3. Logic: Hooks
+                OnAttack(attacker, target);
+                OnBeingAttacked(attacker, target);
+
+                // 4. View: Triggers
+                var attackerViz = attacker.GetComponent<HexGame.Units.UnitVisualization>();
+                if (attackerViz != null) attackerViz.OnAttack(target);
+
+                var targetViz = target.GetComponent<HexGame.Units.UnitVisualization>();
+                if (targetViz != null) targetViz.OnTakeDamage(10); // Dummy
+            }
+            else
+            {
+                // Visual feedback for a miss? Maybe a different anim later.
+                // For now, still trigger attacker's attack anim so they don't just stand there.
+                var attackerViz = attacker.GetComponent<HexGame.Units.UnitVisualization>();
+                if (attackerViz != null) attackerViz.OnAttack(target);
+            }
         }
 
         public override float GetMoveCost(Unit unit, HexData fromHex, HexData toHex)
