@@ -23,7 +23,7 @@ namespace HexGame.Tests
             elevationTool = managerGO.AddComponent<ElevationTool>();
             
             // Create a small grid and get a hex from it
-            HexGrid grid = new HexGrid(5, 5);
+            Grid grid = new Grid(5, 5);
             for (int r = 0; r < 5; r++)
                 for (int q = 0; q < 5; q++)
                     grid.AddHex(new HexData(q, r));
@@ -87,22 +87,21 @@ namespace HexGame.Tests
             Assert.AreEqual(10f, testHex.Elevation, "Elevation should be clamped at 10.");
         }
 
-        [UnityTest]
-        public IEnumerator ElevationTool_BrushSize_CanBeModified()
+        [Test]
+        public void ElevationTool_BrushSize_CanBeModified()
         {
             elevationTool.OnActivate();
             
-            var field = elevationTool.GetType().GetField("brushSize", 
+            var field = elevationTool.GetType().BaseType.GetField("brushSize", 
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             
             int initialSize = (int)field.GetValue(elevationTool);
             
-            // Manually set brushSize to test logic (since we can't easily inject Mouse.current.scroll in EditMode)
+            // Manually set brushSize to test logic
             field.SetValue(elevationTool, Mathf.Clamp(initialSize + 1, 1, 10));
             
             int newSize = (int)field.GetValue(elevationTool);
-            Assert.AreNotEqual(initialSize, newSize, "Brush size should have changed.");
-            yield return null;
+            Assert.AreEqual(initialSize + 1, newSize, "Brush size should have increased.");
         }
     }
 }

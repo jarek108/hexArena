@@ -1,0 +1,23 @@
+{
+    "unitSetName": "BattleBrothers_Core",
+    "units": [
+        {
+            "q": 11,
+            "r": 5,
+            "unitIndex": 0,
+            "teamId": 0
+        },
+        {
+            "q": 10,
+            "r": 5,
+            "unitIndex": 0,
+            "teamId": 0
+        },
+        {
+            "q": 12,
+            "r": 4,
+            "unitIndex": 0,
+            "teamId": 0
+        }
+    ]
+}

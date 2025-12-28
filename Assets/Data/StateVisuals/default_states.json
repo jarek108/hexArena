@@ -1,0 +1,130 @@
+{
+    "settings": [
+        {
+            "state": "Path",
+            "priority": 100,
+            "visuals": {
+                "color": {
+                    "r": 1.0,
+                    "g": 1.0,
+                    "b": 1.0,
+                    "a": 1.0
+                },
+                "width": 0.20000000298023225,
+                "pulsation": 0.0
+            }
+        },
+        {
+            "state": "Target",
+            "priority": 30,
+            "visuals": {
+                "color": {
+                    "r": 0.0,
+                    "g": 0.0,
+                    "b": 1.0,
+                    "a": 1.0
+                },
+                "width": 0.15000000596046449,
+                "pulsation": 0.0
+            }
+        },
+        {
+            "state": "Selected",
+            "priority": 20,
+            "visuals": {
+                "color": {
+                    "r": 1.0,
+                    "g": 0.0,
+                    "b": 0.0,
+                    "a": 1.0
+                },
+                "width": 0.20000000298023225,
+                "pulsation": 2.0
+            }
+        },
+        {
+            "state": "AoA0",
+            "priority": 15,
+            "visuals": {
+                "color": {
+                    "r": 1.0,
+                    "g": 0.5,
+                    "b": 0.0,
+                    "a": 0.7
+                },
+                "width": 0.12,
+                "pulsation": 0.0
+            }
+        },
+        {
+            "state": "AoA1",
+            "priority": 15,
+            "visuals": {
+                "color": {
+                    "r": 0.6,
+                    "g": 0.0,
+                    "b": 1.0,
+                    "a": 0.7
+                },
+                "width": 0.12,
+                "pulsation": 0.0
+            }
+        },
+        {
+            "state": "Hovered",
+            "priority": 10,
+            "visuals": {
+                "color": {
+                    "r": 1.0,
+                    "g": 0.9215685725212097,
+                    "b": 0.01568627916276455,
+                    "a": 1.0
+                },
+                "width": 0.15000000596046449,
+                "pulsation": 5.0
+            }
+        },
+        {
+            "state": "Default",
+            "priority": 0,
+            "visuals": {
+                "color": {
+                    "r": 0.0,
+                    "g": 0.0,
+                    "b": 0.0,
+                    "a": 1.0
+                },
+                "width": 0.05000000074505806,
+                "pulsation": 0.0
+            }
+        },
+        {
+            "state": "ZoC0",
+            "priority": -8,
+            "visuals": {
+                "color": {
+                    "r": 0.066070556640625,
+                    "g": 0.0,
+                    "b": 1.0,
+                    "a": 1.0
+                },
+                "width": 0.15000000596046449,
+                "pulsation": 3.5
+            }
+        },
+        {
+            "state": "ZoC1",
+            "priority": -9,
+            "visuals": {
+                "color": {
+                    "r": 1.0,
+                    "g": 0.0,
+                    "b": 0.13618707656860352,
+                    "a": 1.0
+                },
+                "width": 0.10000000149011612,
+                "pulsation": 3.5999999046325685
+            }
+        }
+    ]
+}

@@ -16,8 +16,11 @@ def activate_windows_win32(target_title):
             
             if target_title.lower() in title.lower():
                 print(f"Activating: {title}")
-                # Restore if minimized
-                user32.ShowWindow(hwnd, SW_RESTORE)
+                
+                # Only restore if minimized (IsIconic) to avoid resizing/moving maximized windows
+                if user32.IsIconic(hwnd):
+                    user32.ShowWindow(hwnd, SW_RESTORE)
+                
                 # Bring to front
                 user32.SetForegroundWindow(hwnd)
         return True
