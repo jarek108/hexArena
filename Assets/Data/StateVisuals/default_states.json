@@ -43,6 +43,34 @@
             }
         },
         {
+            "state": "AoA0",
+            "priority": 15,
+            "visuals": {
+                "color": {
+                    "r": 1.0,
+                    "g": 0.5,
+                    "b": 0.0,
+                    "a": 0.7
+                },
+                "width": 0.12,
+                "pulsation": 0.0
+            }
+        },
+        {
+            "state": "AoA1",
+            "priority": 15,
+            "visuals": {
+                "color": {
+                    "r": 0.6,
+                    "g": 0.0,
+                    "b": 1.0,
+                    "a": 0.7
+                },
+                "width": 0.12,
+                "pulsation": 0.0
+            }
+        },
+        {
             "state": "Hovered",
             "priority": 10,
             "visuals": {

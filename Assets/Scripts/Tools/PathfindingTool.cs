@@ -83,7 +83,13 @@ namespace HexGame.Tools
             ClearTarget();
             
             var ruleset = GameMaster.Instance?.ruleset;
-            if (ruleset != null) ruleset.OnClearPathfindingVisuals();
+            if (ruleset != null)
+            {
+                ruleset.OnUnitSelected(SourceHex.Unit);
+            }
+
+            // Immediately show path visuals (zero-length path + AoA)
+            CalculateAndShowPath(SourceHex);
         }
 
         public void SetTarget(Hex hex)
@@ -133,13 +139,16 @@ namespace HexGame.Tools
         {
             if (SourceHex != null)
             {
+                var ruleset = GameMaster.Instance?.ruleset;
+                if (ruleset != null) ruleset.OnUnitDeselected(SourceHex.Unit);
+
                 SourceHex.Data.RemoveState("Selected");
                 SourceHex = null;
             }
             ClearTarget();
             
-            var ruleset = GameMaster.Instance?.ruleset;
-            if (ruleset != null) ruleset.OnClearPathfindingVisuals();
+            var rulesetVisuals = GameMaster.Instance?.ruleset;
+            if (rulesetVisuals != null) rulesetVisuals.OnClearPathfindingVisuals();
         }
 
         private void ClearTarget()
@@ -185,7 +194,7 @@ namespace HexGame.Tools
                 newHex.Data.AddState("Hovered");
                 
                 // Continuous pathfinding logic
-                if (continuous && SourceHex != null && TargetHex == null && newHex != SourceHex)
+                if (continuous && SourceHex != null && TargetHex == null)
                 {
                     CalculateAndShowPath(newHex);
                 }

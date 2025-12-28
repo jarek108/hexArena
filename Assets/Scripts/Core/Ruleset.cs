@@ -21,6 +21,9 @@ namespace HexGame
 
         public abstract void ExecutePath(Unit unit, List<HexData> path, Hex targetHex);
 
+        public virtual void OnUnitSelected(Unit unit) { }
+        public virtual void OnUnitDeselected(Unit unit) { }
+
         public virtual void OnFinishPathfinding(Unit unit, List<HexData> path, bool success) { }
         public virtual void OnClearPathfindingVisuals() { }
 

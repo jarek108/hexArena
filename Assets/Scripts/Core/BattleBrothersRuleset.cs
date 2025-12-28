@@ -26,6 +26,7 @@ namespace HexGame
 
         private HexGame.Units.UnitVisualization pathGhost;
         private Unit lastGhostSource;
+        private List<HexData> currentAoAHexes = new List<HexData>();
 
         public override void OnStartPathfinding(HexData target, Unit unit)
         {
@@ -38,6 +39,16 @@ namespace HexGame
                 int rrng = unit.GetStat("RRNG", 0);
                 currentAttackType = (rrng > mrng) ? AttackType.Ranged : AttackType.Melee;
             }
+        }
+
+        public override void OnUnitSelected(Unit unit)
+        {
+            OnClearPathfindingVisuals();
+        }
+
+        public override void OnUnitDeselected(Unit unit)
+        {
+            OnClearPathfindingVisuals();
         }
 
         public override void OnFinishPathfinding(Unit unit, List<HexData> path, bool success)
@@ -69,6 +80,9 @@ namespace HexGame
                         pos.y += pathGhost.yOffset;
                         pathGhost.transform.position = pos;
                         pathGhost.gameObject.SetActive(true);
+
+                        // Calculate and show AoA
+                        ShowAoA(unit, ghostHex);
                     }
                 }
                 else
@@ -78,8 +92,58 @@ namespace HexGame
             }
         }
 
+        private void ShowAoA(Unit unit, HexData stopHex)
+        {
+            ClearAoA();
+
+            var grid = GridVisualizationManager.Instance?.Grid;
+            if (grid == null) return;
+
+            int mrng = unit.GetStat("MRNG", 1);
+            int rrng = unit.GetStat("RRNG", 0);
+            int range = Mathf.Max(mrng, rrng);
+            bool isMelee = mrng >= rrng;
+
+            string aoaState = $"AoA{unit.teamId}_{unit.Id}";
+            var inRange = grid.GetHexesInRange(stopHex, range);
+
+            foreach (var h in inRange)
+            {
+                if (h == stopHex) continue;
+
+                // Melee AoA respects elevation
+                if (isMelee)
+                {
+                    if (Mathf.Abs(h.Elevation - stopHex.Elevation) > maxElevationDelta) continue;
+                }
+
+                h.AddState(aoaState);
+                currentAoAHexes.Add(h);
+            }
+        }
+
+        private void ClearAoA()
+        {
+            if (currentAoAHexes.Count == 0) return;
+
+            // We need to know the unit ID to clear the specific state
+            // But since this is transient during pathfinding, we can just clear all AoA states from tracked hexes
+            foreach (var h in currentAoAHexes)
+            {
+                // Remove any state starting with AoA
+                var toRemove = new List<string>();
+                foreach (var s in h.States)
+                {
+                    if (s.StartsWith("AoA")) toRemove.Add(s);
+                }
+                foreach (var s in toRemove) h.RemoveState(s);
+            }
+            currentAoAHexes.Clear();
+        }
+
         public override void OnClearPathfindingVisuals()
         {
+            ClearAoA();
             if (pathGhost != null)
             {
                 if (Application.isPlaying) Destroy(pathGhost.gameObject);
