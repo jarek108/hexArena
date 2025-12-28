@@ -1,3 +1,6 @@
+# STRICT MANDATE: NO UNCONSULTED COMMITS
+**NEVER commit or push changes to Git without explicit, turn-by-frame consultation and confirmation from the user.** Even if a task feels "complete" or the user says "finish the task", you MUST propose the commit message and wait for an explicit "Yes, commit this" for that specific set of changes. This is a zero-tolerance policy.
+
 # Development environment
 - Machine: Windows 10 pro
 - Unity 6000.214f1; 3D project using URP.
@@ -61,10 +64,12 @@ We follow a **Data-Driven Architecture** prioritizing strict Logic/View separati
     *   **Test run** always use unity-mcp's `run_tests`. *Troubleshooting: If 'No Unity plugins connected' error occurs, try waiting 60s or more for recompilation.*
     *   **Post-test Console Check** BEFORE reporting test results further, check the console again. In Unity errors may indicate unreliable tests results
 4.  **Git Usage:** 
-    *   You may propose commit msgs after a major feature/bug fix is verified and CONFIRMED BY THE USER. Never commit changes without user confirmation.
+    *   **CRITICAL:** NEVER commit or push without explicit consultation. 
+    *   You may only propose commit messages after a major feature/bug fix is verified and the user has been consulted.
+    *   **Propose first:** Always present the list of files and the proposed message, then wait for explicit confirmation.
     *   Prepare commit messages based on conversation context and a list of modified files. Do not do long git diff HEAD analysis etc.
-    *   Use simple language and list all areas of change
+    *   Use simple language and list all areas of change.
     *   **Independent Commands**: Run each git command independently. NEVER chain them with `&&`.
-    *   Make sure you push after each commit
+    *   **Pushing**: Only push after a confirmed commit, and ensure each push is also part of the confirmed sequence.
 5.  **Scene inspection/Management:** - Use use unity-mcp's `manage_gameobject` (action: `get_components`) or `manage_scene` (action: `get_hierarchy`) to inspect scene
 6. **Editing** - while using edit replacing 'old_string' with new always break long edits into smaller to avoid tool issues due to the errors in the replaced strings ('The exact text in old_string was not found')

@@ -24,6 +24,8 @@ namespace HexGame
         public virtual void OnUnitSelected(Unit unit) { }
         public virtual void OnUnitDeselected(Unit unit) { }
 
+        public virtual float HitChance(Unit attacker, Unit target) { return 0f; }
+
         public virtual void OnFinishPathfinding(Unit unit, List<HexData> path, bool success) { }
         public virtual void OnClearPathfindingVisuals() { }
 

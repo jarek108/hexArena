@@ -36,7 +36,13 @@ This layer defines "what a unit is" before it enters the scene.
 *   **`GameMaster`**: A singleton that holds the active `Ruleset` asset.
 *   **`Ruleset` (Abstract SO)**: The "brain" of the game. Handles movement costs, combat execution, and pathfinding lifecycle events.
     *   **Hooks**: `OnEntry`, `OnDeparture` (return booleans to allow movement interruption), `OnUnitSelected`, `OnUnitDeselected`.
+    *   **Combat Probability**: `HitChance(attacker, target)` returns a value between 0 and 1.
 *   **`BattleBrothersRuleset`**: Manages terrain costs, Zone of Control, and attack-range aware pathfinding.
+    *   **Hit Chance Logic**: Uses base stats (`MSKL` vs `MDEF`) and applies configurable modifiers:
+        *   **Elevation**: `elevationBonus` for high ground, `elevationPenalty` for low ground.
+        *   **Surround (Backstabber)**: Cumulative `surroundBonus` based on the number of ally Zone of Control states on the target hex (formula: `(AllyZoCCount - 1) * bonus`).
+        *   **Proximity Penalty**: `longWeaponProximityPenalty` applied when a Range-2 melee unit attacks an adjacent (Distance 1) target.
+        *   **Ranged Units**: Only melee units (`MRNG > 0`) produce ZoC, meaning ranged-only units do not contribute to surround bonuses.
 
 ## Key Interactions
 

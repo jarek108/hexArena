@@ -22,6 +22,12 @@ namespace HexGame
         public float forestCost = 3.0f;
         public float desertCost = 4.0f;
 
+        [Header("Combat Modifiers")]
+        public float elevationBonus = 10f;
+        public float elevationPenalty = 10f;
+        public float surroundBonus = 5f;
+        public float longWeaponProximityPenalty = 15f;
+
         public AttackType currentAttackType = AttackType.None;
 
         private HexGame.Units.UnitVisualization pathGhost;
@@ -49,6 +55,55 @@ namespace HexGame
         public override void OnUnitDeselected(Unit unit)
         {
             OnClearPathfindingVisuals();
+        }
+
+        public override float HitChance(Unit attacker, Unit target)
+        {
+            if (attacker == null || target == null) return 0f;
+
+            // 1. Base Stats
+            int mskl = attacker.GetStat("MSKL", 50);
+            int mdef = target.GetStat("MDEF", 0);
+            float score = mskl - mdef;
+
+            // 2. Elevation Modifier
+            HexData attackerHex = null;
+            HexData targetHex = null;
+            
+            if (attacker.CurrentHex != null) attackerHex = attacker.CurrentHex.Data;
+            if (target.CurrentHex != null) targetHex = target.CurrentHex.Data;
+
+            if (attackerHex != null && targetHex != null)
+            {
+                if (attackerHex.Elevation > targetHex.Elevation) score += elevationBonus;
+                else if (attackerHex.Elevation < targetHex.Elevation) score -= elevationPenalty;
+
+                // 3. Distance-based modifiers
+                int dist = HexMath.Distance(attackerHex, targetHex);
+                int mrng = attacker.GetStat("MRNG", 1);
+
+                // Long weapon proximity penalty
+                if (mrng == 2 && dist == 1)
+                {
+                    score -= longWeaponProximityPenalty;
+                }
+
+                // 4. Surround Bonus (Based on ally ZoC on target hex)
+                int allyZoCCount = 0;
+                string allyZoCPrefix = $"ZoC{attacker.teamId}_";
+                foreach (var state in targetHex.States)
+                {
+                    if (state.StartsWith(allyZoCPrefix))
+                    {
+                        allyZoCCount++;
+                    }
+                }
+                
+                // Surround bonus is (ZoC from team - 1) * bonus
+                score += Mathf.Max(0, allyZoCCount - 1) * surroundBonus;
+            }
+
+            return Mathf.Clamp(score / 100f, 0f, 1f);
         }
 
         public override void OnFinishPathfinding(Unit unit, List<HexData> path, bool success)
