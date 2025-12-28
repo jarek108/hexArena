@@ -41,7 +41,7 @@ namespace HexGame
         public abstract void OnHit(Unit attacker, Unit target, float damage);
         public abstract void OnDie(Unit unit);
 
-        public abstract void ExecutePath(Unit unit, List<HexData> path, Hex targetHex);
+        public abstract void ExecutePath(Unit unit, List<HexData> path, Hex targetHex, System.Action onComplete = null);
 
         public virtual void OnUnitSelected(Unit unit) { }
         public virtual void OnUnitDeselected(Unit unit) { }

@@ -118,12 +118,26 @@ namespace HexGame.Tools
             {
                 if (SourceHex.Unit != null && ruleset != null)
                 {
-                    // Let the ruleset handle how the unit follows the path
-                    ruleset.ExecutePath(SourceHex.Unit, result.Path, hex);
-                    
-                    // Clear tool state as unit has moved
-                    ClearAll();
+                    Unit movingUnit = SourceHex.Unit;
+
+                    // Deselect the old hex visually
+                    if (SourceHex != null)
+                    {
+                        SourceHex.Data.RemoveState("Selected");
+                        SourceHex = null;
+                    }
+                    ClearTarget();
                     ruleset.OnClearPathfindingVisuals();
+
+                    // Let the ruleset handle how the unit follows the path
+                    ruleset.ExecutePath(movingUnit, result.Path, hex, () => 
+                    {
+                        // On complete: re-select the unit at its new location
+                        if (movingUnit != null && movingUnit.CurrentHex != null)
+                        {
+                            SetSource(movingUnit.CurrentHex);
+                        }
+                    });
                 }
                 else if (SourceHex.Unit == null)
                 {

@@ -162,7 +162,7 @@ namespace HexGame
             }
         }
 
-        public override void ExecutePath(Unit unit, List<HexData> path, Hex targetHex)
+        public override void ExecutePath(Unit unit, List<HexData> path, Hex targetHex, System.Action onComplete = null)
         {
             if (unit == null || path == null) return;
 
@@ -171,6 +171,7 @@ namespace HexGame
                 {
                     PerformAttack(unit, targetHex.Unit);
                 }
+                onComplete?.Invoke();
             });
         }
 
