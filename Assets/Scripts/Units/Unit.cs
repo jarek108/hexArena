@@ -10,20 +10,30 @@ namespace HexGame
         public int Id => gameObject.GetInstanceID();
 
         public UnitSet unitSet;
-        [SerializeField] private int unitIndex;
+        [SerializeField] private int typeIndex;
         public int teamId;
+
+        public int TypeIndex
+        {
+            get => typeIndex;
+            set
+            {
+                typeIndex = value;
+                Initialize();
+            }
+        }
 
         public UnitType UnitType 
         {
             get 
             {
-                if (unitSet != null && unitIndex >= 0 && unitIndex < unitSet.units.Count)
-                    return unitSet.units[unitIndex];
+                if (unitSet != null && typeIndex >= 0 && typeIndex < unitSet.units.Count)
+                    return unitSet.units[typeIndex];
                 return null;
             }
         }
 
-        public string unitName => UnitType != null ? UnitType.Name : "Unknown Unit";
+        public string UnitName => UnitType != null ? UnitType.Name : "Unknown Unit";
 
         public Hex CurrentHex { get; private set; }
         [SerializeField, HideInInspector] private int lastQ;
@@ -33,34 +43,44 @@ namespace HexGame
         private UnitVisualization currentView;
         private Coroutine moveCoroutine;
 
+        private void OnValidate()
+        {
+            // Only initialize if we have a set and it's not in the middle of a prefab stage or similar
+            if (unitSet != null)
+            {
+                Initialize();
+                if (CurrentHex != null) SetHex(CurrentHex);
+            }
+        }
+
         private void Start()
         {
-            if (unitSet != null) Initialize(unitSet, unitIndex, teamId);
+            if (unitSet != null) Initialize();
         }
 
         public bool IsMoving => moveCoroutine != null;
 
-        public void MoveAlongPath(List<HexData> path)
+        public void MoveAlongPath(List<HexData> path, float speed, float pause, System.Action onComplete = null)
         {
             if (moveCoroutine != null) StopCoroutine(moveCoroutine);
-            moveCoroutine = StartCoroutine(MoveCoroutine(path));
+            moveCoroutine = StartCoroutine(MoveCoroutine(path, speed, pause, onComplete));
         }
 
-        private System.Collections.IEnumerator MoveCoroutine(List<HexData> path)
+        private System.Collections.IEnumerator MoveCoroutine(List<HexData> path, float speed, float pause, System.Action onComplete)
         {
-            var ruleset = GameMaster.Instance?.ruleset as BattleBrothersRuleset;
-            float speed = ruleset != null ? ruleset.transitionSpeed : 5f;
-            float pause = ruleset != null ? ruleset.transitionPause : 0.1f;
+            var ruleset = GameMaster.Instance?.ruleset;
+
+            // Determine stop index from ruleset
+            int stopIndex = ruleset != null ? ruleset.GetMoveStopIndex(this, path) : path.Count;
 
             // path[0] is current position usually, so we skip it or handle it.
-            // Pathfinder returns path including start.
-            for (int i = 1; i < path.Count; i++)
+            for (int i = 1; i < stopIndex; i++)
             {
                 HexData targetData = path[i];
                 var manager = GridVisualizationManager.Instance;
                 Hex targetHex = manager.GetHex(targetData.Q, targetData.R);
 
-                Debug.Log($"[Unit] Moving to step {i}: {targetData.Q},{targetData.R}");
+                Debug.Log($"[Unit] Moving to step {i}/{stopIndex-1}: {targetData.Q},{targetData.R}");
 
                 if (targetHex != null)
                 {
@@ -88,13 +108,27 @@ namespace HexGame
             }
 
             moveCoroutine = null;
+            onComplete?.Invoke();
         }
+
+        public void FacePosition(Vector3 targetPos)
+        {
+            Vector3 dir = targetPos - transform.position;
+            dir.y = 0;
+            if (dir != Vector3.zero) transform.rotation = Quaternion.LookRotation(dir);
+        }
+
 
         public void Initialize(UnitSet set, int index, int team)
         {
             unitSet = set;
-            unitIndex = index;
+            typeIndex = index;
             teamId = team;
+            Initialize();
+        }
+
+        private void Initialize()
+        {
             Stats.Clear();
 
             UnitType type = UnitType;
@@ -111,6 +145,7 @@ namespace HexGame
             if (currentView != null)
             {
                 currentView.Initialize(this);
+                currentView.SetPreviewIdentity(UnitName);
             }
         }
 
@@ -168,7 +203,7 @@ namespace HexGame
             {
                 q = lastQ,
                 r = lastR,
-                unitIndex = this.unitIndex,
+                typeIndex = this.typeIndex,
                 teamId = this.teamId
             };
         }
@@ -179,7 +214,7 @@ namespace HexGame
     {
         public int q;
         public int r;
-        public int unitIndex;
+        public int typeIndex;
         public int teamId;
     }
 }

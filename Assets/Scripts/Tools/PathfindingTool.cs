@@ -2,6 +2,7 @@ using UnityEngine;
 using System.Collections.Generic;
 using HexGame.UI;
 using UnityEngine.InputSystem;
+using HexGame.Units;
 
 namespace HexGame.Tools
 {
@@ -12,8 +13,8 @@ namespace HexGame.Tools
         public Hex SourceHex { get; private set; }
         public Hex TargetHex { get; private set; }
 
-        [SerializeField] private float maxElevationChange = 1.0f;
         [SerializeField] private bool continuous = true;
+        [SerializeField] private bool showGhost = true;
 
         public virtual bool CheckRequirements(out string reason)
         {
@@ -30,6 +31,9 @@ namespace HexGame.Tools
         {
             IsEnabled = false;
             ClearAll();
+            
+            var ruleset = GameMaster.Instance?.ruleset;
+            if (ruleset != null) ruleset.OnClearPathfindingVisuals();
         }
 
         public void HandleInput(Hex hoveredHex)
@@ -37,7 +41,12 @@ namespace HexGame.Tools
             if (!IsEnabled) return;
 
             // Prevent input if a unit is currently moving
-            if (SourceHex != null && SourceHex.Unit != null && SourceHex.Unit.IsMoving) return;
+            if (SourceHex != null && SourceHex.Unit != null && SourceHex.Unit.IsMoving) 
+            {
+                var ruleset = GameMaster.Instance?.ruleset;
+                if (ruleset != null) ruleset.OnClearPathfindingVisuals();
+                return;
+            }
 
             if (Mouse.current != null)
             {
@@ -72,6 +81,9 @@ namespace HexGame.Tools
 
             // Changing source invalidates the current path/target
             ClearTarget();
+            
+            var ruleset = GameMaster.Instance?.ruleset;
+            if (ruleset != null) ruleset.OnClearPathfindingVisuals();
         }
 
         public void SetTarget(Hex hex)
@@ -86,18 +98,27 @@ namespace HexGame.Tools
 
             // Pathfinding to target
             var manager = GridVisualizationManager.Instance ?? FindFirstObjectByType<GridVisualizationManager>();
+            
+            var ruleset = GameMaster.Instance?.ruleset;
+            if (ruleset != null)
+            {
+                ruleset.OnStartPathfinding(hex.Data, SourceHex.Unit);
+            }
+
             PathResult result = Pathfinder.FindPath(manager.Grid, SourceHex.Unit, SourceHex.Data, hex.Data);
 
             if (result.Success)
             {
-                if (SourceHex.Unit != null)
+                if (SourceHex.Unit != null && ruleset != null)
                 {
-                    // Trigger sequential movement
-                    SourceHex.Unit.MoveAlongPath(result.Path);
+                    // Let the ruleset handle how the unit follows the path
+                    ruleset.ExecutePath(SourceHex.Unit, result.Path, hex);
+                    
                     // Clear tool state as unit has moved
                     ClearAll();
+                    ruleset.OnClearPathfindingVisuals();
                 }
-                else
+                else if (SourceHex.Unit == null)
                 {
                     // Fallback visual highlight if no unit
                     if (TargetHex != null) TargetHex.Data.RemoveState("Target");
@@ -116,6 +137,9 @@ namespace HexGame.Tools
                 SourceHex = null;
             }
             ClearTarget();
+            
+            var ruleset = GameMaster.Instance?.ruleset;
+            if (ruleset != null) ruleset.OnClearPathfindingVisuals();
         }
 
         private void ClearTarget()
@@ -126,6 +150,9 @@ namespace HexGame.Tools
                 TargetHex = null;
             }
             ClearPathVisuals();
+            
+            var ruleset = GameMaster.Instance?.ruleset;
+            if (ruleset != null) ruleset.OnClearPathfindingVisuals();
         }
 
         private void ClearPathVisuals()
@@ -163,6 +190,11 @@ namespace HexGame.Tools
                     CalculateAndShowPath(newHex);
                 }
             }
+            else
+            {
+                var ruleset = GameMaster.Instance?.ruleset;
+                if (ruleset != null) ruleset.OnClearPathfindingVisuals();
+            }
         }
 
         private void CalculateAndShowPath(Hex target)
@@ -174,13 +206,30 @@ namespace HexGame.Tools
 
             ClearPathVisuals();
 
+            var ruleset = GameMaster.Instance?.ruleset;
+            if (ruleset != null)
+            {
+                ruleset.OnStartPathfinding(target.Data, SourceHex.Unit);
+            }
+
             PathResult result = Pathfinder.FindPath(manager.Grid, SourceHex.Unit, SourceHex.Data, target.Data);
+
+            if (ruleset != null)
+            {
+                // Ruleset handles ghost drawing
+                if (showGhost) ruleset.OnFinishPathfinding(SourceHex.Unit, result.Path, result.Success);
+                else ruleset.OnClearPathfindingVisuals();
+            }
 
             if (result.Success)
             {
-                foreach (var hexData in result.Path)
+                // Truncate visualization if ruleset dictates
+                int showCount = ruleset != null ? ruleset.GetMoveStopIndex(SourceHex.Unit, result.Path) : result.Path.Count;
+
+                for (int i = 0; i < showCount; i++)
                 {
-                    if (hexData != SourceHex.Data && hexData != target.Data)
+                    var hexData = result.Path[i];
+                    if (hexData != SourceHex.Data && (i < showCount - 1 || target.Unit == null))
                     {
                         hexData.AddState("Path");
                     }

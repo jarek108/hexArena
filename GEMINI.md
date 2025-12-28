@@ -27,7 +27,7 @@ We follow a **Data-Driven Architecture** prioritizing strict Logic/View separati
 # Workflow and coding standards
 
 ## Documentation workflow
-*   **Central Hub**: `GEMINI.md` contains high-level context, environment details, and the active session log.
+*   **Central Hub**: `GEMINI.md` contains high-level context, environment details
 *   **System Documentation**: Detailed architecture, decision logs, and structures for specific systems live in `designs/<system_name>.md`.
 *   **Policy**:
     *   Always keep documentation high-level in the root file and detailed in the designs.
@@ -61,8 +61,8 @@ We follow a **Data-Driven Architecture** prioritizing strict Logic/View separati
     *   **Post-test Console Check** BEFORE reporting test results further, check the console again. In Unity errors may indicate unreliable tests results
 4.  **Git Usage:** 
     *   You may propose commit msgs after a major feature/bug fix is verified and CONFIRMED BY THE USER. Never commit changes without user confirmation.
-    *   Prepare commit messages based on the session notes, your context and a list of modified files. Do not do long git diff HEAD analysis etc.
-    *   Use simple language and lis all areas of change
+    *   Prepare commit messages based on conversation context and a list of modified files. Do not do long git diff HEAD analysis etc.
+    *   Use simple language and list all areas of change
     *   Run each git command independently, do not chain them with &&
     *   Make sure you push after each commit
 5.  **Scene inspection/Management:** - Use use unity-mcp's `manage_gameobject` (action: `get_components`) or `manage_scene` (action: `get_hierarchy`) to inspect scene

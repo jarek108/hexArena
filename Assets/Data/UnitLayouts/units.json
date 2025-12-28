@@ -2,21 +2,117 @@
     "unitSetName": "BattleBrothers_Core",
     "units": [
         {
+            "q": 14,
+            "r": 9,
+            "typeIndex": 4,
+            "teamId": 1
+        },
+        {
+            "q": 15,
+            "r": 8,
+            "typeIndex": 4,
+            "teamId": 1
+        },
+        {
+            "q": 13,
+            "r": 10,
+            "typeIndex": 4,
+            "teamId": 1
+        },
+        {
+            "q": 12,
+            "r": 11,
+            "typeIndex": 4,
+            "teamId": 1
+        },
+        {
+            "q": 16,
+            "r": 8,
+            "typeIndex": 4,
+            "teamId": 1
+        },
+        {
+            "q": 17,
+            "r": 8,
+            "typeIndex": 4,
+            "teamId": 1
+        },
+        {
+            "q": 18,
+            "r": 7,
+            "typeIndex": 4,
+            "teamId": 1
+        },
+        {
+            "q": 19,
+            "r": 6,
+            "typeIndex": 4,
+            "teamId": 1
+        },
+        {
             "q": 11,
+            "r": 6,
+            "typeIndex": 7,
+            "teamId": 1
+        },
+        {
+            "q": 11,
+            "r": 7,
+            "typeIndex": 7,
+            "teamId": 1
+        },
+        {
+            "q": 12,
+            "r": 6,
+            "typeIndex": 7,
+            "teamId": 1
+        },
+        {
+            "q": 12,
             "r": 5,
-            "unitIndex": 0,
+            "typeIndex": 7,
+            "teamId": 1
+        },
+        {
+            "q": 13,
+            "r": 5,
+            "typeIndex": 7,
+            "teamId": 1
+        },
+        {
+            "q": 14,
+            "r": 4,
+            "typeIndex": 7,
+            "teamId": 1
+        },
+        {
+            "q": 4,
+            "r": 10,
+            "typeIndex": 0,
             "teamId": 0
         },
         {
-            "q": 10,
-            "r": 6,
-            "unitIndex": 0,
+            "q": 4,
+            "r": 9,
+            "typeIndex": 0,
             "teamId": 0
         },
         {
-            "q": 9,
-            "r": 6,
-            "unitIndex": 0,
+            "q": 5,
+            "r": 8,
+            "typeIndex": 0,
+            "teamId": 0
+        },
+        {
+            "q": 5,
+            "r": 7,
+            "typeIndex": 0,
+            "teamId": 0
+        },
+        {
+            "q": 4,
+            "r": 11,
+            "typeIndex": 3,
             "teamId": 0
         }
     ]

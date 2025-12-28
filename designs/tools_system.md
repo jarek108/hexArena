@@ -29,7 +29,11 @@ The Tools System follows a decoupled, modular design using **Active Tools** (ong
 *   **`PathfindingTool` (IActiveTool)**: 
     *   **Continuous Mode**: Calculates paths in real-time on hover if a source is selected.
     *   **Locking**: Right-Click locks a target, ignoring subsequent hovers until cleared.
-    *   **Ruleset Aware**: Queries the `GameMaster` for dynamic movement costs.
+    *   **Ruleset Integrated**: 
+        *   Notifies the Ruleset of pathfinding lifecycle events (`OnStartPathfinding`, `OnFinishPathfinding`).
+        *   Supports **Path Truncation**: Visualizes only the reachable portion of a path if targeting an enemy (handled by Ruleset).
+        *   **Ghosting**: Triggers the Ruleset to show a movement ghost at the destination.
+        *   **Delegated Execution**: Calls `ruleset.ExecutePath` to handle the final movement and any follow-up actions (like attacking).
 
 #### Grid Editing
 *   **`BrushTool` (Base)**: Supports scroll-wheel resizing and `maxBrushSize`.

@@ -188,7 +188,7 @@ namespace HexGame
                     Hex hexView = gridManager.GetHexView(hexData);
                     if (hexView != null)
                     {
-                        SpawnUnit(set, data.unitIndex, data.teamId, hexView, visualizationPrefab);
+                        SpawnUnit(set, data.typeIndex, data.teamId, hexView, visualizationPrefab);
                     }
                 }
             }

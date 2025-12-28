@@ -85,7 +85,7 @@ namespace HexGame.Tests
 
             // Assert
             Assert.IsNotNull(targetHex.Data.Unit, "Unit should be restored after load.");
-            Assert.AreEqual("Unit0", targetHex.Data.Unit.unitName);
+            Assert.AreEqual("Unit0", targetHex.Data.Unit.UnitName);
         }
 
         [Test]

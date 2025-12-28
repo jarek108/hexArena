@@ -1,5 +1,6 @@
 using UnityEditor;
 using UnityEngine;
+using System.Linq;
 
 namespace HexGame.Editor
 {
@@ -10,50 +11,53 @@ namespace HexGame.Editor
         public override void OnInspectorGUI()
         {
             serializedObject.Update();
-
             Unit unit = (Unit)target;
 
-            GUI.enabled = false;
-            EditorGUILayout.ObjectField("Script", MonoScript.FromMonoBehaviour(unit), typeof(Unit), false);
-            GUI.enabled = true;
-
-            EditorGUILayout.Space();
-            EditorGUILayout.LabelField("Unit Identity", EditorStyles.boldLabel);
-
-            GUI.enabled = false;
-            EditorGUILayout.IntField("Id", unit.Id);
-            EditorGUILayout.TextField("Type", unit.unitName);
-            GUI.enabled = true;
-
-            EditorGUI.BeginChangeCheck();
+            // 1. Configuration Section
             EditorGUILayout.PropertyField(serializedObject.FindProperty("unitSet"));
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("unitIndex"), new GUIContent("Type Index"));
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("teamId"));
-            
-            if (EditorGUI.EndChangeCheck())
+
+            // Type Selection Dropdown
+            if (unit.unitSet != null && unit.unitSet.units != null && unit.unitSet.units.Count > 0)
             {
-                serializedObject.ApplyModifiedProperties();
+                var names = unit.unitSet.units.Select((u, i) => $"[{i}] {u.Name}").ToArray();
+                SerializedProperty typeIndexProp = serializedObject.FindProperty("typeIndex");
                 
-                // Re-initialize logic and refresh links
-                unit.Initialize(unit.unitSet, (int)serializedObject.FindProperty("unitIndex").intValue, unit.teamId);
-                if (unit.CurrentHex != null)
+                int currentIndex = typeIndexProp.intValue;
+                if (currentIndex < 0 || currentIndex >= names.Length) currentIndex = 0;
+
+                int newIndex = EditorGUILayout.Popup("Unit Type", currentIndex, names);
+                if (newIndex != currentIndex)
                 {
-                    unit.SetHex(unit.CurrentHex);
+                    typeIndexProp.intValue = newIndex;
                 }
-                
-                EditorUtility.SetDirty(unit);
+            }
+            else
+            {
+                EditorGUILayout.HelpBox("Assign a UnitSet to select a type.", MessageType.Info);
             }
 
-            EditorGUILayout.Space();
-            EditorGUILayout.LabelField("Status", EditorStyles.boldLabel);
+            // Read-only Type Index for reference
             GUI.enabled = false;
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("typeIndex"));
+            GUI.enabled = true;
+
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("teamId"));
+
+            // 2. Runtime Identity and Status
+            EditorGUILayout.Space();
+            EditorGUILayout.LabelField("Runtime Information", EditorStyles.boldLabel);
+            
+            GUI.enabled = false;
+            EditorGUILayout.IntField("Instance ID", unit.Id);
+            EditorGUILayout.TextField("Unit Name", unit.UnitName);
             EditorGUILayout.ObjectField("Current Hex", unit.CurrentHex, typeof(Hex), true);
             GUI.enabled = true;
 
+            // 3. Stats Dictionary (Manual Loop)
             if (unit.Stats != null && unit.Stats.Count > 0)
             {
                 EditorGUILayout.Space();
-                EditorGUILayout.LabelField("Stats", EditorStyles.boldLabel);
+                EditorGUILayout.LabelField("Calculated Stats", EditorStyles.boldLabel);
                 GUI.enabled = false;
                 foreach (var stat in unit.Stats)
                 {

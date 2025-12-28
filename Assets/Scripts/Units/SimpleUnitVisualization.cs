@@ -14,7 +14,7 @@ namespace HexGame.Units
                 
             if (unitLogic != null)
             {
-                ApplyVisualIdentity(unitLogic.unitName);
+                ApplyVisualIdentity(unitLogic.UnitName);
             }
         }
 

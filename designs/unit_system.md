@@ -22,20 +22,29 @@ This layer defines "what a unit is" before it enters the scene.
 *   **`Unit`**:
     *   **Identity**: Unique `Id` (mapped to `GetInstanceID()`).
     *   **State**: Holds runtime data: `CurrentHex`, `Stats` (Dictionary), and `teamId`.
-    *   **Lifecycle**: Re-initializes base stats and visualization identity on changes to "Type Index" or "Unit Set" in the Inspector.
+    *   **Lifecycle**: Re-initializes base stats and visualization identity on changes to `typeIndex` or `unitSet` in the Inspector (`OnValidate`).
     *   **Grid Link**: `SetHex(Hex)` updates the logical position, notifies the `Ruleset`, and snaps the transform to the Hex's world coordinates.
+    *   **Movement**: `MoveAlongPath` handles interpolation between hexes with configurable speed and pauses.
 
 ### 3. View Layer (MonoBehaviour)
 *   **`UnitVisualization` (Abstract)**: Interface for the visual puppet with hooks for `OnStartMoving`, `OnAttack`, etc.
 *   **`SimpleUnitVisualization`**: Concrete implementation providing deterministic colors and `yOffset` support.
+*   **Ghosting**: The Ruleset can spawn a "Ghost" visualization during pathfinding to preview the unit's final destination before confirming movement.
 
 ### 4. Management & Rules Layer
 *   **`UnitManager`**: Handles spawning, erasing, and persistence.
 *   **`GameMaster`**: A singleton that holds the active `Ruleset` asset.
-*   **`Ruleset` (Abstract SO)**: The "brain" of the game. Handles movement costs and grid-state side effects.
-*   **`BattleBrothersRuleset`**: Concrete implementation managing terrain costs and per-unit Zone of Control strings.
+*   **`Ruleset` (Abstract SO)**: The "brain" of the game. Handles movement costs, combat execution, and pathfinding lifecycle events.
+*   **`BattleBrothersRuleset`**: Manages terrain costs, Zone of Control, and attack-range aware pathfinding.
 
 ## Key Interactions
+
+### Pathfinding & Combat Flow
+1.  **Selection**: `PathfindingTool` identifies a `SourceHex`.
+2.  **Hover**: Ruleset receives `OnStartPathfinding`. It determines if the target is an enemy and calculates the appropriate `AttackType` (Melee/Ranged).
+3.  **Pathing**: `Pathfinder` calculates the raw path. The Ruleset evaluates costs, allowing pass-through for friendly units but forbidding ending moves on occupied hexes.
+4.  **Preview**: Ruleset receives `OnFinishPathfinding`. It uses `GetMoveStopIndex` to truncate the path (stopping at attack range) and spawns a **Ghost** at the stop position.
+5.  **Execution**: On click, the tool calls `ruleset.ExecutePath`. The unit moves, and if the target was an enemy, performs an `OnAttack` sequence (facing the target, triggering animations).
 
 ### Spawning & Relinking
 1.  **Placement**: `Unit.SetHex(hex)` is called.

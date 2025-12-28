@@ -116,5 +116,66 @@ namespace HexGame.Tests
             float cost = ruleset.GetMoveCost(null, hexStart.Data, hexEnd.Data);
             Assert.AreEqual(2.0f, cost, "Null unit should ignore ZoC penalty.");
         }
+
+        [Test]
+        public void GetMoveCost_MeleeAttack_HighElevation_ReturnsInfinity()
+        {
+            // Arrange
+            // Initialize unit with melee range
+            var type = new UnitType { Name = "MeleeUnit" };
+            type.Stats = new List<UnitStatValue> { new UnitStatValue { id = "MRNG", value = 1 } };
+            unitSet.units = new List<UnitType> { type };
+            unit.Initialize(unitSet, 0, 0); // Team 0
+
+            // Add dummy unit to target hex to trigger attack logic in ruleset
+            var targetGO = new GameObject("Target");
+            var targetUnit = targetGO.AddComponent<Unit>();
+            targetUnit.teamId = 1; // Enemy Team 1
+            hexEnd.Data.Unit = targetUnit;
+
+            ruleset.OnStartPathfinding(hexEnd.Data, unit);
+            ruleset.maxElevationDelta = 1.0f;
+            hexStart.Data.Elevation = 0;
+            hexEnd.Data.Elevation = 2.0f; // Too high for melee
+
+            // Act
+            float cost = ruleset.GetMoveCost(unit, hexStart.Data, hexEnd.Data);
+
+            // Assert
+            Assert.AreEqual(float.PositiveInfinity, cost, "Melee attack should fail if elevation delta is too high.");
+            Object.DestroyImmediate(targetGO);
+        }
+
+        [Test]
+        public void GetMoveCost_RangedAttack_HighElevation_ReturnsZero()
+        {
+            // Arrange
+            // Initialize unit with ranged range
+            var type = new UnitType { Name = "RangedUnit" };
+            type.Stats = new List<UnitStatValue> { 
+                new UnitStatValue { id = "MRNG", value = 1 },
+                new UnitStatValue { id = "RRNG", value = 5 } 
+            };
+            unitSet.units = new List<UnitType> { type };
+            unit.Initialize(unitSet, 0, 0); // Team 0
+
+            // Add dummy unit to target hex
+            var targetGO = new GameObject("Target");
+            var targetUnit = targetGO.AddComponent<Unit>();
+            targetUnit.teamId = 1; // Enemy Team 1
+            hexEnd.Data.Unit = targetUnit;
+
+            ruleset.OnStartPathfinding(hexEnd.Data, unit);
+            ruleset.maxElevationDelta = 1.0f;
+            hexStart.Data.Elevation = 0;
+            hexEnd.Data.Elevation = 2.0f; 
+
+            // Act
+            float cost = ruleset.GetMoveCost(unit, hexStart.Data, hexEnd.Data);
+
+            // Assert
+            Assert.AreEqual(0f, cost, "Ranged attack should bypass elevation check for the final target hex.");
+            Object.DestroyImmediate(targetGO);
+        }
     }
 }

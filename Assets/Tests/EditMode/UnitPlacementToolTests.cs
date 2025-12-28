@@ -79,7 +79,7 @@ namespace HexGame.Tests
 
             // Assert
             Assert.IsNotNull(targetHex.Data.Unit, "Hex should have a unit assigned.");
-            Assert.AreEqual("TestUnit1", targetHex.Data.Unit.unitName);
+            Assert.AreEqual("TestUnit1", targetHex.Data.Unit.UnitName);
         }
         
         [Test]
