@@ -27,6 +27,8 @@ namespace HexGame
         public float elevationPenalty = 10f;
         public float surroundBonus = 5f;
         public float longWeaponProximityPenalty = 15f;
+        public float rangedHighGroundBonus = 10f;
+        public float rangedDistancePenalty = 2f;
 
         public AttackType currentAttackType = AttackType.None;
 
@@ -61,47 +63,82 @@ namespace HexGame
         {
             if (attacker == null || target == null) return 0f;
 
+            HexData attackerHex = attacker.CurrentHex?.Data;
+            HexData targetHex = target.CurrentHex?.Data;
+            if (attackerHex == null || targetHex == null) return 0f;
+
+            int dist = HexMath.Distance(attackerHex, targetHex);
+            int mrng = attacker.GetStat("MRNG", 1);
+            int rrng = attacker.GetStat("RRNG", 0);
+
+            // Determine which formula to use
+            if (dist <= mrng)
+            {
+                return MeleeHitChance(attacker, target, attackerHex, targetHex, dist);
+            }
+            else if (dist <= rrng)
+            {
+                return RangedHitChance(attacker, target, attackerHex, targetHex, dist);
+            }
+
+            return 0f;
+        }
+
+        private float MeleeHitChance(Unit attacker, Unit target, HexData attackerHex, HexData targetHex, int dist)
+        {
             // 1. Base Stats
             int mskl = attacker.GetStat("MSKL", 50);
             int mdef = target.GetStat("MDEF", 0);
             float score = mskl - mdef;
 
             // 2. Elevation Modifier
-            HexData attackerHex = null;
-            HexData targetHex = null;
-            
-            if (attacker.CurrentHex != null) attackerHex = attacker.CurrentHex.Data;
-            if (target.CurrentHex != null) targetHex = target.CurrentHex.Data;
+            if (attackerHex.Elevation > targetHex.Elevation) score += elevationBonus;
+            else if (attackerHex.Elevation < targetHex.Elevation) score -= elevationPenalty;
 
-            if (attackerHex != null && targetHex != null)
+            // 3. Distance-based modifiers
+            int mrng = attacker.GetStat("MRNG", 1);
+
+            // Long weapon proximity penalty
+            if (mrng == 2 && dist == 1)
             {
-                if (attackerHex.Elevation > targetHex.Elevation) score += elevationBonus;
-                else if (attackerHex.Elevation < targetHex.Elevation) score -= elevationPenalty;
-
-                // 3. Distance-based modifiers
-                int dist = HexMath.Distance(attackerHex, targetHex);
-                int mrng = attacker.GetStat("MRNG", 1);
-
-                // Long weapon proximity penalty
-                if (mrng == 2 && dist == 1)
-                {
-                    score -= longWeaponProximityPenalty;
-                }
-
-                // 4. Surround Bonus (Based on ally ZoC on target hex)
-                int allyZoCCount = 0;
-                string allyZoCPrefix = $"ZoC{attacker.teamId}_";
-                foreach (var state in targetHex.States)
-                {
-                    if (state.StartsWith(allyZoCPrefix))
-                    {
-                        allyZoCCount++;
-                    }
-                }
-                
-                // Surround bonus is (ZoC from team - 1) * bonus
-                score += Mathf.Max(0, allyZoCCount - 1) * surroundBonus;
+                score -= longWeaponProximityPenalty;
             }
+
+            // 4. Surround Bonus (Based on ally ZoC on target hex)
+            int allyZoCCount = 0;
+            string allyZoCPrefix = $"ZoC{attacker.teamId}_";
+            foreach (var state in targetHex.States)
+            {
+                if (state.StartsWith(allyZoCPrefix))
+                {
+                    allyZoCCount++;
+                }
+            }
+            
+            // Surround bonus is (ZoC from team - 1) * bonus
+            score += Mathf.Max(0, allyZoCCount - 1) * surroundBonus;
+
+            return Mathf.Clamp(score / 100f, 0f, 1f);
+        }
+
+        private float RangedHitChance(Unit attacker, Unit target, HexData attackerHex, HexData targetHex, int dist)
+        {
+            // 1. Base Stats
+            int rskl = attacker.GetStat("RSKL", 30);
+            int rdef = target.GetStat("RDEF", 0);
+            float score = rskl - rdef;
+
+            // 2. Elevation Bonus (Ranged only gets bonus, no penalty for being low?)
+            // BB usually gives +10% for high ground.
+            if (attackerHex.Elevation > targetHex.Elevation)
+            {
+                score += rangedHighGroundBonus;
+            }
+
+            // 3. Distance Penalty
+            // BB has a penalty per tile of distance. 
+            // Often -2% or -3% per tile.
+            score -= dist * rangedDistancePenalty;
 
             return Mathf.Clamp(score / 100f, 0f, 1f);
         }

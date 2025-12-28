@@ -32,6 +32,9 @@ namespace HexGame.Tests
 
             gameMasterGO = new GameObject("GameMaster");
             gameMaster = gameMasterGO.AddComponent<GameMaster>();
+            // Manually set singleton for EditMode
+            var instanceProp = typeof(GameMaster).GetProperty("Instance", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+            instanceProp.SetValue(null, gameMaster);
 
             grid = new Grid(10, 10);
             manager.Grid = grid;
@@ -44,13 +47,16 @@ namespace HexGame.Tests
             unitSet.units = new List<UnitType> { type };
 
             attacker = CreateUnit("Attacker", 1, 60, 0); // Team 1, MSKL 60
-            target = CreateUnit("Target", 2, 50, 10);   // Team 2, MDEF 10
+            target = CreateUnit("Target", 2, 50, 10);   // Team 2, MDEF 10, RDEF 0
             ally = CreateUnit("Ally", 1, 50, 0);       // Team 1
         }
 
         [TearDown]
         public void TearDown()
         {
+            var instanceProp = typeof(GameMaster).GetProperty("Instance", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+            instanceProp.SetValue(null, null);
+
             Object.DestroyImmediate(managerGO);
             Object.DestroyImmediate(gameMasterGO);
             Object.DestroyImmediate(ruleset);
@@ -70,7 +76,10 @@ namespace HexGame.Tests
             {
                 new UnitStatValue { id = "MSKL", value = mskl },
                 new UnitStatValue { id = "MDEF", value = mdef },
-                new UnitStatValue { id = "MRNG", value = 1 }
+                new UnitStatValue { id = "RSKL", value = 30 },
+                new UnitStatValue { id = "RDEF", value = 0 },
+                new UnitStatValue { id = "MRNG", value = 1 },
+                new UnitStatValue { id = "RRNG", value = 0 }
             };
             
             UnitSet singleSet = ScriptableObject.CreateInstance<UnitSet>();
@@ -100,6 +109,9 @@ namespace HexGame.Tests
         [Test]
         public void HitChance_BaseCalculation_IsCorrect()
         {
+            Hex hAttacker = SetupHex(0, 0, 0, attacker);
+            Hex hTarget = SetupHex(1, 0, 0, target);
+
             // Attacker(60 MSKL) - Target(10 MDEF) = 50%
             float chance = ruleset.HitChance(attacker, target);
             Assert.AreEqual(0.5f, chance, "Base hit chance should be (60-10)/100 = 0.5");
@@ -161,16 +173,11 @@ namespace HexGame.Tests
         {
             // Setup Attacker with MRNG = 2
             attacker = CreateUnit("Polearm", 1, 60, 0);
-            var stats = new List<UnitStatValue> {
-                new UnitStatValue { id = "MSKL", value = 60 },
-                new UnitStatValue { id = "MRNG", value = 2 }
-            };
-            attacker.unitSet.units[0].Stats = stats;
-            attacker.Initialize(attacker.unitSet, 0, 1);
+            attacker.Stats["MRNG"] = 2; // Direct modify for test
 
             ruleset.longWeaponProximityPenalty = 15f;
-            SetupHex(0, 0, 0, attacker);
-            SetupHex(1, 0, 0, target);
+            Hex hAttacker = SetupHex(0, 0, 0, attacker);
+            Hex hTarget = SetupHex(1, 0, 0, target);
 
             // (60 - 10) - 15 = 35%
             float chance = ruleset.HitChance(attacker, target);
@@ -180,26 +187,66 @@ namespace HexGame.Tests
         [Test]
         public void HitChance_RangedAlly_NoSurroundBonus()
         {
-            attacker = CreateUnit("Melee", 1, 60, 0); // MSKL 60
+            attacker = CreateUnit("Melee", 1, 60, 0);
             Unit rangedAlly = CreateUnit("Archer", 1, 50, 0);
-            var stats = new List<UnitStatValue> {
-                new UnitStatValue { id = "MSKL", value = 50 },
-                new UnitStatValue { id = "MRNG", value = 0 } // Ranged
-            };
-            rangedAlly.unitSet.units[0].Stats = stats;
-            rangedAlly.Initialize(rangedAlly.unitSet, 0, 1);
+            rangedAlly.Stats["MRNG"] = 0; // Ensure pure ranged
 
-            SetupHex(0, 0, 0, attacker);
-            SetupHex(1, 0, 0, target);
-            SetupHex(2, -1, 0, rangedAlly);
+            Hex hAttacker = SetupHex(0, 0, 0, attacker);
+            Hex hTarget = SetupHex(1, 0, 0, target);
+            Hex hAlly = SetupHex(2, -1, 0, rangedAlly);
 
             // Ranged ally provides no ZoC. Only attacker provides ZoC.
             // AllyZoCCount = 1. (1 - 1) * 5 = 0.
-            // (60 - 10) + 0 = 50%
             float chance = ruleset.HitChance(attacker, target);
-            Assert.AreEqual(0.5f, chance, "Ranged allies should not contribute to surround bonus as they provide no ZoC");
+            Assert.AreEqual(0.5f, chance, "Ranged allies should not contribute to surround bonus");
             
             Object.DestroyImmediate(rangedAlly.gameObject);
+        }
+
+        [Test]
+        public void HitChance_RangedBaseCalculation_IsCorrect()
+        {
+            // Archer (RSKL 60) vs Target (RDEF 10) at Dist 2
+            // Score = (60 - 10) - (2 * 2) = 50 - 4 = 46%
+            Unit archer = CreateUnit("Archer", 1, 50, 0);
+            archer.Stats["RSKL"] = 60;
+            archer.Stats["RRNG"] = 5;
+            archer.Stats["MRNG"] = 0;
+
+            Unit rDefTarget = CreateUnit("Target", 2, 50, 0);
+            rDefTarget.Stats["RDEF"] = 10;
+
+            Hex hAttacker = SetupHex(0, 0, 0, archer);
+            Hex hTarget = SetupHex(2, 0, 0, rDefTarget); // Dist 2
+            
+            float chance = ruleset.HitChance(archer, rDefTarget);
+            Assert.AreEqual(0.46f, chance, "Ranged hit chance should be (60-10) - (2*2) = 0.46");
+            
+            Object.DestroyImmediate(archer.gameObject);
+            Object.DestroyImmediate(rDefTarget.gameObject);
+        }
+
+        [Test]
+        public void HitChance_RangedHighGround_AddsBonus()
+        {
+            // Archer (RSKL 60) vs Target (RDEF 10) at Dist 2, High Ground
+            // Score = (60 - 10) + 10 - (2 * 2) = 50 + 10 - 4 = 56%
+            Unit archer = CreateUnit("Archer", 1, 50, 0);
+            archer.Stats["RSKL"] = 60;
+            archer.Stats["RRNG"] = 5;
+            archer.Stats["MRNG"] = 0;
+
+            Unit rDefTarget = CreateUnit("Target", 2, 50, 0);
+            rDefTarget.Stats["RDEF"] = 10;
+
+            Hex hAttacker = SetupHex(0, 0, 1.0f, archer); // High ground
+            Hex hTarget = SetupHex(2, 0, 0.0f, rDefTarget);  // Low ground
+            
+            float chance = ruleset.HitChance(archer, rDefTarget);
+            Assert.AreEqual(0.56f, chance, "Ranged hit chance should include elevation bonus");
+            
+            Object.DestroyImmediate(archer.gameObject);
+            Object.DestroyImmediate(rDefTarget.gameObject);
         }
 
         [Test]
@@ -207,6 +254,9 @@ namespace HexGame.Tests
         {
             Unit god = CreateUnit("God", 1, 200, 100);     // 200 MSKL, 100 MDEF
             Unit peasant = CreateUnit("Peasant", 2, 10, 0); // 10 MSKL, 0 MDEF
+
+            Hex hGod = SetupHex(0, 0, 0, god);
+            Hex hPeasant = SetupHex(1, 0, 0, peasant);
 
             Assert.AreEqual(200, god.GetStat("MSKL"), "God MSKL should be 200");
             Assert.AreEqual(100, god.GetStat("MDEF"), "God MDEF should be 100");
