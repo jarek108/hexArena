@@ -421,6 +421,21 @@ namespace HexGame
                 return;
             }
 
+            // Determine effective stop index
+            int stopIndex = GetMoveStopIndex(unit, path);
+            
+            // If the unit effectively doesn't move (stops at start), don't show ghost
+            if (stopIndex <= 1)
+            {
+                OnClearPathfindingVisuals();
+                // However, we still might want to show AoA for the stationary unit if it's selected
+                // But the prompt specifically asks to hide the ghost.
+                // Re-calculating AoA for stationary unit is handled by OnUnitSelected or Tool usually, 
+                // but here we are in the "hover" feedback loop.
+                // If we are just hovering the unit itself, we likely don't need a ghost.
+                return; 
+            }
+
             if (pathGhost == null || lastGhostSource != unit)
             {
                 OnClearPathfindingVisuals();
@@ -429,7 +444,6 @@ namespace HexGame
 
             if (pathGhost != null)
             {
-                int stopIndex = GetMoveStopIndex(unit, path);
                 if (stopIndex > 0)
                 {
                     HexData ghostHex = path[stopIndex - 1];

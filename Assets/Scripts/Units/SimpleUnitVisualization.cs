@@ -7,8 +7,12 @@ namespace HexGame.Units
     {
         [SerializeField] public MeshRenderer meshRenderer;
         
+        private Unit unitLogic; // Cache logic reference
+
         public override void Initialize(Unit unitLogic)
         {
+            this.unitLogic = unitLogic;
+            
             if (meshRenderer == null) 
                 meshRenderer = GetComponentInChildren<MeshRenderer>();
                 
@@ -50,17 +54,29 @@ namespace HexGame.Units
         {
             if (target == null) return;
             
-            if (activeLunge != null) StopCoroutine(activeLunge);
+            if (activeLunge != null) 
+            {
+                StopCoroutine(activeLunge);
+                // Force reset to correct world position to avoid drift or origin-teleport
+                UpdateVisualPositionFromLogic(); 
+            }
             activeLunge = StartCoroutine(LungeCoroutine(target.transform.position));
+        }
+
+        private void UpdateVisualPositionFromLogic()
+        {
+            if (unitLogic != null)
+            {
+                unitLogic.UpdateVisualPosition();
+            }
         }
 
         private Coroutine activeLunge;
         private System.Collections.IEnumerator LungeCoroutine(Vector3 targetPos)
         {
             Vector3 startPos = transform.position;
-            // Original logic position should be the center of the hex it's on.
-            // Since transform might already be offset by yOffset or previous lunge, 
-            // we should be careful. But unit logic usually snaps transform at end of move.
+            // If we just reset, startPos should be correct. 
+            // If we are chaining lunges, startPos is where we are now (which is correct).
             
             float size = GridVisualizationManager.Instance != null ? GridVisualizationManager.Instance.HexSize : 1f;
             float lungeDist = size / 3f;
