@@ -46,6 +46,7 @@ namespace HexGame
         public float gridWidth = 0.05f;
 
         [SerializeField] private float hexSize = 1f;
+        public float HexSize => hexSize;
         [SerializeField] private bool isPointyTop = true;
 
         public Grid Grid { get; set; }

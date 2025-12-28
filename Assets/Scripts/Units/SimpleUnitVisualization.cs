@@ -48,7 +48,51 @@ namespace HexGame.Units
 
         public override void OnAttack(Unit target)
         {
-            // Trigger animation or particle here
+            if (target == null) return;
+            
+            if (activeLunge != null) StopCoroutine(activeLunge);
+            activeLunge = StartCoroutine(LungeCoroutine(target.transform.position));
+        }
+
+        private Coroutine activeLunge;
+        private System.Collections.IEnumerator LungeCoroutine(Vector3 targetPos)
+        {
+            Vector3 startPos = transform.position;
+            // Original logic position should be the center of the hex it's on.
+            // Since transform might already be offset by yOffset or previous lunge, 
+            // we should be careful. But unit logic usually snaps transform at end of move.
+            
+            float size = GridVisualizationManager.Instance != null ? GridVisualizationManager.Instance.HexSize : 1f;
+            float lungeDist = size / 3f;
+            
+            Vector3 dir = (targetPos - startPos).normalized;
+            dir.y = 0; // Keep horizontal
+            
+            Vector3 peakPos = startPos + dir * lungeDist;
+
+            // 1. Lunge Out (Fast)
+            float t = 0;
+            float outDuration = 0.08f;
+            while (t < 1f)
+            {
+                t += Time.deltaTime / outDuration;
+                transform.position = Vector3.Lerp(startPos, peakPos, t);
+                yield return null;
+            }
+            transform.position = peakPos;
+
+            // 2. Return (Slightly slower)
+            t = 0;
+            float backDuration = 0.15f;
+            while (t < 1f)
+            {
+                t += Time.deltaTime / backDuration;
+                transform.position = Vector3.Lerp(peakPos, startPos, t);
+                yield return null;
+            }
+            transform.position = startPos;
+            
+            activeLunge = null;
         }
 
         public override void OnTakeDamage(int amount)
