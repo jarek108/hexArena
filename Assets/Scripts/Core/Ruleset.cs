@@ -37,8 +37,9 @@ namespace HexGame
         public abstract bool OnEntry(Unit unit, HexData hex);
         public abstract bool OnDeparture(Unit unit, HexData hex);
 
-        public abstract void OnAttack(Unit attacker, Unit target);
-        public abstract void OnBeingAttacked(Unit attacker, Unit target);
+        public abstract void OnAttacked(Unit attacker, Unit target);
+        public abstract void OnHit(Unit attacker, Unit target, float damage);
+        public abstract void OnDie(Unit unit);
 
         public abstract void ExecutePath(Unit unit, List<HexData> path, Hex targetHex);
 

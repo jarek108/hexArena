@@ -35,7 +35,7 @@ This layer defines "what a unit is" before it enters the scene.
 *   **`UnitManager`**: Handles spawning, erasing, and persistence.
 *   **`GameMaster`**: A singleton that holds the active `Ruleset` asset.
 *   **`Ruleset` (Abstract SO)**: The "brain" of the game. Handles movement costs, combat execution, and pathfinding lifecycle events.
-    *   **Hooks**: `OnEntry`, `OnDeparture` (return booleans to allow movement interruption), `OnUnitSelected`, `OnUnitDeselected`, `OnStartPathfinding`, `OnFinishPathfinding`.
+    *   **Hooks**: `OnEntry`, `OnDeparture`, `OnUnitSelected`, `OnUnitDeselected`, `OnStartPathfinding`, `OnFinishPathfinding`, `OnAttacked`, `OnHit`, `OnDie`.
     *   **Combat Probability (Probability Map)**: `GetPotentialHits(attacker, target, fromHex)` returns a `List<PotentialHit>` representing the outcome distribution for a single roll.
         *   **`PotentialHit`**: Defines a target, probability range (`min` to `max`), `damageMultiplier`, and `logInfo`.
 *   **`BattleBrothersRuleset`**: Manages terrain costs, Zone of Control, and attack-range aware pathfinding.

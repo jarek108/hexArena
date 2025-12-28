@@ -179,6 +179,8 @@ namespace HexGame
             if (attacker == null || target == null) return;
             attacker.FacePosition(target.transform.position);
 
+            OnAttacked(attacker, target); // Trigger attack event
+
             var hits = GetPotentialHits(attacker, target);
             if (hits.Count == 0) return;
 
@@ -190,7 +192,7 @@ namespace HexGame
                 if (roll >= hit.min && roll < hit.max)
                 {
                     Debug.Log($"[Ruleset] {hit.logInfo} HIT: Chance {hit.min:P0}-{hit.max:P0}, Roll {roll:P1}");
-                    ApplyAttackSuccess(attacker, hit.target, 10f * hit.damageMultiplier);
+                    OnHit(attacker, hit.target, 10f * hit.damageMultiplier);
                     hitResolved = true;
                     break;
                 }
@@ -200,17 +202,51 @@ namespace HexGame
             {
                 Debug.Log($"[Ruleset] MISS: Roll {roll:P1} fell outside all potential hit ranges.");
             }
+        }
 
+        public override void OnAttacked(Unit attacker, Unit target)
+        {
+            if (attacker == null || target == null) return;
+            Debug.Log($"[Ruleset] {attacker.UnitName} attacks {target.UnitName}");
+            
             var attackerViz = attacker.GetComponent<HexGame.Units.UnitVisualization>();
             if (attackerViz != null) attackerViz.OnAttack(target);
         }
 
-        private void ApplyAttackSuccess(Unit attacker, Unit target, float damage)
+        public override void OnHit(Unit attacker, Unit target, float damage)
         {
-            OnAttack(attacker, target);
-            OnBeingAttacked(attacker, target);
+            if (target == null) return;
+            
+            int currentHP = target.GetStat("HP");
+            int dmgInt = Mathf.RoundToInt(damage);
+            currentHP -= dmgInt;
+            target.Stats["HP"] = currentHP;
+            
+            Debug.Log($"[Ruleset] {target.UnitName} took {dmgInt} damage. HP: {currentHP}");
+
             var targetViz = target.GetComponent<HexGame.Units.UnitVisualization>();
-            if (targetViz != null) targetViz.OnTakeDamage((int)damage);
+            if (targetViz != null) targetViz.OnTakeDamage(dmgInt);
+
+            if (currentHP <= 0)
+            {
+                OnDie(target);
+            }
+        }
+
+        public override void OnDie(Unit unit)
+        {
+            if (unit == null) return;
+            Debug.Log($"[Ruleset] {unit.UnitName} HAS DIED!");
+            
+            if (unit.CurrentHex != null)
+            {
+                // Ensure logic cleanup, though simple destruction might suffice for now
+                unit.CurrentHex.Data.Unit = null;
+                OnDeparture(unit, unit.CurrentHex.Data);
+            }
+
+            if (Application.isPlaying) Destroy(unit.gameObject);
+            else DestroyImmediate(unit.gameObject);
         }
 
         public override float GetMoveCost(Unit unit, HexData fromHex, HexData toHex)
@@ -293,17 +329,6 @@ namespace HexGame
             }
 
             return cost;
-        }
-
-        public override void OnAttack(Unit attacker, Unit target)
-        {
-            if (attacker == null || target == null) return;
-            Debug.Log($"[Ruleset] {attacker.UnitName} attacks {target.UnitName}");
-        }
-
-        public override void OnBeingAttacked(Unit attacker, Unit target)
-        {
-            if (attacker == null || target == null) return;
         }
 
         public override int GetMoveStopIndex(Unit unit, List<HexData> path)
