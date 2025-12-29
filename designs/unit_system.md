@@ -49,14 +49,14 @@ The Unit System manages dynamic game entities ("Units") that occupy the grid. It
 ### Persistence Strategy
 *   **Unit Layouts**: Serialized to `UnitSaveBatch` JSON, including the `unitSetId` to ensure logical consistency on reload.
 *   **Auto-Save**: The Unit Data Editor automatically writes changes to JSON files on every field modification.
-*   **Layout Persistence UI**:
-    *   **Row 1**: [Layout Dropdown] [Load] [Refresh] (Quick-access to Data/UnitLayouts).
+    *   **Layout Persistence UI**:
+    *   **Row 1**: [Layout Dropdown] [Refresh] (Quick-access to Data/UnitLayouts).
     *   **Row 2**: 
         *   **Save**: Overwrites the `lastLayoutPath`.
         *   **Save As**: Prompt for a new filename.
-        *   **Reload**: Re-loads the `lastLayoutPath` from disk.
-        *   **Load**: Opens a file browser to load any JSON.
-
+        *   **Reload**: Loads the file selected in the Row 1 dropdown.
+        *   **Load...**: Opens a file browser to load any JSON.
+    *   **Operations**: [Relink Units] [Erase All] consolidated into a single compact row.
 ## Key Interactions
 
 ### Pathfinding & Combat Flow

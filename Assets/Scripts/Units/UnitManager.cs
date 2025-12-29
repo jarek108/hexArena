@@ -11,7 +11,6 @@ namespace HexGame
     {
         public static UnitManager Instance { get; private set; }
 
-        [Header("Setup")]
         public UnitVisualization unitVisualizationPrefab;
         public string activeUnitSetPath = "";
         [HideInInspector] public string lastLayoutPath = "";

@@ -1,5 +1,5 @@
 {
-    "unitSetPath": "Assets/Data/Sets/BattleBrothers_Core.json",
+    "unitSetId": "Core",
     "units": [
         {
             "q": 14,

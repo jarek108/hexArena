@@ -82,16 +82,12 @@ namespace HexGame.Editor
             
             string defaultDir = Path.Combine(Application.dataPath, "Data/UnitLayouts");
 
-            // Row 1: Dropdown, Load (selected), Refresh
+            // Row 1: Dropdown, Refresh
             EditorGUILayout.BeginHorizontal();
             if (availableLayouts != null && availableLayouts.Length > 0)
             {
                 if (selectedLayoutIndex >= availableLayouts.Length) selectedLayoutIndex = 0;
                 selectedLayoutIndex = EditorGUILayout.Popup(selectedLayoutIndex, availableLayouts);
-                if (GUILayout.Button("Load", GUILayout.Width(60)))
-                {
-                    manager.LoadUnits(Path.Combine(defaultDir, availableLayouts[selectedLayoutIndex]));
-                }
             }
             else
             {
@@ -101,7 +97,7 @@ namespace HexGame.Editor
             if (GUILayout.Button("Refresh", GUILayout.Width(60))) RefreshLayoutList();
             EditorGUILayout.EndHorizontal();
 
-            // Row 2: Save, Save As, Reload, Load (external)
+            // Row 2: Save, Save As, Reload, Load...
             EditorGUILayout.BeginHorizontal();
             
             // Save
@@ -124,16 +120,16 @@ namespace HexGame.Editor
                 }
             }
 
-            // Reload
-            GUI.enabled = !string.IsNullOrEmpty(manager.lastLayoutPath);
+            // Reload (from dropdown)
+            GUI.enabled = availableLayouts != null && availableLayouts.Length > 0;
             if (GUILayout.Button("Reload"))
             {
-                manager.LoadUnits(manager.lastLayoutPath);
+                manager.LoadUnits(Path.Combine(defaultDir, availableLayouts[selectedLayoutIndex]));
             }
 
             // Load (External)
             GUI.enabled = true;
-            if (GUILayout.Button("Load"))
+            if (GUILayout.Button("Load..."))
             {
                 string path = EditorUtility.OpenFilePanel("Load Units", defaultDir, "json");
                 if (!string.IsNullOrEmpty(path)) 
@@ -148,26 +144,25 @@ namespace HexGame.Editor
             {
                 EditorGUILayout.LabelField($"Active: {Path.GetFileName(manager.lastLayoutPath)}", EditorStyles.miniLabel);
             }
-            
-            EditorGUILayout.EndVertical();
 
-            // --- Operations Section ---
             EditorGUILayout.Space(5);
-            EditorGUILayout.BeginVertical("box");
-            EditorGUILayout.LabelField("Operations", EditorStyles.boldLabel);
 
-            if (GUILayout.Button("Relink Units to Grid", GUILayout.Height(25)))
+            // Row 3: Relink and Erase (One row, no header)
+            EditorGUILayout.BeginHorizontal();
+            if (GUILayout.Button("Relink Units", GUILayout.Height(20)))
             {
                 manager.RelinkUnitsToGrid();
             }
 
-            if (GUILayout.Button("Erase All Units", GUILayout.Height(25)))
+            if (GUILayout.Button("Erase All", GUILayout.Height(20)))
             {
                 if (EditorUtility.DisplayDialog("Erase All Units", "Are you sure you want to remove all units?", "Yes", "No"))
                 {
                     manager.EraseAllUnits();
                 }
             }
+            EditorGUILayout.EndHorizontal();
+            
             EditorGUILayout.EndVertical();
 
             serializedObject.ApplyModifiedProperties();
