@@ -20,7 +20,7 @@ We follow a **Data-Driven Architecture** prioritizing strict Logic/View separati
     *   **Data**: JSON-based Schemas and Sets (`Assets/Data/`).
     *   **Logic**: `Unit` (Unique `Id`, stats, team affiliation). GameObject naming convention: `UnitName_ID`.
     *   **View**: `UnitVisualization` (Models/Anims). Automated lunge animations.
-    *   **Principle**: Units are grid-aware agents. All configuration data is stored in JSON files, managed via the `UnitDataEditorWindow`. `UnitManager` centralizes the active set and persists it within layout files.
+    *   **Principle**: Units are grid-aware agents. All configuration data is stored in JSON files, managed via the `UnitDataEditorWindow`. `UnitManager` centralizes the active set and persists it within layout files. Quick-save support via `lastLayoutPath`.
 *   **Ruleset & Game Logic** (Detailed in `designs/grid_system.md` & `unit_system.md`):
     *   **Logic**: `Ruleset` (Abstract SO), `BattleBrothersRuleset`.
     *   **Management**: `GameMaster` (Persistent Singleton).

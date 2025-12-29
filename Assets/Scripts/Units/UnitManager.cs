@@ -14,6 +14,7 @@ namespace HexGame
         [Header("Setup")]
         public UnitVisualization unitVisualizationPrefab;
         public string activeUnitSetPath = "";
+        [HideInInspector] public string lastLayoutPath = "";
 
         private UnitSet _activeSet;
         public UnitSet ActiveUnitSet 
@@ -174,6 +175,7 @@ namespace HexGame
 
             string json = JsonUtility.ToJson(batch, true);
             System.IO.File.WriteAllText(path, json);
+            lastLayoutPath = path;
         }
 
         public void LoadUnits(string path)
@@ -201,8 +203,6 @@ namespace HexGame
                 if (set != null)
                 {
                     _activeSet = set;
-                    // We don't have the path easily here unless we store it during resolution or search again
-                    // But we can find the file path during resolution
                 }
             }
 
@@ -234,6 +234,7 @@ namespace HexGame
                     }
                 }
             }
+            lastLayoutPath = path;
             RelinkUnitsToGrid();
         }
 

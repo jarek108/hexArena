@@ -126,7 +126,7 @@ namespace HexGame.Tests
         [Test]
         public void HitChance_AttackerHighGround_AddsBonus()
         {
-            ruleset.elevationBonus = 15f;
+            ruleset.meleeHighGroundBonus = 15f;
             Hex hAttacker = SetupHex(0, 0, 1.0f, null);
             Hex hTarget = SetupHex(1, 0, 0.0f, null);
             attacker.SetHex(hAttacker);
@@ -137,7 +137,7 @@ namespace HexGame.Tests
         [Test]
         public void HitChance_AttackerLowGround_AppliesPenalty()
         {
-            ruleset.elevationPenalty = 20f;
+            ruleset.meleeLowGroundPenalty = 20f;
             Hex hAttacker = SetupHex(0, 0, 0.0f, null);
             Hex hTarget = SetupHex(1, 0, 1.0f, null);
             attacker.SetHex(hAttacker);

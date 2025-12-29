@@ -33,6 +33,7 @@ The Unit System manages dynamic game entities ("Units") that occupy the grid. It
     *   Holds `activeUnitSetPath` (JSON path).
     *   Provides `ActiveUnitSet` (transient transient SO).
     *   Handles layout saving/loading, ensuring the correct UnitSet is restored with the unit positions.
+    *   Tracks `lastLayoutPath` for quick saving (overwriting the active file).
 *   **`UnitDataEditorWindow`**: Centralized UI (HexArena menu) for creating and editing Schemas/Sets with auto-save and draggable stat reordering.
 *   **`Ruleset` (Abstract SO)**: Game brain handling costs and combat flow.
 *   **`BattleBrothersRuleset`**: BB-specific implementation (ZoC, AoA, bucket-based probability).
@@ -46,8 +47,13 @@ The Unit System manages dynamic game entities ("Units") that occupy the grid. It
 4.  **Attack**: `PerformAttack` uses bucket-based resolution. `OnHit` applies HP damage and triggers `OnDie`.
 
 ### Persistence Strategy
-*   **Unit Layouts**: Serialized to `UnitSaveBatch` JSON, including the `unitSetPath` to ensure logical consistency on reload.
+*   **Unit Layouts**: Serialized to `UnitSaveBatch` JSON, including the `unitSetId` to ensure logical consistency on reload.
 *   **Auto-Save**: The Unit Data Editor automatically writes changes to JSON files on every field modification.
+*   **Layout Persistence UI**:
+    *   **Save**: Overwrites the `lastLayoutPath`.
+    *   **Save New**: Prompt for a new filename (Save As).
+    *   **Load File**: Opens a file browser to load a JSON from anywhere.
+    *   **Refresh**: Rescans the standard `UnitLayouts` directory.
 
 ## Key Interactions
 

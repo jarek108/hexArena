@@ -23,11 +23,12 @@ namespace HexGame
         public float desertCost = 4.0f;
 
         [Header("Combat Modifiers")]
-        public float elevationBonus = 10f;
-        public float elevationPenalty = 10f;
+        public float meleeHighGroundBonus = 10f;
+        public float meleeLowGroundPenalty = 10f;
+        public float rangedHighGroundBonus = 10f;
+        public float rangedLowGroundPenalty = 10f;
         public float surroundBonus = 5f;
         public float longWeaponProximityPenalty = 15f;
-        public float rangedHighGroundBonus = 10f;
         public float rangedDistancePenalty = 2f;
         public float coverMissChance = 0.75f;
         public float scatterHitPenalty = 15f;
@@ -568,8 +569,8 @@ namespace HexGame
             int mdef = target.GetStat("MDEF", 0);
             float score = mskl - mdef;
 
-            if (attackerHex.Elevation > targetHex.Elevation) score += elevationBonus;
-            else if (attackerHex.Elevation < targetHex.Elevation) score -= elevationPenalty;
+            if (attackerHex.Elevation > targetHex.Elevation) score += meleeHighGroundBonus;
+            else if (attackerHex.Elevation < targetHex.Elevation) score -= meleeLowGroundPenalty;
 
             int mrng = attacker.GetStat("MRNG", 1);
             if (mrng == 2 && dist == 1)
