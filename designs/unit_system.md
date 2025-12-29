@@ -1,55 +1,53 @@
 # Unit System Architecture
 
 ## Overview
-The Unit System manages dynamic game entities ("Units") that occupy the grid. It bridges the gap between static data definitions (Prototypes) and active scene objects, employing a separation between gameplay state, visual representation, and game-specific logic (Rulesets).
+The Unit System manages dynamic game entities ("Units") that occupy the grid. It employs a **JSON-only data architecture**, separating gameplay state, visual representation, and game-specific logic (Rulesets). All unit definitions and stat schemas are stored in JSON files, allowing for easy modification and version control outside of Unity's binary serialization.
 
 ## Core Principles
-1.  **Data-Driven Prototypes:** Unit attributes (Type, Base Stats) are defined in ScriptableObjects (`UnitSet`, `UnitSchema`), allowing designers to balance the game without touching prefabs or code.
-2.  **View Abstraction:** The `Unit` logic class handles gameplay state (Position, Stats), while `UnitVisualization` handles rendering (Animations, Models). This allows swapping 2D/3D representations without affecting logic.
-3.  **Grid Integration:** Units are spatially aware. They link strictly to `HexData` and synchronize their `Transform` position to the grid's layout.
-4.  **Ruleset Driven:** Units notify the active `Ruleset` of events (Entry/Departure), allowing the ruleset to manage side-effects like Zone of Control (ZoC).
+1.  **JSON-Driven Prototypes:** Unit attributes (Type, Base Stats) are defined in JSON files (`Assets/Data/Sets/*.json`), linked to Schemas (`Assets/Data/Schemas/*.json`).
+2.  **Centralized Management:** `UnitManager` acts as the single source of truth for the active `UnitSet`. Units resolve their stats and definitions logically from the manager's active set.
+3.  **View Abstraction:** The `Unit` logic class handles gameplay state, while `UnitVisualization` handles rendering.
+4.  **Grid Integration:** Units are spatially aware agents linked strictly to `HexData`.
+5.  **Ruleset Driven:** Rulesets manage movement costs and combat side-effects (e.g., ZoC).
 
 ## Architecture Structure
 
-### 1. Data Definition Layer (ScriptableObjects)
-This layer defines "what a unit is" before it enters the scene.
-
-*   **`UnitSchema`**: Defines the *structure* of unit statistics.
-*   **`UnitType`**: The "Prototype" or "Template" containing Name and base stats.
-*   **`UnitSet`**: A collection (Library) of `UnitType`s.
+### 1. Data Definition Layer (JSON)
+*   **`UnitSchema`**: Defines the stat structure (ID and Name). Loaded from JSON into a transient SO.
+*   **`UnitSet`**: A collection of `UnitType` prototypes. Resolves its schema by ID from the Schemas folder.
+*   **`UnitType`**: Individual unit prototype with specific stat values.
 
 ### 2. Logic & State Layer (MonoBehaviour)
 *   **`Unit`**:
-    *   **Identity**: Unique `Id` (mapped to `GetInstanceID()`).
-    *   **State**: Holds runtime data: `CurrentHex`, `Stats` (Dictionary), and `teamId`.
-    *   **Lifecycle**: Re-initializes base stats and visualization identity on changes to `typeIndex` or `unitSet` in the Inspector (`OnValidate`).
-    *   **Grid Link**: `SetHex(Hex)` updates the logical position, notifies the `Ruleset`, and snaps the transform to the Hex's world coordinates.
-    *   **Movement**: `MoveAlongPath` handles interpolation between hexes with configurable speed and pauses.
+    *   **Identity**: Unique `Id` (GetInstanceID). GameObject named `UnitName_ID`.
+    *   **State**: `typeIndex`, `teamId`. Resolves `unitSet` and `Stats` from `UnitManager.Instance.ActiveUnitSet`.
+    *   **Lifecycle**: Re-initializes stats and visualization on index or set changes.
+    *   **Movement**: `MoveAlongPath` interpolation.
 
 ### 3. View Layer (MonoBehaviour)
-*   **`UnitVisualization` (Abstract)**: Interface for the visual puppet with hooks for `OnStartMoving`, `OnAttack`, etc.
-*   **`SimpleUnitVisualization`**: Concrete implementation providing deterministic colors and `yOffset` support.
-*   **Ghosting**: The Ruleset can spawn a "Ghost" visualization during pathfinding to preview the unit's final destination before confirming movement.
+*   **`UnitVisualization`**: Visual representation interface.
+*   **`SimpleUnitVisualization`**: Concrete mesh-based implementation with automated lunge animation handling.
 
 ### 4. Management & Rules Layer
-*   **`UnitManager`**: Handles spawning, erasing, and persistence.
-*   **`GameMaster`**: A singleton that holds the active `Ruleset` asset.
-*   **`Ruleset` (Abstract SO)**: The "brain" of the game. Handles movement costs, combat execution, and pathfinding lifecycle events.
-    *   **Hooks**: `OnEntry`, `OnDeparture`, `OnUnitSelected`, `OnUnitDeselected`, `OnStartPathfinding`, `OnFinishPathfinding`, `OnAttacked`, `OnHit`, `OnDie`.
-    *   **Combat Probability (Probability Map)**: `GetPotentialHits(attacker, target, fromHex)` returns a `List<PotentialHit>` representing the outcome distribution for a single roll.
-        *   **`PotentialHit`**: Defines a target, probability range (`min` to `max`), `damageMultiplier`, and `logInfo`.
-*   **`BattleBrothersRuleset`**: Manages terrain costs, Zone of Control, and attack-range aware pathfinding.
-    *   **Bucket-Based Probability Engine**: Unifies all combat logic into a shared [0, 1] range:
-        *   **Bucket A (Target)**: Primary hit chance, reduced by `coverMissChance` (75%) if obstructed.
-        *   **Bucket B (Cover Interception)**: If the primary shot is intercepted by cover, it rolls against the intercepting unit's `RDEF`.
-        *   **Bucket C (Miss Scatter/Stray)**: Missed primary shots (that weren't intercepted) can scatter to neighbors or hexes behind the target (at Distance 3+), rolling against their `RDEF`.
-    *   **Combat Modifiers**: Uses base stats (`MSKL` vs `MDEF`, `RSKL` vs `RDEF`) and applies configurable modifiers:
-        *   **Elevation**: `elevationBonus`, `elevationPenalty`, `rangedHighGroundBonus`.
-        *   **Surround**: Cumulative `surroundBonus` based on the number of unique ally **Zone of Control** states currently active on the target hex.
-        *   **Proximity Penalty**: `longWeaponProximityPenalty` (15%) for Range-2 melee weapons used at Distance 1.
-    *   **Zone of Control (ZoC)**:
-        *   Units with `MRNG > 0` (Melee) exert ZoC on neighbors within `maxElevationDelta`.
-        *   Entering an enemy ZoC adds a significant `zocPenalty` (default 50) to the movement cost, but does not hard-stop movement (unless AP/Fatigue logic, currently implemented as high cost, prevents it).
+*   **`UnitManager`**: 
+    *   Holds `activeUnitSetPath` (JSON path).
+    *   Provides `ActiveUnitSet` (transient transient SO).
+    *   Handles layout saving/loading, ensuring the correct UnitSet is restored with the unit positions.
+*   **`UnitDataEditorWindow`**: Centralized UI (HexArena menu) for creating and editing Schemas/Sets with auto-save and draggable stat reordering.
+*   **`Ruleset` (Abstract SO)**: Game brain handling costs and combat flow.
+*   **`BattleBrothersRuleset`**: BB-specific implementation (ZoC, AoA, bucket-based probability).
+
+## Key Interactions
+
+### Pathfinding & Combat Flow
+1.  **Selection**: `PathfindingTool` identifies a unit.
+2.  **Hover**: Calculates path and AoA. Ruleset hides movement ghost if stationary.
+3.  **Execution**: `ruleset.ExecutePath` with completion callback to maintain selection.
+4.  **Attack**: `PerformAttack` uses bucket-based resolution. `OnHit` applies HP damage and triggers `OnDie`.
+
+### Persistence Strategy
+*   **Unit Layouts**: Serialized to `UnitSaveBatch` JSON, including the `unitSetPath` to ensure logical consistency on reload.
+*   **Auto-Save**: The Unit Data Editor automatically writes changes to JSON files on every field modification.
 
 ## Key Interactions
 

@@ -11,6 +11,8 @@ namespace HexGame.Tests
     {
         private GameObject managerGO;
         private GridVisualizationManager manager;
+        private GameObject unitManagerGO;
+        private UnitManager unitManager;
         private GameObject gameMasterGO;
         private GameMaster gameMaster;
         private BattleBrothersRuleset ruleset;
@@ -29,6 +31,10 @@ namespace HexGame.Tests
             managerGO = new GameObject("GridVisualizationManager");
             manager = managerGO.AddComponent<GridVisualizationManager>();
             
+            unitManagerGO = new GameObject("UnitManager");
+            unitManager = unitManagerGO.AddComponent<UnitManager>();
+            unitManager.activeUnitSetPath = ""; // Prevent loading real data
+
             gameMasterGO = new GameObject("GameMaster");
             gameMaster = gameMasterGO.AddComponent<GameMaster>();
             
@@ -49,6 +55,8 @@ namespace HexGame.Tests
             grid.AddHex(hex2);
 
             unitSet = ScriptableObject.CreateInstance<UnitSet>();
+            unitManager.ActiveUnitSet = unitSet;
+
             unitGO = new GameObject("Unit");
             unit = unitGO.AddComponent<Unit>();
             
@@ -56,13 +64,14 @@ namespace HexGame.Tests
             // Default 1 MRNG
             type.Stats = new List<UnitStatValue> { new UnitStatValue { id = "MRNG", value = 1 } };
             unitSet.units = new List<UnitType> { type };
-            unit.Initialize(unitSet, 0, 1); // Team 1
+            unit.Initialize(0, 1); // Team 1
         }
 
         [TearDown]
         public void TearDown()
         {
             Object.DestroyImmediate(managerGO);
+            Object.DestroyImmediate(unitManagerGO);
             Object.DestroyImmediate(gameMasterGO);
             Object.DestroyImmediate(unitGO);
             Object.DestroyImmediate(ruleset);
@@ -109,7 +118,7 @@ namespace HexGame.Tests
             // Hex2 has Enemy (Team 2)
             var enemyGO = new GameObject("Enemy");
             var enemy = enemyGO.AddComponent<Unit>();
-            enemy.Initialize(unitSet, 0, 2);
+            enemy.Initialize(0, 2);
             hex2.Unit = enemy;
             hex2.AddState($"Occupied2_{enemy.Id}");
 
@@ -163,7 +172,7 @@ namespace HexGame.Tests
 
             var enemyGO = new GameObject("Enemy");
             var enemy = enemyGO.AddComponent<Unit>();
-            enemy.Initialize(unitSet, 0, 2);
+            enemy.Initialize(0, 2);
             
             HexData enemyHex = new HexData(6, 0);
             enemyHex.Unit = enemy;

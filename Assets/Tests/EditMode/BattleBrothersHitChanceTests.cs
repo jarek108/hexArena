@@ -13,6 +13,8 @@ namespace HexGame.Tests
     {
         private GameObject managerGO;
         private GridVisualizationManager manager;
+        private GameObject unitManagerGO;
+        private UnitManager unitManager;
         private GameObject gameMasterGO;
         private GameMaster gameMaster;
         private BattleBrothersRuleset ruleset;
@@ -31,6 +33,10 @@ namespace HexGame.Tests
             manager = managerGO.AddComponent<GridVisualizationManager>();
             typeof(GridVisualizationManager).GetProperty("Instance").SetValue(null, manager);
 
+            unitManagerGO = new GameObject("UnitManager");
+            unitManager = unitManagerGO.AddComponent<UnitManager>();
+            unitManager.activeUnitSetPath = ""; // Prevent loading real data
+
             gameMasterGO = new GameObject("GameMaster");
             gameMaster = gameMasterGO.AddComponent<GameMaster>();
             var instanceProp = typeof(GameMaster).GetProperty("Instance", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
@@ -43,6 +49,7 @@ namespace HexGame.Tests
             gameMaster.ruleset = ruleset;
             
             unitSet = ScriptableObject.CreateInstance<UnitSet>();
+            unitManager.ActiveUnitSet = unitSet;
             var type = new UnitType { Name = "Unit" };
             unitSet.units = new List<UnitType> { type };
 
@@ -58,6 +65,7 @@ namespace HexGame.Tests
             instanceProp.SetValue(null, null);
 
             Object.DestroyImmediate(managerGO);
+            Object.DestroyImmediate(unitManagerGO);
             Object.DestroyImmediate(gameMasterGO);
             Object.DestroyImmediate(ruleset);
             Object.DestroyImmediate(unitSet);
@@ -82,9 +90,8 @@ namespace HexGame.Tests
                 new UnitStatValue { id = "RRNG", value = 0 }
             };
             
-            UnitSet singleSet = ScriptableObject.CreateInstance<UnitSet>();
-            singleSet.units = new List<UnitType> { customType };
-            u.Initialize(singleSet, 0, team);
+            unitSet.units = new List<UnitType> { customType };
+            u.Initialize(0, team);
             
             return u;
         }

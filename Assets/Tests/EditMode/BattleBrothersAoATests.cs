@@ -31,6 +31,8 @@ namespace HexGame.Tests
 
             unitManagerGO = new GameObject("UnitManager");
             unitManager = unitManagerGO.AddComponent<UnitManager>();
+            unitManager.activeUnitSetPath = ""; // Prevent loading real data
+            typeof(UnitManager).GetProperty("Instance").SetValue(null, unitManager);
 
             gameMasterGO = new GameObject("GameMaster");
             gameMaster = gameMasterGO.AddComponent<GameMaster>();
@@ -41,6 +43,8 @@ namespace HexGame.Tests
             manager.Grid = grid;
 
             unitSet = ScriptableObject.CreateInstance<UnitSet>();
+            unitManager.ActiveUnitSet = unitSet;
+
             GameObject unitGO = new GameObject("Unit");
             unit = unitGO.AddComponent<Unit>();
             unitGO.AddComponent<SimpleUnitVisualization>();
@@ -51,6 +55,7 @@ namespace HexGame.Tests
         [UnityTearDown]
         public IEnumerator TearDown()
         {
+            typeof(UnitManager).GetProperty("Instance").SetValue(null, null);
             Object.DestroyImmediate(managerGO);
             Object.DestroyImmediate(unitManagerGO);
             Object.DestroyImmediate(gameMasterGO);
@@ -68,7 +73,8 @@ namespace HexGame.Tests
                 new UnitStatValue { id = "RRNG", value = rrng }
             };
             unitSet.units = new List<UnitType> { type };
-            unit.Initialize(unitSet, 0, teamId);
+            unitManager.ActiveUnitSet = unitSet;
+            unit.Initialize(0, teamId);
         }
 
         private HexData CreateHex(int q, int r, float elevation = 0)

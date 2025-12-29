@@ -10,32 +10,10 @@ namespace HexGame
     {
         public int Id => gameObject.GetInstanceID();
 
-        public string unitSetPath; // Changed from UnitSet object
-        private UnitSet _unitSet;
         public int teamId;
         [SerializeField] private int typeIndex;
 
-        public UnitSet unitSet
-        {
-            get
-            {
-                if (_unitSet == null && !string.IsNullOrEmpty(unitSetPath))
-                {
-                    if (File.Exists(unitSetPath))
-                    {
-                        string json = File.ReadAllText(unitSetPath);
-                        _unitSet = ScriptableObject.CreateInstance<UnitSet>();
-                        _unitSet.FromJson(json);
-                    }
-                }
-                return _unitSet ?? UnitManager.Instance?.ActiveUnitSet;
-            }
-            set
-            {
-                _unitSet = value;
-                // Path is not automatically updated here, but could be
-            }
-        }
+        public UnitSet unitSet => UnitManager.Instance?.ActiveUnitSet;
 
         public int TypeIndex
         {
@@ -70,17 +48,13 @@ namespace HexGame
 
         private void OnValidate()
         {
-            // Only initialize if we have a set and it's not in the middle of a prefab stage or similar
-            if (unitSet != null)
-            {
-                Initialize();
-                if (CurrentHex != null) SetHex(CurrentHex);
-            }
+            Initialize();
+            if (CurrentHex != null) SetHex(CurrentHex);
         }
 
         private void Start()
         {
-            if (unitSet != null) Initialize();
+            Initialize();
         }
 
         public bool IsMoving => moveCoroutine != null;
@@ -174,9 +148,8 @@ namespace HexGame
         }
 
 
-        public void Initialize(UnitSet set, int index, int team)
+        public void Initialize(int index, int team)
         {
-            unitSet = set;
             typeIndex = index;
             teamId = team;
             Initialize();
@@ -194,6 +167,8 @@ namespace HexGame
                     Stats[stat.id] = stat.value;
                 }
             }
+
+            gameObject.name = $"{UnitName}_{Id}";
             
             // Note: In the new flow, the Unit component is added TO the visualization instance.
             currentView = GetComponent<UnitVisualization>();

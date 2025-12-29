@@ -5,6 +5,8 @@ using HexGame;
 [TestFixture]
 public class UnitPlacementTests
 {
+    private GameObject unitManagerGO;
+    private UnitManager unitManager;
     private GameObject hexGO;
     private Hex hex;
     private GameObject unitGO;
@@ -13,6 +15,10 @@ public class UnitPlacementTests
     [SetUp]
     public void SetUp()
     {
+        unitManagerGO = new GameObject("UnitManager");
+        unitManager = unitManagerGO.AddComponent<UnitManager>();
+        unitManager.activeUnitSetPath = ""; // Prevent loading real data
+
         hexGO = new GameObject("TestHex");
         hex = hexGO.AddComponent<Hex>();
         
@@ -23,16 +29,18 @@ public class UnitPlacementTests
         // Create a dummy UnitSet for initialization
         var testSet = ScriptableObject.CreateInstance<HexGame.Units.UnitSet>();
         testSet.units.Add(new HexGame.Units.UnitType { Name = "Test" });
+        unitManager.ActiveUnitSet = testSet;
 
         unitGO = new GameObject("TestUnit");
         unit = unitGO.AddComponent<Unit>();
-        unit.Initialize(testSet, 0, 0);
+        unit.Initialize(0, 0);
     }
 
     [TearDown]
     public void TearDown()
     {
-        if (unit != null && unit.unitSet != null) Object.DestroyImmediate(unit.unitSet);
+        if (unitManager != null && unitManager.ActiveUnitSet != null) Object.DestroyImmediate(unitManager.ActiveUnitSet);
+        Object.DestroyImmediate(unitManagerGO);
         Object.DestroyImmediate(hexGO);
         Object.DestroyImmediate(unitGO);
     }
@@ -83,7 +91,7 @@ public class UnitPlacementTests
         float offset = 0.5f;
         var viz = unitGO.AddComponent<HexGame.Units.SimpleUnitVisualization>();
         viz.yOffset = offset;
-        unit.Initialize(unit.unitSet, 0, 0); // Re-init to pick up visualization
+        unit.Initialize(0, 0); // Re-init to pick up visualization
 
         // Act
         float newElevation = 5f;

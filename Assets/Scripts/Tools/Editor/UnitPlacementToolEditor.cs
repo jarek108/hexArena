@@ -2,6 +2,7 @@ using UnityEditor;
 using UnityEngine;
 using HexGame.Tools;
 using System.Linq;
+using System.IO;
 
 namespace HexGame.Editor
 {
@@ -12,50 +13,47 @@ namespace HexGame.Editor
         {
             serializedObject.Update();
 
-            SerializedProperty indexProp = serializedObject.FindProperty("selectedUnitIndex");
-            SerializedProperty teamProp = serializedObject.FindProperty("selectedTeamId");
-
-            EditorGUILayout.PropertyField(teamProp);
-
-            UnitPlacementTool tool = (UnitPlacementTool)target;
             var unitManager = UnitManager.Instance;
-
-            if (unitManager != null && unitManager.ActiveUnitSet != null && unitManager.ActiveUnitSet.units != null && unitManager.ActiveUnitSet.units.Count > 0)
+            if (unitManager == null)
             {
-                var unitSet = unitManager.ActiveUnitSet;
-                string[] unitNames = unitSet.units.Select((u, i) => $"[{i}] {u.Name}").ToArray();
-                
-                int currentIndex = indexProp.intValue;
-                if (currentIndex < 0 || currentIndex >= unitNames.Length) currentIndex = 0;
-
-                int newIndex = EditorGUILayout.Popup("Selected Unit", currentIndex, unitNames);
-                if (newIndex != currentIndex)
-                {
-                    indexProp.intValue = newIndex;
-                }
-            }
-            else
-            {
-                GUI.enabled = false;
-                EditorGUILayout.Popup("Selected Unit", 0, new string[] { "No units available" });
-                GUI.enabled = true;
-                EditorGUILayout.HelpBox("Ensure UnitManager has an active UnitSet.", MessageType.Info);
+                EditorGUILayout.HelpBox("UnitManager instance not found.", MessageType.Error);
+                return;
             }
 
-            SerializedProperty brushSizeProp = serializedObject.FindProperty("brushSize");
-            if (brushSizeProp != null)
+            // 1. Unit Set View (Sync with UnitManager)
+            string setsDir = "Assets/Data/Sets";
+            string[] setFiles = Directory.Exists(setsDir) ? Directory.GetFiles(setsDir, "*.json") : new string[0];
+            string[] setNames = setFiles.Select(Path.GetFileName).ToArray();
+            int setIndex = System.Array.IndexOf(setFiles.Select(f => f.Replace("\\", "/")).ToArray(), unitManager.activeUnitSetPath);
+
+            EditorGUI.BeginChangeCheck();
+            setIndex = EditorGUILayout.Popup("Unit Set", setIndex, setNames);
+            if (EditorGUI.EndChangeCheck() && setIndex >= 0)
             {
-                EditorGUILayout.PropertyField(brushSizeProp);
+                Undo.RecordObject(unitManager, "Change Unit Set");
+                unitManager.activeUnitSetPath = setFiles[setIndex].Replace("\\", "/");
+                unitManager.LoadActiveSet();
+                EditorUtility.SetDirty(unitManager);
             }
 
-            SerializedProperty maxBrushSizeProp = serializedObject.FindProperty("maxBrushSize");
-            if (maxBrushSizeProp != null)
+            // 2. Unit Selection
+            var activeSet = unitManager.ActiveUnitSet;
+            if (activeSet != null && activeSet.units.Count > 0)
             {
-                EditorGUILayout.PropertyField(maxBrushSizeProp);
+                string[] unitNames = activeSet.units.Select((u, i) => $"[{i}] {u.Name}").ToArray();
+                SerializedProperty indexProp = serializedObject.FindProperty("selectedUnitIndex");
+                indexProp.intValue = EditorGUILayout.Popup("Unit Type", Mathf.Clamp(indexProp.intValue, 0, unitNames.Length - 1), unitNames);
             }
 
+            // 3. Team Selection (Simple ID)
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("selectedTeamId"), new GUIContent("Team ID"));
+
+            // 4. Brush Settings
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("brushSize"));
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("maxBrushSize"));
+
+            // 5. Visuals
             EditorGUILayout.Space();
-            EditorGUILayout.LabelField("Ghost Visuals", EditorStyles.boldLabel);
             EditorGUILayout.PropertyField(serializedObject.FindProperty("ghostTransparency"));
             EditorGUILayout.PropertyField(serializedObject.FindProperty("disableGhostShadows"));
 

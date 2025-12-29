@@ -11,6 +11,8 @@ namespace HexGame.Tests
     {
         private GameObject managerGO;
         private GridVisualizationManager manager;
+        private GameObject unitManagerGO;
+        private UnitManager unitManager;
         private GameObject gameMasterGO;
         private GameMaster gameMaster;
         private BattleBrothersRuleset ruleset;
@@ -31,6 +33,10 @@ namespace HexGame.Tests
             managerGO = new GameObject("GridVisualizationManager");
             manager = managerGO.AddComponent<GridVisualizationManager>();
             
+            unitManagerGO = new GameObject("UnitManager");
+            unitManager = unitManagerGO.AddComponent<UnitManager>();
+            unitManager.activeUnitSetPath = ""; // Prevent loading real data
+
             gameMasterGO = new GameObject("GameMaster");
             gameMaster = gameMasterGO.AddComponent<GameMaster>();
             
@@ -59,18 +65,21 @@ namespace HexGame.Tests
             grid.AddHex(data2);
 
             unitSet = ScriptableObject.CreateInstance<UnitSet>();
+            unitManager.ActiveUnitSet = unitSet;
+
             unitGO = new GameObject("Unit");
             unit = unitGO.AddComponent<Unit>();
             
             var type = new UnitType { Name = "TestUnit" };
             unitSet.units = new List<UnitType> { type };
-            unit.Initialize(unitSet, 0, 0); // Team 0
+            unit.Initialize(0, 0); // Team 0
         }
 
         [TearDown]
         public void TearDown()
         {
             Object.DestroyImmediate(managerGO);
+            Object.DestroyImmediate(unitManagerGO);
             Object.DestroyImmediate(gameMasterGO);
             Object.DestroyImmediate(hexStartGO);
             Object.DestroyImmediate(hexEndGO);
@@ -125,7 +134,7 @@ namespace HexGame.Tests
             var type = new UnitType { Name = "MeleeUnit" };
             type.Stats = new List<UnitStatValue> { new UnitStatValue { id = "MRNG", value = 1 } };
             unitSet.units = new List<UnitType> { type };
-            unit.Initialize(unitSet, 0, 0); // Team 0
+            unit.Initialize(0, 0); // Team 0
 
             // Add dummy unit to target hex to trigger attack logic in ruleset
             var targetGO = new GameObject("Target");
@@ -157,7 +166,7 @@ namespace HexGame.Tests
                 new UnitStatValue { id = "RRNG", value = 5 } 
             };
             unitSet.units = new List<UnitType> { type };
-            unit.Initialize(unitSet, 0, 0); // Team 0
+            unit.Initialize(0, 0); // Team 0
 
             // Add dummy unit to target hex
             var targetGO = new GameObject("Target");

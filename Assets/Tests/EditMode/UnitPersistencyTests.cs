@@ -32,6 +32,7 @@ namespace HexGame.Tests
             
             unitManagerGO = new GameObject("Units");
             unitManager = unitManagerGO.AddComponent<UnitManager>();
+            unitManager.activeUnitSetPath = ""; // Prevent loading real data from disk
             
             Grid grid = new Grid(5, 5);
             for (int r = 0; r < 5; r++)

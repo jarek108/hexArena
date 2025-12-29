@@ -421,46 +421,41 @@ namespace HexGame
                 return;
             }
 
-            // Determine effective stop index
             int stopIndex = GetMoveStopIndex(unit, path);
             
-            // If the unit effectively doesn't move (stops at start), don't show ghost
+            // Show AoA regardless of whether ghost is shown (as long as we have a stop hex)
+            if (stopIndex > 0)
+            {
+                ShowAoA(unit, path[stopIndex - 1]);
+            }
+
+            // Ghost visibility logic
             if (stopIndex <= 1)
             {
-                OnClearPathfindingVisuals();
-                // However, we still might want to show AoA for the stationary unit if it's selected
-                // But the prompt specifically asks to hide the ghost.
-                // Re-calculating AoA for stationary unit is handled by OnUnitSelected or Tool usually, 
-                // but here we are in the "hover" feedback loop.
-                // If we are just hovering the unit itself, we likely don't need a ghost.
+                // Hide ghost but keep AoA
+                if (pathGhost != null) pathGhost.gameObject.SetActive(false);
                 return; 
             }
 
             if (pathGhost == null || lastGhostSource != unit)
             {
                 OnClearPathfindingVisuals();
+                // Re-calling ShowAoA because OnClearPathfindingVisuals clears it
                 SpawnGhost(unit);
+                if (stopIndex > 0) ShowAoA(unit, path[stopIndex - 1]);
             }
 
             if (pathGhost != null)
             {
-                if (stopIndex > 0)
+                HexData ghostHex = path[stopIndex - 1];
+                var manager = GridVisualizationManager.Instance;
+                Hex hexView = manager.GetHex(ghostHex.Q, ghostHex.R);
+                if (hexView != null)
                 {
-                    HexData ghostHex = path[stopIndex - 1];
-                    var manager = GridVisualizationManager.Instance;
-                    Hex hexView = manager.GetHex(ghostHex.Q, ghostHex.R);
-                    if (hexView != null)
-                    {
-                        Vector3 pos = hexView.transform.position;
-                        pos.y += pathGhost.yOffset;
-                        pathGhost.transform.position = pos;
-                        pathGhost.gameObject.SetActive(true);
-                        ShowAoA(unit, ghostHex);
-                    }
-                }
-                else
-                {
-                    pathGhost.gameObject.SetActive(false);
+                    Vector3 pos = hexView.transform.position;
+                    pos.y += pathGhost.yOffset;
+                    pathGhost.transform.position = pos;
+                    pathGhost.gameObject.SetActive(true);
                 }
             }
         }

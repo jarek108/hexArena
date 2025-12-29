@@ -11,6 +11,8 @@ namespace HexGame.Tests
     {
         private GameObject managerGO;
         private GridVisualizationManager manager;
+        private GameObject unitManagerGO;
+        private UnitManager unitManager;
         private GameObject gameMasterGO;
         private GameMaster gameMaster;
         private BattleBrothersRuleset ruleset;
@@ -31,8 +33,11 @@ namespace HexGame.Tests
             // 1. Setup Managers
             managerGO = new GameObject("GridVisualizationManager");
             manager = managerGO.AddComponent<GridVisualizationManager>();
-            // Ensure Instance is set (Singleton usually sets in Awake, but in TestRunner it works if component is added)
             
+            unitManagerGO = new GameObject("UnitManager");
+            unitManager = unitManagerGO.AddComponent<UnitManager>();
+            unitManager.activeUnitSetPath = ""; // Prevent loading real data
+
             gameMasterGO = new GameObject("GameMaster");
             gameMaster = gameMasterGO.AddComponent<GameMaster>();
             
@@ -41,17 +46,15 @@ namespace HexGame.Tests
 
             // 2. Setup Grid
             grid = new Grid(10, 10);
-            manager.Grid = grid; // Inject grid into manager
+            manager.Grid = grid; 
             
             // 3. Setup Hexes
-            // Hex 1 at (0,0)
             hex1GO = new GameObject("Hex1");
             hex1 = hex1GO.AddComponent<Hex>();
             HexData data1 = new HexData(0, 0);
             hex1.AssignData(data1);
             grid.AddHex(data1);
 
-            // Hex 2 at (1, -1) (Neighbor to 0,0)
             hex2GO = new GameObject("Hex2");
             hex2 = hex2GO.AddComponent<Hex>();
             HexData data2 = new HexData(1, -1);
@@ -60,6 +63,8 @@ namespace HexGame.Tests
 
             // 4. Setup Unit
             unitSet = ScriptableObject.CreateInstance<UnitSet>();
+            unitManager.ActiveUnitSet = unitSet;
+
             unitGO = new GameObject("Unit");
             unit = unitGO.AddComponent<Unit>();
         }
@@ -68,6 +73,7 @@ namespace HexGame.Tests
         public void TearDown()
         {
             Object.DestroyImmediate(managerGO);
+            Object.DestroyImmediate(unitManagerGO);
             Object.DestroyImmediate(gameMasterGO);
             Object.DestroyImmediate(hex1GO);
             Object.DestroyImmediate(hex2GO);
@@ -84,7 +90,7 @@ namespace HexGame.Tests
                 new UnitStatValue { id = "MRNG", value = range }
             };
             unitSet.units = new List<UnitType> { type };
-            unit.Initialize(unitSet, 0, 1); // Team 1
+            unit.Initialize(0, 1); // Team 1
         }
 
         [Test]

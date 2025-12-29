@@ -13,7 +13,7 @@ namespace HexGame
 
         [Header("Setup")]
         public UnitVisualization unitVisualizationPrefab;
-        public string activeUnitSetPath = "Assets/Data/Sets/BattleBrothers_Core.json";
+        public string activeUnitSetPath = "";
 
         private UnitSet _activeSet;
         public UnitSet ActiveUnitSet 
@@ -29,7 +29,10 @@ namespace HexGame
         private void OnEnable()
         {
             Instance = this;
-            LoadActiveSet();
+            if (!string.IsNullOrEmpty(activeUnitSetPath))
+            {
+                LoadActiveSet();
+            }
         }
 
         public void LoadActiveSet()
@@ -91,10 +94,9 @@ namespace HexGame
 
             UnitType type = set.units[index];
             UnitVisualization vizInstance = Instantiate(prefab, transform);
-            vizInstance.gameObject.name = $"Unit_{type.Name}";
 
             Unit unitComponent = vizInstance.gameObject.AddComponent<Unit>();
-            unitComponent.Initialize(set, index, teamId);
+            unitComponent.Initialize(index, teamId);
             unitComponent.SetHex(targetHex);
         }
 
@@ -158,7 +160,7 @@ namespace HexGame
         public void SaveUnits(string path)
         {
             UnitSaveBatch batch = new UnitSaveBatch();
-            batch.unitSetName = ActiveUnitSet != null ? ActiveUnitSet.name : "";
+            batch.unitSetPath = activeUnitSetPath;
 
             foreach (Transform child in transform)
             {
@@ -191,20 +193,19 @@ namespace HexGame
 
             EraseAllUnits();
 
+            // Load set from batch path if available
             UnitSet set = null;
-#if UNITY_EDITOR
-            if (!string.IsNullOrEmpty(batch.unitSetName))
+            if (!string.IsNullOrEmpty(batch.unitSetPath) && File.Exists(batch.unitSetPath))
             {
-                // Try to find a JSON file with the same name in Data/Sets
-                string setJsonPath = $"Assets/Data/Sets/{batch.unitSetName}.json";
-                if (File.Exists(setJsonPath))
-                {
-                    string setJson = File.ReadAllText(setJsonPath);
-                    set = ScriptableObject.CreateInstance<UnitSet>();
-                    set.FromJson(setJson);
-                }
+                string setJson = File.ReadAllText(batch.unitSetPath);
+                set = ScriptableObject.CreateInstance<UnitSet>();
+                set.FromJson(setJson);
+                
+                // Update active set path to match loaded layout
+                activeUnitSetPath = batch.unitSetPath;
+                _activeSet = set;
             }
-#endif
+
             if (set == null)
             {
                 set = fallbackSet;
@@ -240,7 +241,7 @@ namespace HexGame
     [System.Serializable]
     public class UnitSaveBatch
     {
-        public string unitSetName;
+        public string unitSetPath;
         public List<UnitSaveData> units = new List<UnitSaveData>();
     }
 }

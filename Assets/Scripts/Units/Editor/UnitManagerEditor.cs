@@ -42,19 +42,30 @@ namespace HexGame.Editor
             EditorGUILayout.LabelField("Unit Setup", EditorStyles.boldLabel);
             EditorGUILayout.PropertyField(serializedObject.FindProperty("unitVisualizationPrefab"));
             
-            EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("activeUnitSetPath"));
-            if (GUILayout.Button("...", GUILayout.Width(30)))
+            // Unit Set Selection Dropdown
+            string setsDir = "Assets/Data/Sets";
+            if (!Directory.Exists(setsDir)) Directory.CreateDirectory(setsDir);
+            
+            string[] setFiles = Directory.GetFiles(setsDir, "*.json");
+            string[] setNames = setFiles.Select(Path.GetFileName).ToArray();
+            
+            SerializedProperty pathProp = serializedObject.FindProperty("activeUnitSetPath");
+            string currentPath = pathProp.stringValue;
+            int currentIndex = -1;
+            
+            if (!string.IsNullOrEmpty(currentPath))
             {
-                string path = EditorUtility.OpenFilePanel("Select Active Unit Set JSON", "Assets/Data/Sets", "json");
-                if (!string.IsNullOrEmpty(path))
-                {
-                    if (path.StartsWith(Application.dataPath))
-                        path = "Assets" + path.Substring(Application.dataPath.Length);
-                    serializedObject.FindProperty("activeUnitSetPath").stringValue = path;
-                }
+                string currentFileName = Path.GetFileName(currentPath);
+                currentIndex = System.Array.IndexOf(setNames, currentFileName);
             }
-            EditorGUILayout.EndHorizontal();
+
+            EditorGUI.BeginChangeCheck();
+            int newSetIndex = EditorGUILayout.Popup("Active Unit Set", currentIndex, setNames);
+            if (EditorGUI.EndChangeCheck() && newSetIndex >= 0)
+            {
+                pathProp.stringValue = setFiles[newSetIndex].Replace("\\", "/");
+                // Force reload if needed? Or let OnEnable/property handle it
+            }
 
             if (GUILayout.Button("Open Unit Data Editor"))
             {

@@ -1,6 +1,7 @@
 using UnityEditor;
 using UnityEngine;
 using System.Linq;
+using System.IO;
 
 namespace HexGame.Editor
 {
@@ -13,43 +14,25 @@ namespace HexGame.Editor
             serializedObject.Update();
             Unit unit = (Unit)target;
 
-            // 1. Configuration Section
-            EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("unitSetPath"));
-            if (GUILayout.Button("...", GUILayout.Width(30)))
-            {
-                string path = EditorUtility.OpenFilePanel("Select Unit Set JSON", "Assets/Data/Sets", "json");
-                if (!string.IsNullOrEmpty(path))
-                {
-                    // Convert absolute path to project-relative if possible
-                    if (path.StartsWith(Application.dataPath))
-                    {
-                        path = "Assets" + path.Substring(Application.dataPath.Length);
-                    }
-                    serializedObject.FindProperty("unitSetPath").stringValue = path;
-                }
-            }
-            EditorGUILayout.EndHorizontal();
-
-            // Type Selection Dropdown
+            // Type Selection Dropdown using Global Set
             var set = unit.unitSet;
             if (set != null && set.units != null && set.units.Count > 0)
             {
                 var names = set.units.Select((u, i) => $"[{i}] {u.Name}").ToArray();
                 SerializedProperty typeIndexProp = serializedObject.FindProperty("typeIndex");
                 
-                int currentIndex = typeIndexProp.intValue;
-                if (currentIndex < 0 || currentIndex >= names.Length) currentIndex = 0;
+                int currentTypeIndex = typeIndexProp.intValue;
+                if (currentTypeIndex < 0 || currentTypeIndex >= names.Length) currentTypeIndex = 0;
 
-                int newIndex = EditorGUILayout.Popup("Unit Type", currentIndex, names);
-                if (newIndex != currentIndex)
+                int newTypeIndex = EditorGUILayout.Popup("Unit Type", currentTypeIndex, names);
+                if (newTypeIndex != currentTypeIndex)
                 {
-                    typeIndexProp.intValue = newIndex;
+                    typeIndexProp.intValue = newTypeIndex;
                 }
             }
             else
             {
-                EditorGUILayout.HelpBox("Assign a valid UnitSet path to select a type.", MessageType.Info);
+                EditorGUILayout.HelpBox("UnitManager has no valid Active Unit Set.", MessageType.Warning);
             }
 
             // Read-only Type Index for reference
