@@ -432,7 +432,7 @@ namespace HexGame
             if (unit == null || hex == null) return true;
             EnsureResources(unit);
             
-            hex.AddState($"Occupied{unit.teamId}_{unit.Id}");
+            unit.AddOwnedHexState(hex, $"Occupied{unit.teamId}_{unit.Id}");
 
             // Deduct resources if we actually moved (traversal)
             // (Simple logic: if hex is not starting hex, deduct cost)
@@ -463,7 +463,7 @@ namespace HexGame
                         float delta = Mathf.Abs(neighbor.Elevation - hex.Elevation);
                         if (delta <= maxElevationDelta)
                         {
-                            neighbor.AddState(unitZocState);
+                            unit.AddOwnedHexState(neighbor, unitZocState);
                         }
                     }
                 }
@@ -476,20 +476,7 @@ namespace HexGame
             if (unit == null || hex == null) return true;
             EnsureResources(unit);
 
-            hex.RemoveState($"Occupied{unit.teamId}_{unit.Id}");
-
-            if (unit.GetStat("MAT") > 0)
-            {
-                var grid = GridVisualizationManager.Instance?.Grid;
-                if (grid != null)
-                {
-                    string unitZocState = $"ZoC{unit.teamId}_{unit.Id}";
-                    foreach (var neighbor in grid.GetNeighbors(hex))
-                    {
-                        neighbor.RemoveState(unitZocState);
-                    }
-                }
-            }
+            unit.ClearOwnedHexStates();
             return true;
         }
 
@@ -564,7 +551,7 @@ namespace HexGame
                     if (delta > maxElevationDelta) continue;
                 }
 
-                h.AddState(aoaState);
+                unit.AddOwnedHexState(h, aoaState);
                 currentAoAHexes.Add(h);
             }
         }

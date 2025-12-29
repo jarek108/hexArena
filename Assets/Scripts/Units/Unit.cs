@@ -8,6 +8,14 @@ namespace HexGame
     [ExecuteAlways]
     public class Unit : MonoBehaviour
     {
+        [System.Serializable]
+        public struct ProjectedHexState
+        {
+            public int q;
+            public int r;
+            public string state;
+        }
+
         public int Id => gameObject.GetInstanceID();
 
         public int teamId;
@@ -46,6 +54,8 @@ namespace HexGame
         private UnitVisualization currentView;
         private Coroutine moveCoroutine;
 
+        [SerializeField, HideInInspector] private List<ProjectedHexState> ownedHexStates = new List<ProjectedHexState>();
+
         private void OnValidate()
         {
             Initialize();
@@ -55,6 +65,31 @@ namespace HexGame
         private void Start()
         {
             Initialize();
+        }
+
+        private void OnDisable()
+        {
+            ClearOwnedHexStates();
+        }
+
+        public void AddOwnedHexState(HexData hex, string state)
+        {
+            if (hex == null) return;
+            hex.AddState(state);
+            ownedHexStates.Add(new ProjectedHexState { q = hex.Q, r = hex.R, state = state });
+        }
+
+        public void ClearOwnedHexStates()
+        {
+            var grid = GridVisualizationManager.Instance?.Grid;
+            if (grid == null || ownedHexStates.Count == 0) return;
+
+            foreach (var projection in ownedHexStates)
+            {
+                var hex = grid.GetHexAt(projection.q, projection.r);
+                hex?.RemoveState(projection.state);
+            }
+            ownedHexStates.Clear();
         }
 
         public bool IsMoving => moveCoroutine != null;
