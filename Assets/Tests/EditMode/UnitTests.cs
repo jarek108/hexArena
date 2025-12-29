@@ -18,6 +18,7 @@ public class UnitPlacementTests
         unitManagerGO = new GameObject("UnitManager");
         unitManager = unitManagerGO.AddComponent<UnitManager>();
         unitManager.activeUnitSetPath = ""; // Prevent loading real data
+        typeof(UnitManager).GetProperty("Instance").SetValue(null, unitManager);
 
         hexGO = new GameObject("TestHex");
         hex = hexGO.AddComponent<Hex>();
@@ -39,6 +40,7 @@ public class UnitPlacementTests
     [TearDown]
     public void TearDown()
     {
+        typeof(UnitManager).GetProperty("Instance").SetValue(null, null);
         if (unitManager != null && unitManager.ActiveUnitSet != null) Object.DestroyImmediate(unitManager.ActiveUnitSet);
         Object.DestroyImmediate(unitManagerGO);
         Object.DestroyImmediate(hexGO);

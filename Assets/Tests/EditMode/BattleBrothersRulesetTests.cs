@@ -37,6 +37,7 @@ namespace HexGame.Tests
             unitManagerGO = new GameObject("UnitManager");
             unitManager = unitManagerGO.AddComponent<UnitManager>();
             unitManager.activeUnitSetPath = ""; // Prevent loading real data
+            typeof(UnitManager).GetProperty("Instance").SetValue(null, unitManager);
 
             gameMasterGO = new GameObject("GameMaster");
             gameMaster = gameMasterGO.AddComponent<GameMaster>();
@@ -72,6 +73,7 @@ namespace HexGame.Tests
         [TearDown]
         public void TearDown()
         {
+            typeof(UnitManager).GetProperty("Instance").SetValue(null, null);
             Object.DestroyImmediate(managerGO);
             Object.DestroyImmediate(unitManagerGO);
             Object.DestroyImmediate(gameMasterGO);
@@ -87,7 +89,8 @@ namespace HexGame.Tests
             var type = new UnitType { Name = "TestUnit" };
             type.Stats = new List<UnitStatValue>
             {
-                new UnitStatValue { id = "MRNG", value = range }
+                new UnitStatValue { id = "MAT", value = range > 0 ? 60 : 0 },
+                new UnitStatValue { id = "RNG", value = range }
             };
             unitSet.units = new List<UnitType> { type };
             unit.Initialize(0, 1); // Team 1

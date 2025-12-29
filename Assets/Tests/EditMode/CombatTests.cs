@@ -8,6 +8,8 @@ using HexGame.Units;
 
 public class CombatTests
 {
+    private GameObject unitManagerGO;
+    private UnitManager unitManager;
     private GameObject attackerObj;
     private GameObject targetObj;
     private Unit attacker;
@@ -17,15 +19,20 @@ public class CombatTests
     [SetUp]
     public void Setup()
     {
+        unitManagerGO = new GameObject("UnitManager");
+        unitManager = unitManagerGO.AddComponent<UnitManager>();
+        unitManager.activeUnitSetPath = "";
+        typeof(UnitManager).GetProperty("Instance").SetValue(null, unitManager);
+
         attackerObj = new GameObject("Attacker");
         attacker = attackerObj.AddComponent<Unit>();
         attacker.Stats["HP"] = 100;
-        attacker.Stats["MSKL"] = 50;
+        attacker.Stats["MAT"] = 50;
 
         targetObj = new GameObject("Target");
         target = targetObj.AddComponent<Unit>();
         target.Stats["HP"] = 100;
-        target.Stats["MDEF"] = 0;
+        target.Stats["MDF"] = 0;
 
         ruleset = ScriptableObject.CreateInstance<BattleBrothersRuleset>();
     }
@@ -33,6 +40,8 @@ public class CombatTests
     [TearDown]
     public void Teardown()
     {
+        typeof(UnitManager).GetProperty("Instance").SetValue(null, null);
+        if (unitManagerGO != null) Object.DestroyImmediate(unitManagerGO);
         if (attackerObj != null) Object.DestroyImmediate(attackerObj);
         if (targetObj != null) Object.DestroyImmediate(targetObj);
         if (ruleset != null) Object.DestroyImmediate(ruleset);
@@ -41,6 +50,9 @@ public class CombatTests
     [Test]
     public void OnHit_ReducesHP()
     {
+        // Arrange
+        attacker.Stats["ABY"] = 100;
+
         // Act
         ruleset.OnHit(attacker, target, 20);
 
@@ -53,6 +65,7 @@ public class CombatTests
     {
         // Arrange
         target.Stats["HP"] = 10;
+        attacker.Stats["ABY"] = 100;
 
         // Act
         ruleset.OnHit(attacker, target, 20);

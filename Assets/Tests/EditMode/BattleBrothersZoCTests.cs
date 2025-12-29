@@ -36,6 +36,7 @@ namespace HexGame.Tests
             unitManagerGO = new GameObject("UnitManager");
             unitManager = unitManagerGO.AddComponent<UnitManager>();
             unitManager.activeUnitSetPath = ""; // Prevent loading real data
+            typeof(UnitManager).GetProperty("Instance").SetValue(null, unitManager);
 
             gameMasterGO = new GameObject("GameMaster");
             gameMaster = gameMasterGO.AddComponent<GameMaster>();
@@ -71,6 +72,7 @@ namespace HexGame.Tests
             unit = unitGO.AddComponent<Unit>();
             
             var type = new UnitType { Name = "TestUnit" };
+            type.Stats = new List<UnitStatValue> { new UnitStatValue { id = "AP", value = 100 } };
             unitSet.units = new List<UnitType> { type };
             unit.Initialize(0, 0); // Team 0
         }
@@ -78,6 +80,7 @@ namespace HexGame.Tests
         [TearDown]
         public void TearDown()
         {
+            typeof(UnitManager).GetProperty("Instance").SetValue(null, null);
             Object.DestroyImmediate(managerGO);
             Object.DestroyImmediate(unitManagerGO);
             Object.DestroyImmediate(gameMasterGO);
@@ -130,9 +133,12 @@ namespace HexGame.Tests
         public void GetMoveCost_MeleeAttack_HighElevation_ReturnsInfinity()
         {
             // Arrange
-            // Initialize unit with melee range
+            // Initialize unit with melee skill and range
             var type = new UnitType { Name = "MeleeUnit" };
-            type.Stats = new List<UnitStatValue> { new UnitStatValue { id = "MRNG", value = 1 } };
+            type.Stats = new List<UnitStatValue> { 
+                new UnitStatValue { id = "MAT", value = 60 },
+                new UnitStatValue { id = "RNG", value = 1 } 
+            };
             unitSet.units = new List<UnitType> { type };
             unit.Initialize(0, 0); // Team 0
 
@@ -162,8 +168,8 @@ namespace HexGame.Tests
             // Initialize unit with ranged range
             var type = new UnitType { Name = "RangedUnit" };
             type.Stats = new List<UnitStatValue> { 
-                new UnitStatValue { id = "MRNG", value = 1 },
-                new UnitStatValue { id = "RRNG", value = 5 } 
+                new UnitStatValue { id = "RAT", value = 60 },
+                new UnitStatValue { id = "RNG", value = 5 } 
             };
             unitSet.units = new List<UnitType> { type };
             unit.Initialize(0, 0); // Team 0

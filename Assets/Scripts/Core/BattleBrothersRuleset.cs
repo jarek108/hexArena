@@ -47,15 +47,25 @@ namespace HexGame
             currentAttackType = AttackType.None;
             if (target.Unit != null && unit != null)
             {
-                int mrng = unit.GetStat("MRNG", 1);
-                int rrng = unit.GetStat("RRNG", 0);
-                currentAttackType = (rrng > mrng) ? AttackType.Ranged : AttackType.Melee;
+                int mat = unit.GetStat("MAT", 0);
+                int rat = unit.GetStat("RAT", 0);
+                currentAttackType = (rat > mat) ? AttackType.Ranged : AttackType.Melee;
             }
         }
 
         public override void OnUnitSelected(Unit unit)
         {
             OnClearPathfindingVisuals();
+            EnsureResources(unit);
+        }
+
+        private void EnsureResources(Unit unit)
+        {
+            if (unit == null) return;
+            // Initialize runtime resources if missing. 
+            // Default to 9 AP if stat is missing (standard BB).
+            if (!unit.Stats.ContainsKey("CAP")) unit.Stats["CAP"] = unit.GetStat("AP", 9);
+            if (!unit.Stats.ContainsKey("CFAT")) unit.Stats["CFAT"] = 0;
         }
 
         public override void OnUnitDeselected(Unit unit)
@@ -73,17 +83,18 @@ namespace HexGame
             if (attackerHex == null || targetHex == null) return results;
 
             int dist = HexMath.Distance(attackerHex, targetHex);
-            int mrng = attacker.GetStat("MRNG", 1);
-            int rrng = attacker.GetStat("RRNG", 0);
+            int mat = attacker.GetStat("MAT", 0);
+            int rat = attacker.GetStat("RAT", 0);
+            int rng = attacker.GetStat("RNG", 1);
 
             float currentMax = 0f;
 
-            if (dist <= mrng)
+            if (mat > 0 && dist <= rng)
             {
                 float chance = CalculateMeleeHitChance(attacker, target, attackerHex, targetHex, dist);
                 results.Add(new PotentialHit(target, 0, chance, 0, 1f, "Melee"));
             }
-            else if (dist <= rrng)
+            else if (rat > 0 && dist <= rng)
             {
                 // 1. Analyze Surroundings
                 List<Unit> covers, strays;
@@ -99,7 +110,7 @@ namespace HexGame
                 results.Add(new PotentialHit(target, 0, primaryWidth, 0, 1f, "Target"));
                 currentMax = primaryWidth;
 
-                // Bucket B: Cover Interception (Individual RDEF check)
+                // Bucket B: Cover Interception (Individual RDF check)
                 if (hasCover)
                 {
                     foreach (var c in covers)
@@ -113,7 +124,7 @@ namespace HexGame
                     }
                 }
 
-                // Bucket C: Miss Scatter (Stray shots with individual RDEF check)
+                // Bucket C: Miss Scatter (Stray shots with individual RDF check)
                 if (dist >= 3 && strays.Count > 0)
                 {
                     float missChance = 1.0f - primaryWidth - (hasCover ? (1.0f * coverMissChance) : 0f);
@@ -143,7 +154,7 @@ namespace HexGame
 
             var neighbors = grid.GetNeighbors(targetHex);
             HexData hexBehind = null;
-            if (dist == 3)
+            if (dist >= 3)
             {
                 var line = HexMath.GetLine(new Vector3Int(attackerHex.Q, attackerHex.R, attackerHex.S), new Vector3Int(targetHex.Q, targetHex.R, targetHex.S));
                 if (line.Count >= 2)
@@ -170,7 +181,22 @@ namespace HexGame
             unit.MoveAlongPath(path, transitionSpeed, transitionPause, () => {
                 if (targetHex != null && targetHex.Unit != null && targetHex.Unit.teamId != unit.teamId)
                 {
-                    PerformAttack(unit, targetHex.Unit);
+                    // Basic Check: Do we have resources to attack?
+                    int cap = unit.GetStat("CAP");
+                    int cfat = unit.GetStat("CFAT");
+                    int mfat = unit.GetStat("FAT");
+                    int attackCost = 4; // Placeholder constant for AP attack cost
+
+                    if (cap >= attackCost && cfat < mfat)
+                    {
+                        PerformAttack(unit, targetHex.Unit);
+                        unit.Stats["CAP"] -= attackCost;
+                        unit.Stats["CFAT"] += unit.GetStat("AFAT", 10);
+                    }
+                    else
+                    {
+                        Debug.Log($"[Ruleset] {unit.UnitName} too exhausted to attack!");
+                    }
                 }
                 onComplete?.Invoke();
             });
@@ -194,7 +220,10 @@ namespace HexGame
                 if (roll >= hit.min && roll < hit.max)
                 {
                     Debug.Log($"[Ruleset] {hit.logInfo} HIT: Chance {hit.min:P0}-{hit.max:P0}, Roll {roll:P1}");
-                    OnHit(attacker, hit.target, 10f * hit.damageMultiplier);
+                    
+                    float rawDmg = Random.Range(attacker.GetStat("DMIN", 30), attacker.GetStat("DMAX", 40) + 1);
+                    OnHit(attacker, hit.target, rawDmg * hit.damageMultiplier);
+                    
                     hitResolved = true;
                     break;
                 }
@@ -220,14 +249,44 @@ namespace HexGame
             if (target == null) return;
             
             int currentHP = target.GetStat("HP");
-            int dmgInt = Mathf.RoundToInt(damage);
-            currentHP -= dmgInt;
-            target.Stats["HP"] = currentHP;
+            int currentARM = target.GetStat("ARM", 0);
             
-            Debug.Log($"[Ruleset] {target.UnitName} took {dmgInt} damage. HP: {currentHP}");
+            float aby = attacker.GetStat("ABY", 20) / 100f;
+            float adm = attacker.GetStat("ADM", 100) / 100f;
+
+            int armDmg = Mathf.RoundToInt(damage * adm);
+            int directHPDmg = Mathf.RoundToInt(damage * aby);
+
+            if (currentARM > 0)
+            {
+                int actualArmLoss = Mathf.Min(currentARM, armDmg);
+                currentARM -= actualArmLoss;
+                
+                // Armour reduction: direct damage is reduced by 10% of remaining armour
+                float reduction = currentARM * 0.1f;
+                int finalHPDmg = Mathf.Max(0, Mathf.RoundToInt(directHPDmg - reduction));
+                
+                // If armour was destroyed, any leftover armour damage goes to HP at 100%
+                if (armDmg > actualArmLoss)
+                {
+                    finalHPDmg += (armDmg - actualArmLoss);
+                }
+                
+                currentHP -= finalHPDmg;
+                Debug.Log($"[Ruleset] {target.UnitName} hit! ARM: {currentARM + actualArmLoss}->{currentARM}, HP: {currentHP} (Direct: {finalHPDmg})");
+            }
+            else
+            {
+                // No armour: full damage to HP
+                currentHP -= Mathf.RoundToInt(damage);
+                Debug.Log($"[Ruleset] {target.UnitName} hit! No ARM, HP: {currentHP} (Full: {Mathf.RoundToInt(damage)})");
+            }
+            
+            target.Stats["HP"] = currentHP;
+            target.Stats["ARM"] = currentARM;
 
             var targetViz = target.GetComponent<HexGame.Units.UnitVisualization>();
-            if (targetViz != null) targetViz.OnTakeDamage(dmgInt);
+            if (targetViz != null) targetViz.OnTakeDamage(Mathf.RoundToInt(damage));
 
             if (currentHP <= 0)
             {
@@ -242,7 +301,6 @@ namespace HexGame
             
             if (unit.CurrentHex != null)
             {
-                // Ensure logic cleanup, though simple destruction might suffice for now
                 unit.CurrentHex.Data.Unit = null;
                 OnDeparture(unit, unit.CurrentHex.Data);
             }
@@ -259,7 +317,9 @@ namespace HexGame
                 
                 if (isEnemy)
                 {
-                    if (currentAttackType == AttackType.Melee)
+                    int mat = unit.GetStat("MAT", 0);
+                    int rat = unit.GetStat("RAT", 0);
+                    if (mat > 0) // Melee check
                     {
                         float attackDelta = Mathf.Abs(toHex.Elevation - fromHex.Elevation);
                         if (attackDelta > maxElevationDelta) return float.PositiveInfinity;
@@ -283,17 +343,13 @@ namespace HexGame
                             string teamPart = state.Substring(8, underscoreIndex - 8);
                             if (int.TryParse(teamPart, out int occupiedTeamId))
                             {
-                                if (occupiedTeamId != unit.teamId)
-                                {
-                                    return float.PositiveInfinity;
-                                }
+                                if (occupiedTeamId != unit.teamId) return float.PositiveInfinity;
                                 else
                                 {
                                     if (toHex == currentSearchTarget) return float.PositiveInfinity;
-
                                     if (currentSearchTarget != null && currentSearchTarget.Unit != null)
                                     {
-                                        int range = Mathf.Max(unit.GetStat("MRNG", 1), unit.GetStat("RRNG", 0));
+                                        int range = unit.GetStat("RNG", 1);
                                         if (HexMath.Distance(toHex, currentSearchTarget) <= range)
                                             return float.PositiveInfinity;
                                     }
@@ -309,6 +365,7 @@ namespace HexGame
 
             if (unit != null)
             {
+                EnsureResources(unit);
                 foreach (var state in toHex.States)
                 {
                     if (state.StartsWith("ZoC"))
@@ -328,6 +385,10 @@ namespace HexGame
                         }
                     }
                 }
+                
+                // Resource Check: Can we afford this move?
+                int cap = unit.GetStat("CAP");
+                if (cap < cost) return float.PositiveInfinity;
             }
 
             return cost;
@@ -340,9 +401,7 @@ namespace HexGame
             
             if (lastHex.Unit != null && lastHex.Unit.teamId != unit.teamId)
             {
-                int mrng = unit.GetStat("MRNG", 1);
-                int rrng = unit.GetStat("RRNG", 0);
-                int range = Mathf.Max(mrng, rrng);
+                int range = unit.GetStat("RNG", 1);
 
                 for (int i = 0; i < path.Count; i++)
                 {
@@ -371,10 +430,29 @@ namespace HexGame
         public override bool OnEntry(Unit unit, HexData hex)
         {
             if (unit == null || hex == null) return true;
+            EnsureResources(unit);
             
             hex.AddState($"Occupied{unit.teamId}_{unit.Id}");
 
-            if (unit.GetStat("MRNG") > 0)
+            // Deduct resources if we actually moved (traversal)
+            // (Simple logic: if hex is not starting hex, deduct cost)
+            // But ruleset doesn't know previous hex here easily without context.
+            // However, Pathfinder already checked affordability.
+            // For now, we'll assume the Unit logic handles traversal subtraction 
+            // OR we calculate cost here.
+            // Let's assume Unit logic calls this at every step.
+            
+            if (unit.CurrentHex != null)
+            {
+                float cost = GetMoveCost(unit, unit.CurrentHex.Data, hex);
+                if (!float.IsInfinity(cost))
+                {
+                    unit.Stats["CAP"] -= Mathf.RoundToInt(cost);
+                    unit.Stats["CFAT"] += Mathf.RoundToInt(cost);
+                }
+            }
+
+            if (unit.GetStat("MAT") > 0)
             {
                 var grid = GridVisualizationManager.Instance?.Grid;
                 if (grid != null)
@@ -396,10 +474,11 @@ namespace HexGame
         public override bool OnDeparture(Unit unit, HexData hex)
         {
             if (unit == null || hex == null) return true;
+            EnsureResources(unit);
 
             hex.RemoveState($"Occupied{unit.teamId}_{unit.Id}");
 
-            if (unit.GetStat("MRNG") > 0)
+            if (unit.GetStat("MAT") > 0)
             {
                 var grid = GridVisualizationManager.Instance?.Grid;
                 if (grid != null)
@@ -468,18 +547,22 @@ namespace HexGame
             var grid = GridVisualizationManager.Instance?.Grid;
             if (grid == null) return;
 
-            int mrng = unit.GetStat("MRNG", 1);
-            int rrng = unit.GetStat("RRNG", 0);
-            int range = Mathf.Max(mrng, rrng);
-            bool isMelee = mrng >= rrng;
+            int rng = unit.GetStat("RNG", 1);
+            int mat = unit.GetStat("MAT", 0);
+            bool isMelee = mat > 0;
 
             string aoaState = $"AoA{unit.teamId}_{unit.Id}";
-            var inRange = grid.GetHexesInRange(stopHex, range);
+            var inRange = grid.GetHexesInRange(stopHex, rng);
 
             foreach (var h in inRange)
             {
                 if (h == stopHex) continue;
-                if (isMelee && Mathf.Abs(h.Elevation - stopHex.Elevation) > maxElevationDelta) continue;
+                
+                if (isMelee)
+                {
+                    float delta = Mathf.Abs(h.Elevation - stopHex.Elevation);
+                    if (delta > maxElevationDelta) continue;
+                }
 
                 h.AddState(aoaState);
                 currentAoAHexes.Add(h);
@@ -553,11 +636,13 @@ namespace HexGame
 
         private float GetBaseRangedHitChance(Unit attacker, Unit target, HexData attackerHex, HexData targetHex, int dist)
         {
-            int rskl = attacker.GetStat("RSKL", 30);
-            int rdef = target.GetStat("RDEF", 0);
-            float score = rskl - rdef;
+            int rat = attacker.GetStat("RAT", 30);
+            int rdf = target.GetStat("RDF", 0);
+            float score = rat - rdf;
 
             if (attackerHex.Elevation > targetHex.Elevation) score += rangedHighGroundBonus;
+            else if (attackerHex.Elevation < targetHex.Elevation) score -= rangedLowGroundPenalty;
+            
             score -= dist * rangedDistancePenalty;
 
             return Mathf.Clamp(score / 100f, 0f, 1f);
@@ -565,15 +650,15 @@ namespace HexGame
 
         private float CalculateMeleeHitChance(Unit attacker, Unit target, HexData attackerHex, HexData targetHex, int dist)
         {
-            int mskl = attacker.GetStat("MSKL", 50);
-            int mdef = target.GetStat("MDEF", 0);
-            float score = mskl - mdef;
+            int mat = attacker.GetStat("MAT", 50);
+            int mdf = target.GetStat("MDF", 0);
+            float score = mat - mdf;
 
             if (attackerHex.Elevation > targetHex.Elevation) score += meleeHighGroundBonus;
             else if (attackerHex.Elevation < targetHex.Elevation) score -= meleeLowGroundPenalty;
 
-            int mrng = attacker.GetStat("MRNG", 1);
-            if (mrng == 2 && dist == 1)
+            int rng = attacker.GetStat("RNG", 1);
+            if (rng == 2 && dist == 1)
             {
                 score -= longWeaponProximityPenalty;
             }

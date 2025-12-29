@@ -34,6 +34,7 @@ namespace HexGame.Tests
             unitManagerGO = new GameObject("UnitManager");
             unitManager = unitManagerGO.AddComponent<UnitManager>();
             unitManager.activeUnitSetPath = ""; // Prevent loading real data
+            typeof(UnitManager).GetProperty("Instance").SetValue(null, unitManager);
 
             gameMasterGO = new GameObject("GameMaster");
             gameMaster = gameMasterGO.AddComponent<GameMaster>();
@@ -70,6 +71,7 @@ namespace HexGame.Tests
         [TearDown]
         public void TearDown()
         {
+            typeof(UnitManager).GetProperty("Instance").SetValue(null, null);
             Object.DestroyImmediate(managerGO);
             Object.DestroyImmediate(unitManagerGO);
             Object.DestroyImmediate(gameMasterGO);
@@ -166,9 +168,10 @@ namespace HexGame.Tests
         public void RangedAttack_AlreadyInRange_StopIndexIsOne()
         {
             // Archer at (0,0) has range 6. Enemy is at (6,0) (Dist 6).
-            Unit archer = unit; // Stats: MRNG 1
-            archer.Stats["RRNG"] = 6;
-            archer.Stats["MRNG"] = 0;
+            Unit archer = unit; // Stats: MAT 0
+            archer.Stats["RAT"] = 60;
+            archer.Stats["RNG"] = 6;
+            archer.Stats["MAT"] = 0;
 
             var enemyGO = new GameObject("Enemy");
             var enemy = enemyGO.AddComponent<Unit>();

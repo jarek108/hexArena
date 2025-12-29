@@ -69,8 +69,9 @@ namespace HexGame.Tests
             var type = new UnitType { Name = "Test" };
             type.Stats = new List<UnitStatValue>
             {
-                new UnitStatValue { id = "MRNG", value = mrng },
-                new UnitStatValue { id = "RRNG", value = rrng }
+                new UnitStatValue { id = "MAT", value = mrng > 0 ? 50 : 0 },
+                new UnitStatValue { id = "RAT", value = rrng > 0 ? 50 : 0 },
+                new UnitStatValue { id = "RNG", value = Mathf.Max(mrng, rrng) }
             };
             unitSet.units = new List<UnitType> { type };
             unitManager.ActiveUnitSet = unitSet;
@@ -135,7 +136,7 @@ namespace HexGame.Tests
             
             HexData stop = CreateHex(0, 0, 0);
             HexData low = CreateHex(1, 0, 0);
-            HexData high = CreateHex(0, 1, 2.0f); // Too high
+            HexData high = CreateHex(1, -1, 2.0f); // Guaranteed neighbor of (0,0)
 
             List<HexData> path = new List<HexData> { stop };
             ruleset.OnFinishPathfinding(unit, path, true);
