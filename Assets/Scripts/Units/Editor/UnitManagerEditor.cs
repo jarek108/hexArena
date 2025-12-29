@@ -82,6 +82,7 @@ namespace HexGame.Editor
             
             string defaultDir = Path.Combine(Application.dataPath, "Data/UnitLayouts");
 
+            // Row 1: Dropdown, Load (selected), Refresh
             EditorGUILayout.BeginHorizontal();
             if (availableLayouts != null && availableLayouts.Length > 0)
             {
@@ -100,15 +101,19 @@ namespace HexGame.Editor
             if (GUILayout.Button("Refresh", GUILayout.Width(60))) RefreshLayoutList();
             EditorGUILayout.EndHorizontal();
 
+            // Row 2: Save, Save As, Reload, Load (external)
             EditorGUILayout.BeginHorizontal();
+            
+            // Save
             GUI.enabled = !string.IsNullOrEmpty(manager.lastLayoutPath);
             if (GUILayout.Button("Save"))
             {
                 manager.SaveUnits(manager.lastLayoutPath);
             }
+            
+            // Save As
             GUI.enabled = true;
-
-            if (GUILayout.Button("Save New..."))
+            if (GUILayout.Button("Save As"))
             {
                 string path = EditorUtility.SaveFilePanel("Save Unit Layout", defaultDir, "units.json", "json");
                 if (!string.IsNullOrEmpty(path)) 
@@ -118,7 +123,17 @@ namespace HexGame.Editor
                     GUIUtility.ExitGUI();
                 }
             }
-            if (GUILayout.Button("Load File..."))
+
+            // Reload
+            GUI.enabled = !string.IsNullOrEmpty(manager.lastLayoutPath);
+            if (GUILayout.Button("Reload"))
+            {
+                manager.LoadUnits(manager.lastLayoutPath);
+            }
+
+            // Load (External)
+            GUI.enabled = true;
+            if (GUILayout.Button("Load"))
             {
                 string path = EditorUtility.OpenFilePanel("Load Units", defaultDir, "json");
                 if (!string.IsNullOrEmpty(path)) 
