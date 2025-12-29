@@ -1,0 +1,69 @@
+{
+    "id": "BattleBrothers",
+    "definitions": [
+        {
+            "id": "MAT",
+            "name": "Melee Skill"
+        },
+        {
+            "id": "RAT",
+            "name": "Ranged Skill"
+        },
+        {
+            "id": "HP",
+            "name": "Hitpoints"
+        },
+        {
+            "id": "ARM",
+            "name": "Armour"
+        },
+        {
+            "id": "FAT",
+            "name": "Fatigue (Max Stamina)"
+        },
+        {
+            "id": "INI",
+            "name": "Initiative (Turn Order)"
+        },
+        {
+            "id": "DMIN",
+            "name": "Min Damage"
+        },
+        {
+            "id": "DMAX",
+            "name": "Max Damage"
+        },
+        {
+            "id": "RNG",
+            "name": "Attack Range"
+        },
+        {
+            "id": "ABY",
+            "name": "Armour bypass"
+        },
+        {
+            "id": "ADM",
+            "name": "Armour damage"
+        },
+        {
+            "id": "MDF",
+            "name": "Melee Defense"
+        },
+        {
+            "id": "RDF",
+            "name": "Ranged Defense"
+        },
+        {
+            "id": "AP",
+            "name": "Action Points"
+        },
+        {
+            "id": "RES",
+            "name": "Resolve (Bravery)"
+        },
+        {
+            "id": "AFAT",
+            "name": "Attack fatigue"
+        }
+    ]
+}

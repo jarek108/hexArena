@@ -3,90 +3,58 @@ using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
 using System.IO;
+using UnityEditorInternal;
 
 namespace HexGame.Units.Editor
 {
     public static class UnitEditorUI
     {
+        private static ReorderableList schemaList;
+        private static UnitSchema lastSchema;
+
         public static void DrawSchemaEditor(UnitSchema schema, ref Vector2 scrollPos)
         {
             if (schema == null) return;
 
-            scrollPos = EditorGUILayout.BeginScrollView(scrollPos);
-
-            EditorGUILayout.LabelField("Stat Definitions (ID Based)", EditorStyles.boldLabel);
-
             if (schema.definitions == null) schema.definitions = new List<UnitStatDefinition>();
 
-            HashSet<string> seenIds = new HashSet<string>();
-            List<int> duplicateIndices = new List<int>();
-
-            // Validation
-            for (int i = 0; i < schema.definitions.Count; i++)
+            if (schemaList == null || lastSchema != schema)
             {
-                string id = schema.definitions[i].id;
-                if (string.IsNullOrEmpty(id)) continue;
-                if (seenIds.Contains(id)) duplicateIndices.Add(i);
-                seenIds.Add(id);
-            }
-
-            // Drawing
-            for (int i = 0; i < schema.definitions.Count; i++)
-            {
-                UnitStatDefinition def = schema.definitions[i];
+                lastSchema = schema;
+                schemaList = new ReorderableList(schema.definitions, typeof(UnitStatDefinition), true, true, true, true);
                 
-                GUIStyle style = EditorStyles.helpBox;
-                if (duplicateIndices.Contains(i)) GUI.backgroundColor = new Color(1f, 0.6f, 0.6f);
-                else GUI.backgroundColor = Color.white;
+                schemaList.drawHeaderCallback = (Rect rect) => {
+                    EditorGUI.LabelField(rect, "Stat Definitions (ID Based)");
+                };
 
-                EditorGUILayout.BeginVertical(style);
-                GUI.backgroundColor = Color.white;
+                schemaList.drawElementCallback = (Rect rect, int index, bool isActive, bool isFocused) => {
+                    var element = schema.definitions[index];
+                    rect.y += 2;
+                    float width = rect.width;
+                    
+                    float x = rect.x;
+                    EditorGUI.LabelField(new Rect(x, rect.y, 20, EditorGUIUtility.singleLineHeight), "ID");
+                    x += 22;
+                    element.id = EditorGUI.TextField(new Rect(x, rect.y, width * 0.25f, EditorGUIUtility.singleLineHeight), element.id);
+                    x += width * 0.25f + 5;
+                    
+                    EditorGUI.LabelField(new Rect(x, rect.y, 35, EditorGUIUtility.singleLineHeight), "Desc");
+                    x += 37;
+                    element.name = EditorGUI.TextField(new Rect(x, rect.y, width - x + rect.x - 25, EditorGUIUtility.singleLineHeight), element.name);
 
-                EditorGUILayout.BeginHorizontal();
-                EditorGUILayout.LabelField("ID", GUILayout.Width(20));
-                def.id = EditorGUILayout.TextField(def.id, GUILayout.Width(80));
-                
-                EditorGUILayout.LabelField("Desc", GUILayout.Width(40));
-                def.name = EditorGUILayout.TextField(def.name);
+                    if (GUI.Button(new Rect(rect.x + width - 20, rect.y, 20, EditorGUIUtility.singleLineHeight), "x", EditorStyles.miniButton))
+                    {
+                        schema.definitions.RemoveAt(index);
+                        EditorUtility.SetDirty(schema);
+                    }
+                };
 
-                // Reordering
-                if (GUILayout.Button("▲", GUILayout.Width(25)) && i > 0)
-                {
-                    var temp = schema.definitions[i];
-                    schema.definitions[i] = schema.definitions[i - 1];
-                    schema.definitions[i - 1] = temp;
+                schemaList.onChangedCallback = (ReorderableList list) => {
                     EditorUtility.SetDirty(schema);
-                }
-                if (GUILayout.Button("▼", GUILayout.Width(25)) && i < schema.definitions.Count - 1)
-                {
-                    var temp = schema.definitions[i];
-                    schema.definitions[i] = schema.definitions[i + 1];
-                    schema.definitions[i + 1] = temp;
-                    EditorUtility.SetDirty(schema);
-                }
-
-                if (GUILayout.Button("X", GUILayout.Width(20)))
-                {
-                    schema.definitions.RemoveAt(i);
-                    i--;
-                    EditorUtility.SetDirty(schema);
-                }
-                EditorGUILayout.EndHorizontal();
-                EditorGUILayout.EndVertical();
+                };
             }
 
-            if (duplicateIndices.Count > 0)
-            {
-                EditorGUILayout.HelpBox("Duplicate IDs detected! IDs must be unique.", MessageType.Error);
-            }
-
-            if (GUILayout.Button("Add Stat"))
-            {
-                schema.definitions.Add(new UnitStatDefinition { id = "New", name = "Description" });
-                EditorUtility.SetDirty(schema);
-            }
-            
-            EditorGUILayout.EndScrollView();
+            schemaList.DoLayoutList();
         }
 
         public static void DrawUnitSetEditor(UnitSet set, ref Vector2 scrollPos)
@@ -105,23 +73,31 @@ namespace HexGame.Units.Editor
             }
 
             GUILayout.Space(10);
-            EditorGUILayout.LabelField($"Units ({set.schema.name})", EditorStyles.boldLabel);
+            string schemaName = "None";
+            if (!string.IsNullOrEmpty(set.schemaId)) 
+            {
+                schemaName = set.schemaId;
+            }
+            EditorGUILayout.LabelField($"Units ({schemaName})", EditorStyles.boldLabel);
 
-            var schemaDefs = set.schema.definitions;
+            var schemaDefs = set.schema != null ? set.schema.definitions : null;
 
-            // List - Start ScrollView BEFORE Header to ensure headers scroll with content
-            scrollPos = EditorGUILayout.BeginScrollView(scrollPos);
+            if (schemaDefs == null)
+            {
+                EditorGUILayout.HelpBox("Assign a valid Schema JSON path to edit units.", MessageType.Warning);
+                return;
+            }
 
             // Check for extras and offer to add them
             HashSet<string> schemaIds = new HashSet<string>(schemaDefs.Select(d => d.id));
-            HashSet<string> extraIds = new HashSet<string>();
+            List<string> extraIds = new List<string>();
             foreach(var u in set.units) 
             {
                 if(u.Stats != null)
                 {
                     foreach(var s in u.Stats) 
                     {
-                        if (!schemaIds.Contains(s.id)) extraIds.Add(s.id);
+                        if (!schemaIds.Contains(s.id) && !extraIds.Contains(s.id)) extraIds.Add(s.id);
                     }
                 }
             }
@@ -148,8 +124,18 @@ namespace HexGame.Units.Editor
                 EditorGUILayout.LabelField(new GUIContent(def.id, def.name), GUILayout.Width(40));
             }
             
-            // Header for potential extras
-            EditorGUILayout.LabelField("Extras / Orphans", GUILayout.Width(100));
+            // Header for orphans
+            foreach (var extraId in extraIds)
+            {
+                EditorGUILayout.BeginVertical(GUILayout.Width(40));
+                EditorGUILayout.LabelField(extraId, EditorStyles.miniLabel, GUILayout.Width(40));
+                if (GUILayout.Button("x", EditorStyles.miniButton, GUILayout.Width(20)))
+                {
+                    foreach (var u in set.units) u.Stats.RemoveAll(s => s.id == extraId);
+                    EditorUtility.SetDirty(set);
+                }
+                EditorGUILayout.EndVertical();
+            }
 
             EditorGUILayout.EndHorizontal();
             
@@ -170,12 +156,10 @@ namespace HexGame.Units.Editor
                     
                     if (index != -1)
                     {
-                        // Found: Draw normally
                         var stat = unit.Stats[index];
                         int newVal = EditorGUILayout.IntField(stat.value, GUILayout.Width(40));
                         if (newVal != stat.value)
                         {
-                            // Structs are value types, need to replace in list
                             stat.value = newVal;
                             unit.Stats[index] = stat;
                             EditorUtility.SetDirty(set);
@@ -183,7 +167,6 @@ namespace HexGame.Units.Editor
                     }
                     else
                     {
-                        // Missing: Draw Red Box with 0
                         GUI.backgroundColor = new Color(1f, 0.6f, 0.6f); // Red
                         int newVal = EditorGUILayout.IntField(0, GUILayout.Width(40));
                         GUI.backgroundColor = Color.white;
@@ -196,26 +179,28 @@ namespace HexGame.Units.Editor
                     }
                 }
 
-                // 2. Identify and Draw "Extra" Stats (Not in Schema)
-                // schemaIds is already computed
-                
-                for (int s = 0; s < unit.Stats.Count; s++)
+                // 2. Draw Orphaned Stats (Aligned Columns)
+                foreach (var extraId in extraIds)
                 {
-                    var stat = unit.Stats[s];
-                    if (!schemaIds.Contains(stat.id))
+                    int index = unit.Stats.FindIndex(s => s.id == extraId);
+                    if (index != -1)
                     {
-                        // Found an extra stat
+                        var stat = unit.Stats[index];
                         GUI.backgroundColor = Color.yellow;
-                        EditorGUILayout.LabelField(stat.id, GUILayout.Width(30)); // Show ID
-                        int newVal = EditorGUILayout.IntField(stat.value, GUILayout.Width(30));
+                        int newVal = EditorGUILayout.IntField(stat.value, GUILayout.Width(40));
                         GUI.backgroundColor = Color.white;
 
                         if (newVal != stat.value)
                         {
                             stat.value = newVal;
-                            unit.Stats[s] = stat;
+                            unit.Stats[index] = stat;
                             EditorUtility.SetDirty(set);
                         }
+                    }
+                    else
+                    {
+                        // Placeholder for alignment if this unit doesn't have this orphan
+                        GUILayout.Space(44); 
                     }
                 }
 
@@ -233,8 +218,6 @@ namespace HexGame.Units.Editor
                 set.units.Add(new UnitType());
                 EditorUtility.SetDirty(set);
             }
-
-            EditorGUILayout.EndScrollView();
         }
 
         private static void CreateSchemaFromSet(UnitSet set)
@@ -259,16 +242,18 @@ namespace HexGame.Units.Editor
              // 2. Check if it exists
              if (schemaNameCandidate != null)
              {
-                 string existingPath = Path.Combine(folder, schemaNameCandidate + ".asset");
-                 UnitSchema existingSchema = AssetDatabase.LoadAssetAtPath<UnitSchema>(existingPath);
-                 
-                 if (existingSchema != null)
+                 string existingPath = Path.Combine(folder, schemaNameCandidate + ".json");
+                 if (File.Exists(existingPath))
                  {
                      if (EditorUtility.DisplayDialog("Schema Found", 
-                         $"A schema named '{schemaNameCandidate}' already exists.\nDo you want to assign it to this set?", 
+                         $"A schema JSON named '{schemaNameCandidate}' already exists.\nDo you want to assign it to this set?", 
                          "Yes, Assign", "No, Create New"))
                      {
-                         set.schema = existingSchema;
+                         string json = File.ReadAllText(existingPath);
+                         var temp = ScriptableObject.CreateInstance<UnitSchema>();
+                         temp.FromJson(json);
+                         set.schemaId = temp.id;
+                         set.schema = null; // Force reload
                          EditorUtility.SetDirty(set);
                          return;
                      }
@@ -295,24 +280,26 @@ namespace HexGame.Units.Editor
              }
              
              string baseName = schemaNameCandidate ?? (set.setName + "_Schema");
-             string path = Path.Combine(folder, baseName + ".asset");
+             string path = Path.Combine(folder, baseName + ".json");
              path = AssetDatabase.GenerateUniqueAssetPath(path);
              
              UnitSchema newSchema = ScriptableObject.CreateInstance<UnitSchema>();
+             newSchema.id = Path.GetFileNameWithoutExtension(path);
              newSchema.definitions = new List<UnitStatDefinition>();
              foreach(var id in orderedIds)
              {
                  newSchema.definitions.Add(new UnitStatDefinition { id = id, name = id });
              }
              
-             AssetDatabase.CreateAsset(newSchema, path);
-             AssetDatabase.SaveAssets();
+             File.WriteAllText(path, newSchema.ToJson());
+             AssetDatabase.Refresh();
              
              // 4. Assign
-             set.schema = newSchema;
+             set.schemaId = newSchema.id;
+             set.schema = null; // Force reload
              EditorUtility.SetDirty(set);
              
-             EditorGUIUtility.PingObject(newSchema);
+             Debug.Log("Created Schema JSON: " + path);
         }
     }
 }

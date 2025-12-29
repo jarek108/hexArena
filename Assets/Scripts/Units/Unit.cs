@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using HexGame.Units;
+using System.IO;
 
 namespace HexGame
 {
@@ -9,9 +10,32 @@ namespace HexGame
     {
         public int Id => gameObject.GetInstanceID();
 
-        public UnitSet unitSet;
-        [SerializeField] private int typeIndex;
+        public string unitSetPath; // Changed from UnitSet object
+        private UnitSet _unitSet;
         public int teamId;
+        [SerializeField] private int typeIndex;
+
+        public UnitSet unitSet
+        {
+            get
+            {
+                if (_unitSet == null && !string.IsNullOrEmpty(unitSetPath))
+                {
+                    if (File.Exists(unitSetPath))
+                    {
+                        string json = File.ReadAllText(unitSetPath);
+                        _unitSet = ScriptableObject.CreateInstance<UnitSet>();
+                        _unitSet.FromJson(json);
+                    }
+                }
+                return _unitSet ?? UnitManager.Instance?.ActiveUnitSet;
+            }
+            set
+            {
+                _unitSet = value;
+                // Path is not automatically updated here, but could be
+            }
+        }
 
         public int TypeIndex
         {
@@ -27,8 +51,9 @@ namespace HexGame
         {
             get 
             {
-                if (unitSet != null && typeIndex >= 0 && typeIndex < unitSet.units.Count)
-                    return unitSet.units[typeIndex];
+                var set = unitSet;
+                if (set != null && typeIndex >= 0 && typeIndex < set.units.Count)
+                    return set.units[typeIndex];
                 return null;
             }
         }

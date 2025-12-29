@@ -16,153 +16,62 @@ namespace HexGame.Units.Editor
             UnitSet set = (UnitSet)target;
             serializedObject.Update();
 
+            string currentPath = AssetDatabase.GetAssetPath(set);
+            bool isJsonLinked = !string.IsNullOrEmpty(currentPath) && currentPath.EndsWith(".json");
+
+            // --- JSON Actions ---
+            EditorGUILayout.BeginHorizontal();
+            if (GUILayout.Button("Load JSON"))
+            {
+                string path = EditorUtility.OpenFilePanel("Load Set JSON", "Assets/Data/Sets", "json");
+                if (!string.IsNullOrEmpty(path))
+                {
+                    string json = File.ReadAllText(path);
+                    set.FromJson(json);
+                    EditorUtility.SetDirty(set);
+                }
+            }
+            if (GUILayout.Button("Save JSON"))
+            {
+                string path = EditorUtility.SaveFilePanel("Save Set JSON", "Assets/Data/Sets", set.name, "json");
+                if (!string.IsNullOrEmpty(path))
+                {
+                    File.WriteAllText(path, set.ToJson());
+                    AssetDatabase.Refresh();
+                }
+            }
+            EditorGUILayout.EndHorizontal();
+
+            EditorGUI.BeginChangeCheck();
+
             // --- Header / Configuration ---
             EditorGUILayout.LabelField("Configuration", EditorStyles.boldLabel);
             
-            // Set Name with renaming logic
-            EditorGUI.BeginChangeCheck();
-            string newSetName = EditorGUILayout.TextField("Set Name", set.setName);
-            if (EditorGUI.EndChangeCheck())
-            {
-                set.setName = newSetName;
-                // Rename immediately? Or wait for Enter/Focus lost? 
-                // Immediate renaming might be annoying while typing. 
-                // But for now, we just update the field. 
-                // We'll add a "Apply Rename" button or do it on validation if needed.
-                // Actually, the user requirement is "when it is change... automatically convert".
-                // Doing it on every keystroke is bad. Let's do it on delayed check or a button.
-                // Better: Detect focus lost or specifically handle the event.
-                // For simplicity/safety, let's update the internal value but trigger the file rename via a helper check 
-                // comparing file name vs expected name.
-            }
+            set.setName = EditorGUILayout.TextField("Set Name", set.setName);
 
             // Schema Selection
-            EditorGUI.BeginChangeCheck();
-            UnitSchema currentSchema = set.schema;
-            UnitSchema newSchema = (UnitSchema)EditorGUILayout.ObjectField("Schema", currentSchema, typeof(UnitSchema), false);
-            if (EditorGUI.EndChangeCheck())
+            string newSchemaId = EditorGUILayout.TextField("Schema ID Ref", set.schemaId);
+            if (newSchemaId != set.schemaId)
             {
-                if (newSchema != currentSchema) pendingSchemaSelection = newSchema;
+                set.schemaId = newSchemaId;
+                set.schema = null; // Force reload by ID
             }
 
-            // Check if file name matches convention
-            if (set.schema != null && !string.IsNullOrEmpty(set.setName))
-            {
-                string currentPath = AssetDatabase.GetAssetPath(set);
-                string currentFileName = Path.GetFileNameWithoutExtension(currentPath);
-                string expectedFileName = SanitizeFilename($"{set.schema.name}_{set.setName}");
-                
-                if (currentFileName != expectedFileName && pendingSchemaSelection == null)
-                {
-                    if (GUILayout.Button($"Rename File to '{expectedFileName}'"))
-                    {
-                        TryRenameAsset(set, expectedFileName);
-                        GUIUtility.ExitGUI();
-                    }
-                }
-            }
-
-            // --- Validation & Migration UI ---
-            if (pendingSchemaSelection != null && pendingSchemaSelection != set.schema)
-            {
-                string fromName = set.schema ? set.schema.name : "None";
-                string toName = pendingSchemaSelection.name;
-                string newFileName = SanitizeFilename($"{toName}_{set.setName}");
-                
-                string msg = $"Schema change detected!\nFrom: {fromName}\nTo: {toName}\n\nSaving this change will CREATE A NEW FILE named '{newFileName}'.";
-                
-                EditorGUILayout.HelpBox(msg, MessageType.Warning);
-                
-                if (GUILayout.Button($"Migrate & Save as '{newFileName}'"))
-                {
-                    MigrateAndSave(set, pendingSchemaSelection, newFileName);
-                    pendingSchemaSelection = null; 
-                    GUIUtility.ExitGUI();
-                }
-                
-                if (GUILayout.Button("Cancel Change")) pendingSchemaSelection = null;
-                
-                serializedObject.ApplyModifiedProperties();
-                return;
-            }
-
-            // --- Standard Validation ---
-            // Delegated to UnitEditorUI
-            if (set.schema == null)
-            {
-                UnitEditorUI.DrawUnitSetEditor(set, ref scrollPos);
-                serializedObject.ApplyModifiedProperties();
-                return;
-            }
-
+            scrollPos = EditorGUILayout.BeginScrollView(scrollPos);
             // --- Unit List Editor ---
             UnitEditorUI.DrawUnitSetEditor(set, ref scrollPos);
+            EditorGUILayout.EndScrollView();
+
+            if (EditorGUI.EndChangeCheck())
+            {
+                EditorUtility.SetDirty(set);
+                if (isJsonLinked)
+                {
+                    File.WriteAllText(currentPath, set.ToJson());
+                }
+            }
 
             serializedObject.ApplyModifiedProperties();
-        }
-
-        private string SanitizeFilename(string name)
-        {
-            char[] invalidChars = Path.GetInvalidFileNameChars();
-            foreach (char c in invalidChars)
-            {
-                name = name.Replace(c, '_');
-            }
-            return name;
-        }
-
-        private void TryRenameAsset(UnitSet set, string newName)
-        {
-            string path = AssetDatabase.GetAssetPath(set);
-            string folder = Path.GetDirectoryName(path);
-            string newPath = Path.Combine(folder, newName + ".asset");
-
-            if (File.Exists(newPath))
-            {
-                bool overwrite = EditorUtility.DisplayDialog("Overwrite File?", 
-                    $"File '{newName}.asset' already exists. Overwrite?", "Yes", "Cancel");
-                
-                if (!overwrite) return; 
-                
-                // AssetDatabase.RenameAsset cannot overwrite. We must delete target first.
-                AssetDatabase.DeleteAsset(newPath);
-            }
-
-            string result = AssetDatabase.RenameAsset(path, newName);
-            
-            AssetDatabase.SaveAssets();
-        }
-
-        private void MigrateAndSave(UnitSet originalSet, UnitSchema newSchema, string newFileName)
-        {
-            string originalPath = AssetDatabase.GetAssetPath(originalSet);
-            string folder = Path.GetDirectoryName(originalPath);
-            string newPath = Path.Combine(folder, newFileName + ".asset");
-            
-            if (File.Exists(newPath))
-            {
-                 bool overwrite = EditorUtility.DisplayDialog("Overwrite File?", 
-                    $"File '{newFileName}.asset' already exists. Overwrite?", "Yes", "Cancel");
-                
-                if (!overwrite) return;
-                // GenerateUniqueAssetPath would be the alternative, but requirements say "Overwrite" logic
-                // If overwrite confirmed, AssetDatabase.CreateAsset will overwrite if it exists? 
-                // No, usually it's safer to delete or use GenerateUnique if we wanted unique.
-                // AssetDatabase.CreateAsset overwrites? Documentation says "creates a new asset".
-                // Let's explicitly delete to be sure.
-                AssetDatabase.DeleteAsset(newPath);
-            }
-
-            UnitSet newSet = Instantiate(originalSet);
-            newSet.schema = newSchema;
-            // Ensure the internal name matches the file name logic we want
-            // newSet.setName is already set because we instantiated logic
-            
-            AssetDatabase.CreateAsset(newSet, newPath);
-            AssetDatabase.SaveAssets();
-            
-            Selection.activeObject = newSet;
-            EditorGUIUtility.PingObject(newSet);
         }
     }
 }

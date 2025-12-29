@@ -14,6 +14,7 @@ namespace HexGame.Units
     [CreateAssetMenu(fileName = "NewUnitSchema", menuName = "HexGame/Unit Schema")]
     public class UnitSchema : ScriptableObject
     {
+        public string id = "NewSchema";
         public List<UnitStatDefinition> definitions = new List<UnitStatDefinition> 
         { 
             new UnitStatDefinition { id = "HP", name = "Hit Points" },
@@ -22,5 +23,15 @@ namespace HexGame.Units
             new UnitStatDefinition { id = "Acc", name = "Accuracy" },
             new UnitStatDefinition { id = "Arm", name = "Armour" }
         };
+
+        public string ToJson()
+        {
+            return JsonUtility.ToJson(this, true);
+        }
+
+        public void FromJson(string json)
+        {
+            JsonUtility.FromJsonOverwrite(json, this);
+        }
     }
 }

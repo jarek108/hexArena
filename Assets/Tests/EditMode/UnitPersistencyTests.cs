@@ -47,7 +47,7 @@ namespace HexGame.Tests
             testViz = testVizGO.AddComponent<SimpleUnitVisualization>();
 
             // Setup Manager
-            unitManager.activeUnitSet = testSet;
+            unitManager.ActiveUnitSet = testSet;
             unitManager.unitVisualizationPrefab = testViz;
 
             testPath = Path.Combine(Application.temporaryCachePath, "test_units.json");

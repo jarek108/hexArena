@@ -14,12 +14,28 @@ namespace HexGame.Editor
             Unit unit = (Unit)target;
 
             // 1. Configuration Section
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("unitSet"));
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("unitSetPath"));
+            if (GUILayout.Button("...", GUILayout.Width(30)))
+            {
+                string path = EditorUtility.OpenFilePanel("Select Unit Set JSON", "Assets/Data/Sets", "json");
+                if (!string.IsNullOrEmpty(path))
+                {
+                    // Convert absolute path to project-relative if possible
+                    if (path.StartsWith(Application.dataPath))
+                    {
+                        path = "Assets" + path.Substring(Application.dataPath.Length);
+                    }
+                    serializedObject.FindProperty("unitSetPath").stringValue = path;
+                }
+            }
+            EditorGUILayout.EndHorizontal();
 
             // Type Selection Dropdown
-            if (unit.unitSet != null && unit.unitSet.units != null && unit.unitSet.units.Count > 0)
+            var set = unit.unitSet;
+            if (set != null && set.units != null && set.units.Count > 0)
             {
-                var names = unit.unitSet.units.Select((u, i) => $"[{i}] {u.Name}").ToArray();
+                var names = set.units.Select((u, i) => $"[{i}] {u.Name}").ToArray();
                 SerializedProperty typeIndexProp = serializedObject.FindProperty("typeIndex");
                 
                 int currentIndex = typeIndexProp.intValue;
@@ -33,7 +49,7 @@ namespace HexGame.Editor
             }
             else
             {
-                EditorGUILayout.HelpBox("Assign a UnitSet to select a type.", MessageType.Info);
+                EditorGUILayout.HelpBox("Assign a valid UnitSet path to select a type.", MessageType.Info);
             }
 
             // Read-only Type Index for reference

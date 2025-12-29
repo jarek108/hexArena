@@ -1,0 +1,216 @@
+{
+  "setName": "Core",
+  "schemaId": "BattleBrothers",
+  "units": [
+    {
+      "Name": "Shielded Warrior",
+      "Stats": {
+        "HP": 70,
+        "ARM": 100,
+        "FAT": 100,
+        "INI": 100,
+        "DMIN": 30,
+        "DMAX": 40,
+        "RNG": 1,
+        "ABY": 20,
+        "ADM": 80,
+        "MAT": 65,
+        "RAT": 0,
+        "MDF": 20,
+        "RDF": 20,
+        "AP": 9,
+        "RES": 50,
+        "AFAT": 10
+      }
+    },
+    {
+      "Name": "Shielded Spearman",
+      "Stats": {
+        "HP": 65,
+        "ARM": 90,
+        "FAT": 100,
+        "INI": 105,
+        "DMIN": 25,
+        "DMAX": 35,
+        "RNG": 1,
+        "ABY": 25,
+        "ADM": 90,
+        "MAT": 70,
+        "RAT": 0,
+        "MDF": 15,
+        "RDF": 15,
+        "AP": 9,
+        "RES": 45,
+        "AFAT": 10
+      }
+    },
+    {
+      "Name": "2H Warrior",
+      "Stats": {
+        "HP": 80,
+        "ARM": 150,
+        "FAT": 110,
+        "INI": 95,
+        "DMIN": 60,
+        "DMAX": 80,
+        "RNG": 1,
+        "ABY": 30,
+        "ADM": 150,
+        "MAT": 75,
+        "RAT": 0,
+        "MDF": 5,
+        "RDF": 5,
+        "AP": 9,
+        "RES": 55,
+        "AFAT": 15
+      }
+    },
+    {
+      "Name": "Pikeman",
+      "Stats": {
+        "HP": 60,
+        "ARM": 80,
+        "FAT": 100,
+        "INI": 95,
+        "DMIN": 45,
+        "DMAX": 60,
+        "RNG": 2,
+        "ABY": 30,
+        "ADM": 100,
+        "MAT": 60,
+        "RAT": 0,
+        "MDF": 5,
+        "RDF": 10,
+        "AP": 9,
+        "RES": 45,
+        "AFAT": 12
+      }
+    },
+    {
+      "Name": "Archer",
+      "Stats": {
+        "HP": 55,
+        "ARM": 40,
+        "FAT": 90,
+        "INI": 110,
+        "DMIN": 30,
+        "DMAX": 50,
+        "RNG": 6,
+        "ABY": 10,
+        "ADM": 50,
+        "MAT": 0,
+        "RAT": 70,
+        "MDF": 5,
+        "RDF": 10,
+        "AP": 9,
+        "RES": 40,
+        "AFAT": 15
+      }
+    },
+    {
+      "Name": "Skeleton",
+      "Stats": {
+        "HP": 40,
+        "ARM": 40,
+        "FAT": 80,
+        "INI": 80,
+        "DMIN": 25,
+        "DMAX": 35,
+        "RNG": 1,
+        "ABY": 20,
+        "ADM": 70,
+        "MAT": 60,
+        "RAT": 0,
+        "MDF": 5,
+        "RDF": 15,
+        "AP": 9,
+        "RES": 100,
+        "AFAT": 8
+      }
+    },
+    {
+      "Name": "Zombie",
+      "Stats": {
+        "HP": 100,
+        "ARM": 0,
+        "FAT": 100,
+        "INI": 60,
+        "DMIN": 20,
+        "DMAX": 30,
+        "RNG": 1,
+        "ABY": 10,
+        "ADM": 50,
+        "MAT": 45,
+        "RAT": 0,
+        "MDF": 0,
+        "RDF": 0,
+        "AP": 6,
+        "RES": 100,
+        "AFAT": 5
+      }
+    },
+    {
+      "Name": "Direwolf",
+      "Stats": {
+        "HP": 50,
+        "ARM": 0,
+        "FAT": 120,
+        "INI": 130,
+        "DMIN": 30,
+        "DMAX": 50,
+        "RNG": 1,
+        "ABY": 20,
+        "ADM": 60,
+        "MAT": 70,
+        "RAT": 0,
+        "MDF": 10,
+        "RDF": 10,
+        "AP": 12,
+        "RES": 60,
+        "AFAT": 10
+      }
+    },
+    {
+      "Name": "Nachzehrer",
+      "Stats": {
+        "HP": 120,
+        "ARM": 0,
+        "FAT": 100,
+        "INI": 90,
+        "DMIN": 35,
+        "DMAX": 55,
+        "RNG": 1,
+        "ABY": 15,
+        "ADM": 50,
+        "MAT": 60,
+        "RAT": 0,
+        "MDF": 5,
+        "RDF": 0,
+        "AP": 9,
+        "RES": 40,
+        "AFAT": 10
+      }
+    },
+    {
+      "Name": "Lindwurm",
+      "Stats": {
+        "HP": 400,
+        "ARM": 400,
+        "FAT": 200,
+        "INI": 80,
+        "DMIN": 80,
+        "DMAX": 120,
+        "RNG": 2,
+        "ABY": 40,
+        "ADM": 200,
+        "MAT": 85,
+        "RAT": 0,
+        "MDF": 30,
+        "RDF": 20,
+        "AP": 9,
+        "RES": 100,
+        "AFAT": 20
+      }
+    }
+  ]
+}

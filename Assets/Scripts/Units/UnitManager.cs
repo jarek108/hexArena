@@ -2,6 +2,7 @@ using UnityEngine;
 using System.Collections.Generic;
 using HexGame.Units;
 using System.Linq;
+using System.IO;
 
 namespace HexGame
 {
@@ -12,13 +13,51 @@ namespace HexGame
 
         [Header("Setup")]
         public UnitVisualization unitVisualizationPrefab;
-        public UnitSet activeUnitSet;
+        public string activeUnitSetPath = "Assets/Data/Sets/BattleBrothers_Core.json";
 
-        public UnitSet ActiveUnitSet => activeUnitSet;
+        private UnitSet _activeSet;
+        public UnitSet ActiveUnitSet 
+        {
+            get
+            {
+                if (_activeSet == null) LoadActiveSet();
+                return _activeSet;
+            }
+            set => _activeSet = value;
+        }
 
         private void OnEnable()
         {
             Instance = this;
+            LoadActiveSet();
+        }
+
+        public void LoadActiveSet()
+        {
+            if (string.IsNullOrEmpty(activeUnitSetPath) || !System.IO.File.Exists(activeUnitSetPath))
+            {
+                Debug.LogWarning($"[UnitManager] Active set path is invalid: {activeUnitSetPath}");
+                return;
+            }
+
+            string json = System.IO.File.ReadAllText(activeUnitSetPath);
+            _activeSet = ScriptableObject.CreateInstance<UnitSet>();
+            _activeSet.FromJson(json);
+            
+            // Note: If the JSON refers to a schema asset that was deleted, it will be null.
+            // We might need to manually link it if we know where it is.
+            if (_activeSet.schema == null)
+            {
+                // Try to find a schema with the same name in Data/Schemas
+                // This is a bit hacky but helps with the transition
+                string schemaDir = "Assets/Data/Schemas";
+                if (Directory.Exists(schemaDir))
+                {
+                    // This is just a fallback for the transition
+                }
+            }
+
+            Debug.Log($"[UnitManager] Loaded active set: {_activeSet.setName} from {activeUnitSetPath}");
         }
 
         private void Start()
@@ -33,7 +72,7 @@ namespace HexGame
 
         public void SpawnUnit(int index, int teamId, Hex targetHex)
         {
-            SpawnUnit(activeUnitSet, index, teamId, targetHex, unitVisualizationPrefab);
+            SpawnUnit(ActiveUnitSet, index, teamId, targetHex, unitVisualizationPrefab);
         }
 
         public void SpawnUnit(UnitSet set, int index, int teamId, Hex targetHex, UnitVisualization prefab)
@@ -119,7 +158,7 @@ namespace HexGame
         public void SaveUnits(string path)
         {
             UnitSaveBatch batch = new UnitSaveBatch();
-            batch.unitSetName = activeUnitSet != null ? activeUnitSet.name : "";
+            batch.unitSetName = ActiveUnitSet != null ? ActiveUnitSet.name : "";
 
             foreach (Transform child in transform)
             {
@@ -137,7 +176,7 @@ namespace HexGame
 
         public void LoadUnits(string path)
         {
-            LoadUnits(path, activeUnitSet, unitVisualizationPrefab);
+            LoadUnits(path, ActiveUnitSet, unitVisualizationPrefab);
         }
 
         public void LoadUnits(string path, UnitSet fallbackSet, UnitVisualization visualizationPrefab)
@@ -156,11 +195,13 @@ namespace HexGame
 #if UNITY_EDITOR
             if (!string.IsNullOrEmpty(batch.unitSetName))
             {
-                string[] guids = UnityEditor.AssetDatabase.FindAssets($"{batch.unitSetName} t:UnitSet");
-                if (guids.Length > 0)
+                // Try to find a JSON file with the same name in Data/Sets
+                string setJsonPath = $"Assets/Data/Sets/{batch.unitSetName}.json";
+                if (File.Exists(setJsonPath))
                 {
-                    string assetPath = UnityEditor.AssetDatabase.GUIDToAssetPath(guids[0]);
-                    set = UnityEditor.AssetDatabase.LoadAssetAtPath<UnitSet>(assetPath);
+                    string setJson = File.ReadAllText(setJsonPath);
+                    set = ScriptableObject.CreateInstance<UnitSet>();
+                    set.FromJson(setJson);
                 }
             }
 #endif

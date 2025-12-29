@@ -52,7 +52,7 @@ namespace HexGame.Tests
             testViz = testVizGO.AddComponent<SimpleUnitVisualization>();
            
             // Assign Setup to Manager
-            unitManager.activeUnitSet = testSet;
+            unitManager.ActiveUnitSet = testSet;
             unitManager.unitVisualizationPrefab = testViz;
 
             yield return null;

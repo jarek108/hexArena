@@ -3,6 +3,7 @@ using UnityEngine;
 using HexGame.Units;
 using System.IO;
 using System.Linq;
+using HexGame.Units.Editor;
 
 namespace HexGame.Editor
 {
@@ -40,7 +41,26 @@ namespace HexGame.Editor
             EditorGUILayout.BeginVertical("box");
             EditorGUILayout.LabelField("Unit Setup", EditorStyles.boldLabel);
             EditorGUILayout.PropertyField(serializedObject.FindProperty("unitVisualizationPrefab"));
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("activeUnitSet"));
+            
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("activeUnitSetPath"));
+            if (GUILayout.Button("...", GUILayout.Width(30)))
+            {
+                string path = EditorUtility.OpenFilePanel("Select Active Unit Set JSON", "Assets/Data/Sets", "json");
+                if (!string.IsNullOrEmpty(path))
+                {
+                    if (path.StartsWith(Application.dataPath))
+                        path = "Assets" + path.Substring(Application.dataPath.Length);
+                    serializedObject.FindProperty("activeUnitSetPath").stringValue = path;
+                }
+            }
+            EditorGUILayout.EndHorizontal();
+
+            if (GUILayout.Button("Open Unit Data Editor"))
+            {
+                UnitDataEditorWindow.Open();
+            }
+
             EditorGUILayout.EndVertical();
 
             EditorGUILayout.Space(5);
