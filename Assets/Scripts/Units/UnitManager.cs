@@ -160,7 +160,7 @@ namespace HexGame
         public void SaveUnits(string path)
         {
             UnitSaveBatch batch = new UnitSaveBatch();
-            batch.unitSetPath = activeUnitSetPath;
+            batch.unitSetId = ActiveUnitSet != null ? ActiveUnitSet.setName : "";
 
             foreach (Transform child in transform)
             {
@@ -193,17 +193,17 @@ namespace HexGame
 
             EraseAllUnits();
 
-            // Load set from batch path if available
+            // Load set from batch ID if available
             UnitSet set = null;
-            if (!string.IsNullOrEmpty(batch.unitSetPath) && File.Exists(batch.unitSetPath))
+            if (!string.IsNullOrEmpty(batch.unitSetId))
             {
-                string setJson = File.ReadAllText(batch.unitSetPath);
-                set = ScriptableObject.CreateInstance<UnitSet>();
-                set.FromJson(setJson);
-                
-                // Update active set path to match loaded layout
-                activeUnitSetPath = batch.unitSetPath;
-                _activeSet = set;
+                set = ResolveSetById(batch.unitSetId);
+                if (set != null)
+                {
+                    _activeSet = set;
+                    // We don't have the path easily here unless we store it during resolution or search again
+                    // But we can find the file path during resolution
+                }
             }
 
             if (set == null)
@@ -236,12 +236,32 @@ namespace HexGame
             }
             RelinkUnitsToGrid();
         }
+
+        private UnitSet ResolveSetById(string id)
+        {
+            string folder = "Assets/Data/Sets";
+            if (!Directory.Exists(folder)) return null;
+
+            string[] files = Directory.GetFiles(folder, "*.json");
+            foreach (var file in files)
+            {
+                string json = File.ReadAllText(file);
+                var tempSet = ScriptableObject.CreateInstance<UnitSet>();
+                tempSet.FromJson(json);
+                if (tempSet.setName == id) 
+                {
+                    activeUnitSetPath = file.Replace("\\", "/");
+                    return tempSet;
+                }
+            }
+            return null;
+        }
     }
 
     [System.Serializable]
     public class UnitSaveBatch
     {
-        public string unitSetPath;
+        public string unitSetId;
         public List<UnitSaveData> units = new List<UnitSaveData>();
     }
 }
