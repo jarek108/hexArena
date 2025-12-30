@@ -107,12 +107,21 @@ namespace HexGame.Tools
             var manager = GridVisualizationManager.Instance ?? FindFirstObjectByType<GridVisualizationManager>();
             
             var ruleset = GameMaster.Instance?.ruleset;
-            if (ruleset != null)
+
+            PathResult result;
+            if (SourceHex.Data.Unit != null && hex.Data.Unit != null && hex.Data.Unit.teamId != SourceHex.Data.Unit.teamId && ruleset != null)
             {
-                ruleset.OnStartPathfinding(hex.Data, SourceHex.Data.Unit);
+                // Multi-target search for attack positions
+                var attackPositions = ruleset.GetValidAttackPositions(SourceHex.Data.Unit, hex.Data.Unit);
+                ruleset.OnStartPathfinding(attackPositions, SourceHex.Data.Unit);
+                result = Pathfinder.FindPath(manager.Grid, SourceHex.Data.Unit, SourceHex.Data, attackPositions.ToArray());
+            }
+            else
+            {
+                if (ruleset != null) ruleset.OnStartPathfinding(hex.Data, SourceHex.Data.Unit);
+                result = Pathfinder.FindPath(manager.Grid, SourceHex.Data.Unit, SourceHex.Data, hex.Data);
             }
 
-            PathResult result = Pathfinder.FindPath(manager.Grid, SourceHex.Data.Unit, SourceHex.Data, hex.Data);
             Debug.Log("path found");
             if (result.Success)
             {
@@ -232,12 +241,19 @@ namespace HexGame.Tools
             PotentialHits.Clear();
 
             var ruleset = GameMaster.Instance?.ruleset;
-            if (ruleset != null && SourceHex.Data.Unit != null)
-            {
-                ruleset.OnStartPathfinding(target.Data, SourceHex.Data.Unit);
-            }
 
-            PathResult result = Pathfinder.FindPath(manager.Grid, SourceHex.Data.Unit, SourceHex.Data, target.Data);
+            PathResult result;
+            if (SourceHex.Data.Unit != null && target.Data.Unit != null && target.Data.Unit.teamId != SourceHex.Data.Unit.teamId && ruleset != null)
+            {
+                var attackPositions = ruleset.GetValidAttackPositions(SourceHex.Data.Unit, target.Data.Unit);
+                ruleset.OnStartPathfinding(attackPositions, SourceHex.Data.Unit);
+                result = Pathfinder.FindPath(manager.Grid, SourceHex.Data.Unit, SourceHex.Data, attackPositions.ToArray());
+            }
+            else
+            {
+                if (ruleset != null && SourceHex.Data.Unit != null) ruleset.OnStartPathfinding(target.Data, SourceHex.Data.Unit);
+                result = Pathfinder.FindPath(manager.Grid, SourceHex.Data.Unit, SourceHex.Data, target.Data);
+            }
 
             if (ruleset != null && SourceHex.Data.Unit != null)
             {

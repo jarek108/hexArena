@@ -30,12 +30,14 @@ namespace HexGame
             }
         }
 
-        public static PathResult FindPath(Grid grid, Unit unit, HexData start, HexData target)
+        public static PathResult FindPath(Grid grid, Unit unit, HexData start, params HexData[] targets)
         {
-            if (grid == null || start == null || target == null)
+            if (grid == null || start == null || targets == null || targets.Length == 0)
                 return new PathResult { Success = false };
 
-            if (start == target)
+            HashSet<HexData> targetSet = new HashSet<HexData>(targets);
+
+            if (targetSet.Contains(start))
                 return new PathResult { Path = new List<HexData> { start }, TotalCost = 0, Success = true };
 
             Ruleset ruleset = GameMaster.Instance != null ? GameMaster.Instance.ruleset : 
@@ -44,14 +46,14 @@ namespace HexGame
             var openSet = new List<Node>();
             var closedSet = new HashSet<HexData>();
 
-            openSet.Add(new Node(start, null, 0, HexMath.Distance(start, target)));
+            openSet.Add(new Node(start, null, 0, GetHeuristic(start, targetSet)));
 
             while (openSet.Count > 0)
             {
                 // Get node with lowest F score
                 Node current = openSet.OrderBy(n => n.F).ThenBy(n => n.H).First();
 
-                if (current.Data == target)
+                if (targetSet.Contains(current.Data))
                 {
                     return RetracePath(current);
                 }
@@ -83,7 +85,7 @@ namespace HexGame
 
                     if (neighborNode == null)
                     {
-                        openSet.Add(new Node(neighbor, current, newG, HexMath.Distance(neighbor, target)));
+                        openSet.Add(new Node(neighbor, current, newG, GetHeuristic(neighbor, targetSet)));
                     }
                     else if (newG < neighborNode.G)
                     {
@@ -94,6 +96,17 @@ namespace HexGame
             }
 
             return new PathResult { Success = false };
+        }
+
+        private static float GetHeuristic(HexData current, HashSet<HexData> targets)
+        {
+            float min = float.MaxValue;
+            foreach (var target in targets)
+            {
+                int dist = HexMath.Distance(current, target);
+                if (dist < min) min = dist;
+            }
+            return min;
         }
 
         private static PathResult RetracePath(Node targetNode)

@@ -36,10 +36,19 @@ namespace HexGame
     public abstract class Ruleset : ScriptableObject 
     {
         [HideInInspector] public HexData currentSearchTarget;
+        [HideInInspector] public List<HexData> currentSearchTargets = new List<HexData>();
 
         public virtual void OnStartPathfinding(HexData target, Unit unit)
         {
             currentSearchTarget = target;
+            currentSearchTargets.Clear();
+            currentSearchTargets.Add(target);
+        }
+
+        public virtual void OnStartPathfinding(IEnumerable<HexData> targets, Unit unit)
+        {
+            currentSearchTargets = new List<HexData>(targets);
+            currentSearchTarget = currentSearchTargets.Count > 0 ? currentSearchTargets[0] : null;
         }
 
         /// <summary>
@@ -78,6 +87,20 @@ namespace HexGame
         public virtual int GetMoveStopIndex(Unit unit, List<HexData> path)
         {
             return path != null ? path.Count : 0;
+        }
+
+        /// <summary>
+        /// Returns a list of hexes from which the attacker can strike the target.
+        /// By default returns the target's own hex (direct targeting).
+        /// </summary>
+        public virtual List<HexData> GetValidAttackPositions(Unit attacker, Unit target)
+        {
+            var results = new List<HexData>();
+            if (target != null && target.CurrentHex != null)
+            {
+                results.Add(target.CurrentHex.Data);
+            }
+            return results;
         }
     }
 }

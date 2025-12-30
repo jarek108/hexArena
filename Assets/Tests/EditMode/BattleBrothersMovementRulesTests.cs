@@ -162,6 +162,9 @@ namespace HexGame.Tests
                 enemyHex
             };
 
+            // Must set target so Ruleset knows we are attacking this enemy
+            ruleset.OnStartPathfinding(enemyHex, archer);
+
             int stopIndex = ruleset.GetMoveStopIndex(archer, path);
 
             Assert.AreEqual(1, stopIndex, "Should stop at current hex (index 1) if already in range.");

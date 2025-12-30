@@ -493,54 +493,87 @@ namespace HexGame
             }
         }
 
+        public override List<HexData> GetValidAttackPositions(Unit attacker, Unit target)
+        {
+            var results = new List<HexData>();
+            if (attacker == null || target == null || target.CurrentHex == null) return results;
+
+            var grid = GridVisualizationManager.Instance?.Grid;
+            if (grid == null) return results;
+
+            int rng = attacker.GetStat("RNG", 1);
+            HexData targetHex = target.CurrentHex.Data;
+
+            var inRange = grid.GetHexesInRange(targetHex, rng);
+            foreach (var h in inRange)
+            {
+                // Must be empty (or the attacker themselves)
+                if (h.Unit != null && h.Unit != attacker) continue;
+
+                // Respect elevation delta
+                float delta = Mathf.Abs(h.Elevation - targetHex.Elevation);
+                if (delta > maxElevationDelta) continue;
+
+                results.Add(h);
+            }
+
+            return results;
+        }
+
         public override int GetMoveStopIndex(Unit unit, List<HexData> path)
         {
             if (path == null || path.Count == 0 || unit == null) return 0;
             EnsureResources(unit);
-            HexData lastHex = path[path.Count - 1];
+
+            // Determine if we are moving to attack an enemy
+            int targetAttackIndex = path.Count - 1;
+            bool isAttackMove = false;
             
-            // Check for enemy at end of path (Attack logic)
-            bool enemyAtEnd = false;
-            foreach (var u in lastHex.Units)
+            // If we have multiple targets (from GetValidAttackPositions), stop at the first one we touch
+            if (currentSearchTargets != null && currentSearchTargets.Count > 1)
             {
-                if (u.teamId != unit.teamId)
-                {
-                    enemyAtEnd = true;
-                    break;
-                }
-            }
-
-            if (enemyAtEnd)
-            {
-                int range = unit.GetStat("RNG", 1);
-
+                var targetSet = new HashSet<HexData>(currentSearchTargets);
                 for (int i = 0; i < path.Count; i++)
                 {
-                    if (HexMath.Distance(path[i], lastHex) <= range)
+                    if (targetSet.Contains(path[i]))
                     {
-                        // Check affordability up to this index
-                        float totalCost = 0;
-                        for (int j = 1; j <= i; j++)
+                        targetAttackIndex = i;
+                        isAttackMove = true;
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                // Single target fallback (direct move or single attack pos)
+                Unit targetEnemy = currentSearchTarget?.Unit;
+                if (targetEnemy != null && targetEnemy.teamId != unit.teamId)
+                {
+                    isAttackMove = true;
+                    int rng = unit.GetStat("RNG", 1);
+                    for (int i = 0; i < path.Count; i++)
+                    {
+                        if (HexMath.Distance(path[i], currentSearchTarget) <= rng)
                         {
-                            totalCost += GetPathfindingMoveCost(unit, path[j - 1], path[j]);
+                            targetAttackIndex = i;
+                            break;
                         }
-                        
-                        if (ignoreAPs || totalCost <= unit.GetStat("CAP")) return i + 1;
-                        break; 
                     }
                 }
             }
 
-            // Standard Move: Find furthest affordable AND valid stop
+            // Find furthest affordable index
             int maxReachableIndex = 0;
             if (ignoreAPs)
             {
-                maxReachableIndex = path.Count - 1;
+                maxReachableIndex = isAttackMove ? targetAttackIndex : path.Count - 1;
             }
             else
             {
                 float runningCost = 0;
-                for (int i = 1; i < path.Count; i++)
+                int limit = isAttackMove ? targetAttackIndex : path.Count - 1;
+                
+                for (int i = 1; i <= limit; i++)
                 {
                     float stepCost = GetPathfindingMoveCost(unit, path[i - 1], path[i]);
                     if (runningCost + stepCost > unit.GetStat("CAP")) break;
@@ -549,21 +582,21 @@ namespace HexGame
                 }
             }
 
-            // Backtrack if the reachable hex is occupied by an ally
+            // Backtrack if the reachable hex is occupied by ANY other unit
             for (int i = maxReachableIndex; i > 0; i--)
             {
                 HexData hex = path[i];
-                bool occupiedByAlly = false;
+                bool occupiedByOther = false;
                 foreach (var u in hex.Units)
                 {
-                    if (u != unit && u.teamId == unit.teamId)
+                    if (u != unit)
                     {
-                        occupiedByAlly = true;
+                        occupiedByOther = true;
                         break;
                     }
                 }
 
-                if (!occupiedByAlly) return i + 1;
+                if (!occupiedByOther) return i + 1;
             }
 
             return 1; // Fallback: Stay at start
