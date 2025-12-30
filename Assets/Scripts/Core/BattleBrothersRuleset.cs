@@ -8,6 +8,11 @@ namespace HexGame
     [CreateAssetMenu(fileName = "BattleBrothersRuleset", menuName = "HexGame/Ruleset/BattleBrothers")]
     public class BattleBrothersRuleset : Ruleset
     {
+        [Header("Debug / Control")]
+        public bool ignoreAPs = false;
+        public bool ignoreFatigue = false;
+        public bool ignoreMoveOrder = false;
+
         [Header("Movement Constraints")]
         public float maxElevationDelta = 1.0f;
         public float uphillPenalty = 1.0f;
@@ -187,15 +192,19 @@ namespace HexGame
                     int mfat = unit.GetStat("FAT");
                     int attackCost = 4; // Placeholder constant for AP attack cost
 
-                    if (cap >= attackCost && cfat < mfat)
+                    bool canAffordAP = ignoreAPs || cap >= attackCost;
+                    bool canAffordFatigue = ignoreFatigue || cfat < mfat;
+
+                    if (canAffordAP && canAffordFatigue)
                     {
                         PerformAttack(unit, targetHex.Unit);
-                        unit.Stats["CAP"] -= attackCost;
-                        unit.Stats["CFAT"] += unit.GetStat("AFAT", 10);
+                        if (!ignoreAPs) unit.Stats["CAP"] -= attackCost;
+                        if (!ignoreFatigue) unit.Stats["CFAT"] += unit.GetStat("AFAT", 10);
                     }
                     else
                     {
-                        Debug.Log($"[Ruleset] {unit.UnitName} too exhausted to attack!");
+                        string reason = !canAffordAP ? "AP" : "Fatigue";
+                        Debug.Log($"[Ruleset] {unit.UnitName} too exhausted ({reason}) to attack!");
                     }
                 }
                 onComplete?.Invoke();
@@ -388,6 +397,13 @@ namespace HexGame
         {
             if (unit == null || fromHex == null || toHex == null) return MoveVerification.Failure("Invalid unit or hex.");
 
+            // 0. Move Order check
+            if (!ignoreMoveOrder)
+            {
+                // Placeholder for future turn management logic
+                // Currently, we don't have a turn manager, so we allow all moves
+            }
+
             // 1. Elevation check
             float delta = Mathf.Abs(toHex.Elevation - fromHex.Elevation);
             if (delta > maxElevationDelta) return MoveVerification.Failure("Elevation delta too high.");
@@ -402,12 +418,19 @@ namespace HexGame
             // 3. Resource check
             EnsureResources(unit);
             float cost = GetPathfindingMoveCost(unit, fromHex, toHex);
-            int cap = unit.GetStat("CAP");
-            if (cap < cost) return MoveVerification.Failure($"Not enough AP. Required: {cost}, Have: {cap}");
 
-            int cfat = unit.GetStat("CFAT");
-            int mfat = unit.GetStat("FAT", 100);
-            if (cfat + cost > mfat) return MoveVerification.Failure("Too much fatigue.");
+            if (!ignoreAPs)
+            {
+                int cap = unit.GetStat("CAP");
+                if (cap < cost) return MoveVerification.Failure($"Not enough AP. Required: {cost}, Have: {cap}");
+            }
+
+            if (!ignoreFatigue)
+            {
+                int cfat = unit.GetStat("CFAT");
+                int mfat = unit.GetStat("FAT", 100);
+                if (cfat + cost > mfat) return MoveVerification.Failure("Too much fatigue.");
+            }
 
             return MoveVerification.Success();
         }
@@ -420,6 +443,7 @@ namespace HexGame
             // Cleanup old footprint from the PREVIOUS hex
             if (fromHex != null)
             {
+                if (fromHex.Unit == unit) fromHex.Unit = null;
                 unit.ClearOwnedHexStates();
             }
 
@@ -427,11 +451,12 @@ namespace HexGame
             float cost = fromHex != null ? GetPathfindingMoveCost(unit, fromHex, toHex) : 0f;
             if (!float.IsInfinity(cost))
             {
-                unit.Stats["CAP"] -= Mathf.RoundToInt(cost);
-                unit.Stats["CFAT"] += Mathf.RoundToInt(cost);
+                if (!ignoreAPs) unit.Stats["CAP"] -= Mathf.RoundToInt(cost);
+                if (!ignoreFatigue) unit.Stats["CFAT"] += Mathf.RoundToInt(cost);
             }
 
             // Apply new footprint on current hex
+            toHex.Unit = unit;
             unit.AddOwnedHexState(toHex, $"Occupied{unit.teamId}_{unit.Id}");
 
             // Project ZoC if unit has melee range
@@ -474,13 +499,15 @@ namespace HexGame
                             totalCost += GetPathfindingMoveCost(unit, path[j - 1], path[j]);
                         }
                         
-                        if (totalCost <= unit.GetStat("CAP")) return i + 1;
+                        if (ignoreAPs || totalCost <= unit.GetStat("CAP")) return i + 1;
                         break; 
                     }
                 }
             }
 
             // Default: Find furthest affordable step in path
+            if (ignoreAPs) return path.Count;
+
             float runningCost = 0;
             for (int i = 1; i < path.Count; i++)
             {

@@ -6,6 +6,7 @@ namespace HexGame.Tests
 {
     public static class TestHelper
     {
+        // Helper methods for tests
         public static GameObject CreateTestManager()
         {
             var existing = Object.FindFirstObjectByType<GridVisualizationManager>();

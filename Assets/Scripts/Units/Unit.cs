@@ -238,11 +238,14 @@ namespace HexGame
 
             if (CurrentHex != null)
             {
-                CurrentHex.Data.Unit = this;
-
                 if (ruleset != null)
                 {
                     ruleset.PerformMove(this, previousData, CurrentHex.Data);
+                }
+                else
+                {
+                    // Fallback if no ruleset exists
+                    CurrentHex.Data.Unit = this;
                 }
 
                 transform.position = CurrentHex.transform.position + new Vector3(0, currentView != null ? currentView.yOffset : 0, 0);

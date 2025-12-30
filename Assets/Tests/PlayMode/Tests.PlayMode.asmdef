@@ -1,5 +1,5 @@
 {
-    "name": "Tests.EditMode",
+    "name": "Tests.PlayMode",
     "references": [
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner",
@@ -8,9 +8,7 @@
         "Unity.InputSystem.TestFramework",
         "HexGame.Tests.Common"
     ],
-    "includePlatforms": [
-        "Editor"
-    ],
+    "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
     "overrideReferences": true,

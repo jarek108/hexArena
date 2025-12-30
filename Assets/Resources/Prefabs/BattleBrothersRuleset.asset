@@ -12,6 +12,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 40706ac3d6a96c44e88aa272603d2500, type: 3}
   m_Name: BattleBrothersRuleset
   m_EditorClassIdentifier: HexGame::HexGame.BattleBrothersRuleset
+  currentSearchTarget:
+    Q: 0
+    R: 0
+    S: 0
+    Unit: {fileID: 0}
+  ignoreAPs: 1
+  ignoreFatigue: 1
+  ignoreMoveOrder: 1
   maxElevationDelta: 1
   uphillPenalty: 1
   zocPenalty: 50
@@ -22,3 +30,14 @@ MonoBehaviour:
   mountainCost: 5
   forestCost: 3
   desertCost: 4
+  meleeHighGroundBonus: 10
+  meleeLowGroundPenalty: 10
+  rangedHighGroundBonus: 10
+  rangedLowGroundPenalty: 10
+  surroundBonus: 5
+  longWeaponProximityPenalty: 15
+  rangedDistancePenalty: 2
+  coverMissChance: 0.75
+  scatterHitPenalty: 15
+  scatterDamagePenalty: 0.25
+  currentAttackType: 0

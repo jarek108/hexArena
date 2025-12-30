@@ -184,5 +184,83 @@ namespace HexGame.Tests
             // Assert
             Assert.AreEqual(2.0f, cost, "Movement into friendly occupied hex should NOT be infinite.");
         }
+
+        [Test]
+        public void VerifyMove_Respects_IgnoreAPs()
+        {
+            // Arrange
+            ruleset.ignoreAPs = true;
+            ruleset.plainsCost = 10f;
+            unit.Stats["CAP"] = 0; // Unit has no AP
+
+            // Act
+            var result = ruleset.VerifyMove(unit, hex1.Data, hex2.Data);
+
+            // Assert
+            Assert.IsTrue(result.isValid, "Move should be valid because ignoreAPs is true.");
+        }
+
+        [Test]
+        public void PerformMove_Respects_IgnoreAPs()
+        {
+            // Arrange
+            ruleset.ignoreAPs = true;
+            ruleset.plainsCost = 5f;
+            unit.Stats["CAP"] = 10;
+
+            // Act
+            ruleset.PerformMove(unit, hex1.Data, hex2.Data);
+
+            // Assert
+            Assert.AreEqual(10, unit.Stats["CAP"], "AP should NOT be deducted because ignoreAPs is true.");
+        }
+
+        [Test]
+        public void VerifyMove_Respects_IgnoreFatigue()
+        {
+            // Arrange
+            ruleset.ignoreAPs = true;
+            ruleset.ignoreFatigue = true;
+            ruleset.plainsCost = 10f;
+            unit.Stats["CFAT"] = 100;
+            unit.Stats["FAT"] = 100; // Max fatigue reached
+
+            // Act
+            var result = ruleset.VerifyMove(unit, hex1.Data, hex2.Data);
+
+            // Assert
+            Assert.IsTrue(result.isValid, "Move should be valid because ignoreFatigue is true.");
+        }
+
+        [Test]
+        public void PerformMove_Respects_IgnoreFatigue()
+        {
+            // Arrange
+            ruleset.ignoreFatigue = true;
+            ruleset.plainsCost = 5f;
+            unit.Stats["CFAT"] = 0;
+
+            // Act
+            ruleset.PerformMove(unit, hex1.Data, hex2.Data);
+
+            // Assert
+            Assert.AreEqual(0, unit.Stats["CFAT"], "Fatigue should NOT be added because ignoreFatigue is true.");
+        }
+
+        [Test]
+        public void GetMoveStopIndex_Respects_IgnoreAPs()
+        {
+            // Arrange
+            ruleset.ignoreAPs = true;
+            ruleset.plainsCost = 10f;
+            unit.Stats["CAP"] = 0;
+            List<HexData> path = new List<HexData> { hex1.Data, hex2.Data };
+
+            // Act
+            int stopIndex = ruleset.GetMoveStopIndex(unit, path);
+
+            // Assert
+            Assert.AreEqual(2, stopIndex, "Should NOT truncate path because ignoreAPs is true.");
+        }
     }
 }

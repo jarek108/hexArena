@@ -1,16 +1,10 @@
 {
-    "name": "Tests.EditMode",
+    "name": "HexGame.Tests.Common",
     "references": [
-        "UnityEngine.TestRunner",
-        "UnityEditor.TestRunner",
         "HexGame",
-        "Unity.InputSystem",
-        "Unity.InputSystem.TestFramework",
-        "HexGame.Tests.Common"
+        "Unity.InputSystem"
     ],
-    "includePlatforms": [
-        "Editor"
-    ],
+    "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
     "overrideReferences": true,
