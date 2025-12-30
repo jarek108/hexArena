@@ -67,7 +67,7 @@ namespace HexGame
                     float moveCost = 1.0f; // Default fallback
                     if (ruleset != null)
                     {
-                        moveCost = ruleset.GetMoveCost(unit, current.Data, neighbor);
+                        moveCost = ruleset.GetPathfindingMoveCost(unit, current.Data, neighbor);
                     }
                     else
                     {

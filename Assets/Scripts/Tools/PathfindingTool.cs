@@ -113,7 +113,7 @@ namespace HexGame.Tools
             }
 
             PathResult result = Pathfinder.FindPath(manager.Grid, SourceHex.Unit, SourceHex.Data, hex.Data);
-
+            Debug.Log("path found");
             if (result.Success)
             {
                 if (SourceHex.Unit != null && ruleset != null)

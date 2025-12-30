@@ -2,26 +2,68 @@
     "unitSetId": "Core",
     "units": [
         {
-            "q": 14,
+            "q": 4,
+            "r": 10,
+            "typeIndex": 0,
+            "teamId": 0
+        },
+        {
+            "q": 4,
             "r": 9,
+            "typeIndex": 0,
+            "teamId": 0
+        },
+        {
+            "q": 4,
+            "r": 8,
+            "typeIndex": 0,
+            "teamId": 0
+        },
+        {
+            "q": 5,
+            "r": 8,
+            "typeIndex": 1,
+            "teamId": 0
+        },
+        {
+            "q": 5,
+            "r": 9,
+            "typeIndex": 1,
+            "teamId": 0
+        },
+        {
+            "q": 4,
+            "r": 11,
+            "typeIndex": 4,
+            "teamId": 0
+        },
+        {
+            "q": 4,
+            "r": 12,
+            "typeIndex": 4,
+            "teamId": 0
+        },
+        {
+            "q": 12,
+            "r": 10,
+            "typeIndex": 6,
+            "teamId": 1
+        },
+        {
+            "q": 13,
+            "r": 9,
+            "typeIndex": 6,
+            "teamId": 1
+        },
+        {
+            "q": 14,
+            "r": 8,
             "typeIndex": 6,
             "teamId": 1
         },
         {
             "q": 15,
             "r": 8,
-            "typeIndex": 6,
-            "teamId": 1
-        },
-        {
-            "q": 13,
-            "r": 10,
-            "typeIndex": 6,
-            "teamId": 1
-        },
-        {
-            "q": 12,
-            "r": 11,
             "typeIndex": 6,
             "teamId": 1
         },
@@ -38,8 +80,14 @@
             "teamId": 1
         },
         {
-            "q": 18,
+            "q": 17,
             "r": 7,
+            "typeIndex": 6,
+            "teamId": 1
+        },
+        {
+            "q": 18,
+            "r": 6,
             "typeIndex": 6,
             "teamId": 1
         },
@@ -57,7 +105,19 @@
         },
         {
             "q": 11,
-            "r": 7,
+            "r": 5,
+            "typeIndex": 8,
+            "teamId": 1
+        },
+        {
+            "q": 12,
+            "r": 5,
+            "typeIndex": 8,
+            "teamId": 1
+        },
+        {
+            "q": 12,
+            "r": 4,
             "typeIndex": 8,
             "teamId": 1
         },
@@ -68,52 +128,10 @@
             "teamId": 1
         },
         {
-            "q": 12,
-            "r": 5,
-            "typeIndex": 8,
-            "teamId": 1
-        },
-        {
-            "q": 13,
-            "r": 5,
-            "typeIndex": 8,
-            "teamId": 1
-        },
-        {
-            "q": 14,
-            "r": 4,
-            "typeIndex": 8,
-            "teamId": 1
-        },
-        {
-            "q": 4,
-            "r": 10,
-            "typeIndex": 0,
-            "teamId": 0
-        },
-        {
-            "q": 4,
-            "r": 9,
-            "typeIndex": 0,
-            "teamId": 0
-        },
-        {
-            "q": 5,
-            "r": 8,
-            "typeIndex": 1,
-            "teamId": 0
-        },
-        {
-            "q": 5,
+            "q": 11,
             "r": 7,
-            "typeIndex": 1,
-            "teamId": 0
-        },
-        {
-            "q": 4,
-            "r": 11,
-            "typeIndex": 4,
-            "teamId": 0
+            "typeIndex": 8,
+            "teamId": 1
         }
     ]
 }

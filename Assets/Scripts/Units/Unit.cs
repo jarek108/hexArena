@@ -92,6 +92,22 @@ namespace HexGame
             ownedHexStates.Clear();
         }
 
+        public void RemoveOwnedHexStatesByPrefix(string prefix)
+        {
+            var grid = GridVisualizationManager.Instance?.Grid;
+            if (grid == null || ownedHexStates.Count == 0) return;
+
+            for (int i = ownedHexStates.Count - 1; i >= 0; i--)
+            {
+                if (ownedHexStates[i].state.StartsWith(prefix))
+                {
+                    var hex = grid.GetHexAt(ownedHexStates[i].q, ownedHexStates[i].r);
+                    hex?.RemoveState(ownedHexStates[i].state);
+                    ownedHexStates.RemoveAt(i);
+                }
+            }
+        }
+
         public bool IsMoving => moveCoroutine != null;
 
         public void MoveAlongPath(List<HexData> path, float speed, float pause, System.Action onComplete = null)
@@ -104,25 +120,26 @@ namespace HexGame
         {
             var ruleset = GameMaster.Instance?.ruleset;
 
-            // Logical "unoccupy" from start hex while in transit to prevent collisions
-            if (CurrentHex != null && CurrentHex.Data.Unit == this)
-            {
-                CurrentHex.Data.Unit = null;
-            }
-
-            // Determine stop index from ruleset
+            // Determine stop index from ruleset (which now handles budget)
             int stopIndex = ruleset != null ? ruleset.GetMoveStopIndex(this, path) : path.Count;
 
             // path[0] is current position usually
             for (int i = 1; i < stopIndex; i++)
             {
-                // 1. Departure Check
-                if (ruleset != null && CurrentHex != null)
+                HexData targetData = path[i];
+                HexData previousData = CurrentHex != null ? CurrentHex.Data : null;
+
+                // 1. Logic Check (Can we still make this step?)
+                if (ruleset != null)
                 {
-                    if (!ruleset.OnDeparture(this, CurrentHex.Data)) break;
+                    var verification = ruleset.VerifyMove(this, previousData, targetData);
+                    if (!verification.isValid)
+                    {
+                        Debug.Log($"[Unit] Move stopped: {verification.reason}");
+                        break; 
+                    }
                 }
 
-                HexData targetData = path[i];
                 var manager = GridVisualizationManager.Instance;
                 Hex targetHex = manager.GetHex(targetData.Q, targetData.R);
 
@@ -143,31 +160,18 @@ namespace HexGame
                     }
                     transform.position = endPos;
 
-                    // 2. Update Reference (Traversal)
+                    // 2. Logic Execution
+                    if (ruleset != null)
+                    {
+                        ruleset.PerformMove(this, previousData, targetData);
+                    }
+
+                    // 3. Update Visual/Reference Reference
                     CurrentHex = targetHex;
                     lastQ = CurrentHex.Q;
                     lastR = CurrentHex.R;
 
-                    // 3. Entry Check
-                    if (ruleset != null)
-                    {
-                        if (!ruleset.OnEntry(this, CurrentHex.Data)) break;
-                    }
-
                     if (pause > 0) yield return new WaitForSeconds(pause);
-                }
-            }
-
-            // Logical "re-occupy" the final landing hex
-            if (CurrentHex != null)
-            {
-                if (CurrentHex.Data.Unit == null)
-                {
-                    CurrentHex.Data.Unit = this;
-                }
-                else if (CurrentHex.Data.Unit != this)
-                {
-                    Debug.LogWarning($"[Unit] {UnitName} ended move on occupied hex {CurrentHex.Q},{CurrentHex.R}!");
                 }
             }
 
@@ -216,31 +220,29 @@ namespace HexGame
 
         public void SetHex(Hex hex)
         {
-            // Only clear the old hex if WE are the one logically occupying it.
-            if (CurrentHex != null && CurrentHex.Data.Unit == this)
+            HexData previousData = CurrentHex != null ? CurrentHex.Data : null;
+            if (previousData != null && previousData.Unit == this)
             {
-                CurrentHex.Data.Unit = null;
+                previousData.Unit = null;
+            }
+
+            // If leaving the grid (moving to null), clear our projected footprint.
+            if (previousData != null && hex == null)
+            {
+                ClearOwnedHexStates();
             }
 
             var ruleset = GameMaster.Instance?.ruleset;
-            if (CurrentHex != null && ruleset != null)
-            {
-                ruleset.OnDeparture(this, CurrentHex.Data);
-            }
 
             CurrentHex = hex;
 
             if (CurrentHex != null)
             {
-                // Only claim the new hex if it's empty.
-                if (CurrentHex.Data.Unit == null)
-                {
-                    CurrentHex.Data.Unit = this;
-                }
+                CurrentHex.Data.Unit = this;
 
                 if (ruleset != null)
                 {
-                    ruleset.OnEntry(this, CurrentHex.Data);
+                    ruleset.PerformMove(this, previousData, CurrentHex.Data);
                 }
 
                 transform.position = CurrentHex.transform.position + new Vector3(0, currentView != null ? currentView.yOffset : 0, 0);

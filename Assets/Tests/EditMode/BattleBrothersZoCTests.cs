@@ -94,7 +94,7 @@ namespace HexGame.Tests
         [Test]
         public void GetMoveCost_NoZoC_ReturnsBaseCost()
         {
-            float cost = ruleset.GetMoveCost(unit, hexStart.Data, hexEnd.Data);
+            float cost = ruleset.GetPathfindingMoveCost(unit, hexStart.Data, hexEnd.Data);
             Assert.AreEqual(2.0f, cost, "Cost should be base plains cost.");
         }
 
@@ -104,8 +104,23 @@ namespace HexGame.Tests
             // Enemy Team 1 ZoC
             hexEnd.Data.AddState("ZoC1_999");
             
-            float cost = ruleset.GetMoveCost(unit, hexStart.Data, hexEnd.Data);
+            float cost = ruleset.GetPathfindingMoveCost(unit, hexStart.Data, hexEnd.Data);
             Assert.AreEqual(52.0f, cost, "Cost should be base (2) + penalty (50).");
+        }
+
+        [Test]
+        public void VerifyMove_EnemyZoC_FailsWhenLowAP()
+        {
+            // Arrange
+            hexEnd.Data.AddState("ZoC1_999");
+            unit.Stats["CAP"] = 9; // Standard AP, less than 52
+
+            // Act
+            var result = ruleset.VerifyMove(unit, hexStart.Data, hexEnd.Data);
+
+            // Assert
+            Assert.IsFalse(result.isValid, "Move should be invalid due to high ZoC cost vs low AP.");
+            Assert.IsTrue(result.reason.Contains("Not enough AP"), "Reason should mention AP.");
         }
 
         [Test]
@@ -114,7 +129,7 @@ namespace HexGame.Tests
             // Friendly Team 0 ZoC
             hexEnd.Data.AddState("ZoC0_999");
 
-            float cost = ruleset.GetMoveCost(unit, hexStart.Data, hexEnd.Data);
+            float cost = ruleset.GetPathfindingMoveCost(unit, hexStart.Data, hexEnd.Data);
             Assert.AreEqual(2.0f, cost, "Friendly ZoC should not penalize movement.");
         }
 
@@ -125,7 +140,7 @@ namespace HexGame.Tests
             hexEnd.Data.AddState("ZoC1_999");
 
             // Passing null as unit (Pathfinding without unit)
-            float cost = ruleset.GetMoveCost(null, hexStart.Data, hexEnd.Data);
+            float cost = ruleset.GetPathfindingMoveCost(null, hexStart.Data, hexEnd.Data);
             Assert.AreEqual(2.0f, cost, "Null unit should ignore ZoC penalty.");
         }
 
@@ -154,7 +169,7 @@ namespace HexGame.Tests
             hexEnd.Data.Elevation = 2.0f; // Too high for melee
 
             // Act
-            float cost = ruleset.GetMoveCost(unit, hexStart.Data, hexEnd.Data);
+            float cost = ruleset.GetPathfindingMoveCost(unit, hexStart.Data, hexEnd.Data);
 
             // Assert
             Assert.AreEqual(float.PositiveInfinity, cost, "Melee attack should fail if elevation delta is too high.");
@@ -186,7 +201,7 @@ namespace HexGame.Tests
             hexEnd.Data.Elevation = 2.0f; 
 
             // Act
-            float cost = ruleset.GetMoveCost(unit, hexStart.Data, hexEnd.Data);
+            float cost = ruleset.GetPathfindingMoveCost(unit, hexStart.Data, hexEnd.Data);
 
             // Assert
             Assert.AreEqual(0f, cost, "Ranged attack should bypass elevation check for the final target hex.");

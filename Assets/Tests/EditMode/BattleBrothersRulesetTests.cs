@@ -158,7 +158,7 @@ namespace HexGame.Tests
             hex2.Data.AddState("Occupied2_999"); // Team 2
 
             // Act
-            float cost = ruleset.GetMoveCost(unit, hex1.Data, hex2.Data);
+            float cost = ruleset.GetPathfindingMoveCost(unit, hex1.Data, hex2.Data);
 
             // Assert
             Assert.AreEqual(float.PositiveInfinity, cost, "Movement into enemy occupied hex should be infinite cost.");
@@ -179,7 +179,7 @@ namespace HexGame.Tests
             hex2.Data.TerrainType = TerrainType.Plains;
 
             // Act
-            float cost = ruleset.GetMoveCost(unit, hex1.Data, hex2.Data);
+            float cost = ruleset.GetPathfindingMoveCost(unit, hex1.Data, hex2.Data);
 
             // Assert
             Assert.AreEqual(2.0f, cost, "Movement into friendly occupied hex should NOT be infinite.");

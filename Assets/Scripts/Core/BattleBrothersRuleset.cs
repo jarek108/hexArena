@@ -302,14 +302,13 @@ namespace HexGame
             if (unit.CurrentHex != null)
             {
                 unit.CurrentHex.Data.Unit = null;
-                OnDeparture(unit, unit.CurrentHex.Data);
             }
 
             if (Application.isPlaying) Destroy(unit.gameObject);
             else DestroyImmediate(unit.gameObject);
         }
 
-        public override float GetMoveCost(Unit unit, HexData fromHex, HexData toHex)
+        public override float GetPathfindingMoveCost(Unit unit, HexData fromHex, HexData toHex)
         {
             if (toHex == currentSearchTarget)
             {
@@ -318,17 +317,16 @@ namespace HexGame
                 if (isEnemy)
                 {
                     int mat = unit.GetStat("MAT", 0);
-                    int rat = unit.GetStat("RAT", 0);
                     if (mat > 0) // Melee check
                     {
-                        float attackDelta = Mathf.Abs(toHex.Elevation - fromHex.Elevation);
+                        float attackDelta = fromHex != null ? Mathf.Abs(toHex.Elevation - fromHex.Elevation) : 0f;
                         if (attackDelta > maxElevationDelta) return float.PositiveInfinity;
                     }
                     return 0f;
                 }
             }
 
-            float delta = Mathf.Abs(toHex.Elevation - fromHex.Elevation);
+            float delta = fromHex != null ? Mathf.Abs(toHex.Elevation - fromHex.Elevation) : 0f;
             if (delta > maxElevationDelta) return float.PositiveInfinity;
 
             if (unit != null)
@@ -346,13 +344,10 @@ namespace HexGame
                                 if (occupiedTeamId != unit.teamId) return float.PositiveInfinity;
                                 else
                                 {
+                                    // It's a friendly unit. 
+                                    // We can path THROUGH them, but we cannot STOP on them.
+                                    // 'toHex == currentSearchTarget' handles the final destination.
                                     if (toHex == currentSearchTarget) return float.PositiveInfinity;
-                                    if (currentSearchTarget != null && currentSearchTarget.Unit != null)
-                                    {
-                                        int range = unit.GetStat("RNG", 1);
-                                        if (HexMath.Distance(toHex, currentSearchTarget) <= range)
-                                            return float.PositiveInfinity;
-                                    }
                                 }
                             }
                         }
@@ -361,11 +356,10 @@ namespace HexGame
             }
 
             float cost = GetTerrainCost(toHex.TerrainType);
-            if (toHex.Elevation > fromHex.Elevation) cost += uphillPenalty;
+            if (fromHex != null && toHex.Elevation > fromHex.Elevation) cost += uphillPenalty;
 
             if (unit != null)
             {
-                EnsureResources(unit);
                 foreach (var state in toHex.States)
                 {
                     if (state.StartsWith("ZoC"))
@@ -385,18 +379,84 @@ namespace HexGame
                         }
                     }
                 }
-                
-                // Resource Check: Can we afford this move?
-                int cap = unit.GetStat("CAP");
-                if (cap < cost) return float.PositiveInfinity;
             }
 
             return cost;
         }
 
+        public override MoveVerification VerifyMove(Unit unit, HexData fromHex, HexData toHex)
+        {
+            if (unit == null || fromHex == null || toHex == null) return MoveVerification.Failure("Invalid unit or hex.");
+
+            // 1. Elevation check
+            float delta = Mathf.Abs(toHex.Elevation - fromHex.Elevation);
+            if (delta > maxElevationDelta) return MoveVerification.Failure("Elevation delta too high.");
+
+            // 2. Occupation check
+            if (toHex.Unit != null && toHex.Unit != unit)
+            {
+                if (toHex.Unit.teamId != unit.teamId) return MoveVerification.Failure("Hex occupied by enemy.");
+                else return MoveVerification.Failure("Hex occupied by ally.");
+            }
+
+            // 3. Resource check
+            EnsureResources(unit);
+            float cost = GetPathfindingMoveCost(unit, fromHex, toHex);
+            int cap = unit.GetStat("CAP");
+            if (cap < cost) return MoveVerification.Failure($"Not enough AP. Required: {cost}, Have: {cap}");
+
+            int cfat = unit.GetStat("CFAT");
+            int mfat = unit.GetStat("FAT", 100);
+            if (cfat + cost > mfat) return MoveVerification.Failure("Too much fatigue.");
+
+            return MoveVerification.Success();
+        }
+
+        public override void PerformMove(Unit unit, HexData fromHex, HexData toHex)
+        {
+            if (unit == null || toHex == null) return;
+            EnsureResources(unit);
+
+            // Cleanup old footprint from the PREVIOUS hex
+            if (fromHex != null)
+            {
+                unit.ClearOwnedHexStates();
+            }
+
+            // Deduct Resources
+            float cost = fromHex != null ? GetPathfindingMoveCost(unit, fromHex, toHex) : 0f;
+            if (!float.IsInfinity(cost))
+            {
+                unit.Stats["CAP"] -= Mathf.RoundToInt(cost);
+                unit.Stats["CFAT"] += Mathf.RoundToInt(cost);
+            }
+
+            // Apply new footprint on current hex
+            unit.AddOwnedHexState(toHex, $"Occupied{unit.teamId}_{unit.Id}");
+
+            // Project ZoC if unit has melee range
+            if (unit.GetStat("MAT") > 0)
+            {
+                var grid = GridVisualizationManager.Instance?.Grid;
+                if (grid != null)
+                {
+                    string unitZocState = $"ZoC{unit.teamId}_{unit.Id}";
+                    foreach (var neighbor in grid.GetNeighbors(toHex))
+                    {
+                        float delta = Mathf.Abs(neighbor.Elevation - toHex.Elevation);
+                        if (delta <= maxElevationDelta)
+                        {
+                            unit.AddOwnedHexState(neighbor, unitZocState);
+                        }
+                    }
+                }
+            }
+        }
+
         public override int GetMoveStopIndex(Unit unit, List<HexData> path)
         {
             if (path == null || path.Count == 0 || unit == null) return 0;
+            EnsureResources(unit);
             HexData lastHex = path[path.Count - 1];
             
             if (lastHex.Unit != null && lastHex.Unit.teamId != unit.teamId)
@@ -407,10 +467,28 @@ namespace HexGame
                 {
                     if (HexMath.Distance(path[i], lastHex) <= range)
                     {
-                        return i + 1;
+                        // Check affordability up to this index
+                        float totalCost = 0;
+                        for (int j = 1; j <= i; j++)
+                        {
+                            totalCost += GetPathfindingMoveCost(unit, path[j - 1], path[j]);
+                        }
+                        
+                        if (totalCost <= unit.GetStat("CAP")) return i + 1;
+                        break; 
                     }
                 }
             }
+
+            // Default: Find furthest affordable step in path
+            float runningCost = 0;
+            for (int i = 1; i < path.Count; i++)
+            {
+                float stepCost = GetPathfindingMoveCost(unit, path[i - 1], path[i]);
+                if (runningCost + stepCost > unit.GetStat("CAP")) return i;
+                runningCost += stepCost;
+            }
+
             return path.Count;
         }
 
@@ -425,59 +503,6 @@ namespace HexGame
                 case TerrainType.Desert: return desertCost;
                 default: return 1.0f;
             }
-        }
-
-        public override bool OnEntry(Unit unit, HexData hex)
-        {
-            if (unit == null || hex == null) return true;
-            EnsureResources(unit);
-            
-            unit.AddOwnedHexState(hex, $"Occupied{unit.teamId}_{unit.Id}");
-
-            // Deduct resources if we actually moved (traversal)
-            // (Simple logic: if hex is not starting hex, deduct cost)
-            // But ruleset doesn't know previous hex here easily without context.
-            // However, Pathfinder already checked affordability.
-            // For now, we'll assume the Unit logic handles traversal subtraction 
-            // OR we calculate cost here.
-            // Let's assume Unit logic calls this at every step.
-            
-            if (unit.CurrentHex != null)
-            {
-                float cost = GetMoveCost(unit, unit.CurrentHex.Data, hex);
-                if (!float.IsInfinity(cost))
-                {
-                    unit.Stats["CAP"] -= Mathf.RoundToInt(cost);
-                    unit.Stats["CFAT"] += Mathf.RoundToInt(cost);
-                }
-            }
-
-            if (unit.GetStat("MAT") > 0)
-            {
-                var grid = GridVisualizationManager.Instance?.Grid;
-                if (grid != null)
-                {
-                    string unitZocState = $"ZoC{unit.teamId}_{unit.Id}";
-                    foreach (var neighbor in grid.GetNeighbors(hex))
-                    {
-                        float delta = Mathf.Abs(neighbor.Elevation - hex.Elevation);
-                        if (delta <= maxElevationDelta)
-                        {
-                            unit.AddOwnedHexState(neighbor, unitZocState);
-                        }
-                    }
-                }
-            }
-            return true;
-        }
-
-        public override bool OnDeparture(Unit unit, HexData hex)
-        {
-            if (unit == null || hex == null) return true;
-            EnsureResources(unit);
-
-            unit.ClearOwnedHexStates();
-            return true;
         }
 
         public override void OnFinishPathfinding(Unit unit, List<HexData> path, bool success)
@@ -529,7 +554,8 @@ namespace HexGame
 
         private void ShowAoA(Unit unit, HexData stopHex)
         {
-            ClearAoA();
+            if (unit == null) return;
+            ClearAoA(unit);
 
             var grid = GridVisualizationManager.Instance?.Grid;
             if (grid == null) return;
@@ -556,24 +582,18 @@ namespace HexGame
             }
         }
 
-        private void ClearAoA()
+        private void ClearAoA(Unit unit)
         {
-            if (currentAoAHexes.Count == 0) return;
-            foreach (var h in currentAoAHexes)
+            if (unit != null)
             {
-                var toRemove = new List<string>();
-                foreach (var s in h.States)
-                {
-                    if (s.StartsWith("AoA")) toRemove.Add(s);
-                }
-                foreach (var s in toRemove) h.RemoveState(s);
+                unit.RemoveOwnedHexStatesByPrefix("AoA");
             }
             currentAoAHexes.Clear();
         }
 
         public override void OnClearPathfindingVisuals()
         {
-            ClearAoA();
+            ClearAoA(lastGhostSource);
             if (pathGhost != null)
             {
                 if (Application.isPlaying) Destroy(pathGhost.gameObject);

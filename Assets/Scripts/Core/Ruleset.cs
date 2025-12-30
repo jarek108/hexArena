@@ -24,6 +24,15 @@ namespace HexGame
         }
     }
 
+    public struct MoveVerification
+    {
+        public bool isValid;
+        public string reason;
+
+        public static MoveVerification Success() => new MoveVerification { isValid = true, reason = "" };
+        public static MoveVerification Failure(string reason) => new MoveVerification { isValid = false, reason = reason };
+    }
+
     public abstract class Ruleset : ScriptableObject 
     {
         [HideInInspector] public HexData currentSearchTarget;
@@ -33,9 +42,21 @@ namespace HexGame
             currentSearchTarget = target;
         }
 
-        public abstract float GetMoveCost(Unit unit, HexData fromHex, HexData toHex);
-        public abstract bool OnEntry(Unit unit, HexData hex);
-        public abstract bool OnDeparture(Unit unit, HexData hex);
+        /// <summary>
+        /// Returns the tactical weight of a move for pathfinding. 
+        /// Should ONLY return Infinity for physical blockers, not resource constraints.
+        /// </summary>
+        public abstract float GetPathfindingMoveCost(Unit unit, HexData fromHex, HexData toHex);
+
+        /// <summary>
+        /// Validates if a unit can actually perform a move based on its current state (AP, Fatigue, etc.)
+        /// </summary>
+        public abstract MoveVerification VerifyMove(Unit unit, HexData fromHex, HexData toHex);
+
+        /// <summary>
+        /// Executes the side effects of a move (deducting resources, updating grid footprints).
+        /// </summary>
+        public abstract void PerformMove(Unit unit, HexData fromHex, HexData toHex);
 
         public abstract void OnAttacked(Unit attacker, Unit target);
         public abstract void OnHit(Unit attacker, Unit target, float damage);

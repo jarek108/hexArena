@@ -90,7 +90,7 @@ namespace HexGame.Tests
             ruleset.OnStartPathfinding(hex2, unit); 
 
             // Act: Check cost to enter Hex1 (Friendly)
-            float cost = ruleset.GetMoveCost(unit, hex0, hex1);
+            float cost = ruleset.GetPathfindingMoveCost(unit, hex0, hex1);
 
             // Assert
             Assert.AreNotEqual(float.PositiveInfinity, cost, "Should be able to pass through friendly unit.");
@@ -107,7 +107,7 @@ namespace HexGame.Tests
             ruleset.OnStartPathfinding(hex1, unit);
 
             // Act
-            float cost = ruleset.GetMoveCost(unit, hex0, hex1);
+            float cost = ruleset.GetPathfindingMoveCost(unit, hex0, hex1);
 
             // Assert
             Assert.AreEqual(float.PositiveInfinity, cost, "Should NOT be able to end move on friendly unit.");
@@ -126,40 +126,16 @@ namespace HexGame.Tests
 
             // Hex1 has Friendly (Team 1) - BLOCKING the only direct path
             hex1.AddState($"Occupied1_{unit.Id}");
+            hex1.Unit = unit; // Actually assign unit to trigger VerifyMove correctly
 
-            // Simulating Attack Pathfinding to Hex2 (Enemy)
-            // Logic: Pathfinding will try to route. 
-            // 1. Move 0->1?
-            // If 1 is "pass through", cost is 2.
-            // But we can't stop on 1. 
-            // 2. Can we stop on 1?
-            // "Stop Index" logic handles the truncation, but Pathfinder needs to find a valid 'end' node.
-            
-            // This test verifies GetMoveCost logic specifically:
-            // Moving 0 -> 1 (Intermediate) -> Allowed
-            // Stopping on 1? That's handled by 'GetMoveStopIndex' logic OR by Pathfinder not finding a valid end.
-            
-            // Actually, if we target Hex2 (Enemy), the pathfinder calculates cost to Hex2.
-            // MoveCost 1->2 (Into Enemy) is Infinity (because it's occupied by Team 2).
-            // So normal pathfinding 0->1->2 FAILS.
-            
-            // Wait, for Attack, we want to stop at 1.
-            // But 1 is Occupied.
-            // So we CANNOT attack from 1.
-            
-            // Let's verify that 'stopping' on 1 is forbidden even if it's the attack position.
-            
-            // NOTE: The Pathfinder targets the Enemy Hex (2).
-            // The truncation happens AFTER the path is found.
-            // If the path to 2 goes through 1, and 1 is occupied...
-            // The unit would "stop" at 1. 
-            // But 1 is occupied.
-            // So this move should be invalid.
-            
             // Check: Is Hex1 treated as a valid destination?
             ruleset.OnStartPathfinding(hex1, unit); // Simulate trying to move directly to 1
-            float cost = ruleset.GetMoveCost(unit, hex0, hex1);
-            Assert.AreEqual(float.PositiveInfinity, cost, "Cannot manually move to occupied friendly.");
+            float cost = ruleset.GetPathfindingMoveCost(unit, hex0, hex1);
+            Assert.AreEqual(float.PositiveInfinity, cost, "Pathfinding destination cannot be occupied hex.");
+
+            // VerifyMove should also fail
+            var result = ruleset.VerifyMove(unit, hex0, hex1);
+            Assert.IsFalse(result.isValid, "VerifyMove should reject stopping on occupied hex.");
 
             Object.DestroyImmediate(enemyGO);
         }

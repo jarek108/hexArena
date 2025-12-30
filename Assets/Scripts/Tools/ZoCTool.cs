@@ -40,10 +40,7 @@ namespace HexGame.Tools
 
         private bool IsTeamZoC(string state)
         {
-            if (!state.StartsWith("ZoC_")) return false;
-            int underscoreCount = 0;
-            foreach (char c in state) if (c == '_') underscoreCount++;
-            return underscoreCount == 1;
+            return state.StartsWith("ZoC");
         }
     }
 }
