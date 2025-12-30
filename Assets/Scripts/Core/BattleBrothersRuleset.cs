@@ -747,17 +747,25 @@ namespace HexGame
                 score -= longWeaponProximityPenalty;
             }
 
-            int allyZoCCount = 0;
+            int engagedAlliesCount = 0;
             string allyZoCPrefix = $"ZoC{attacker.teamId}_";
+            bool attackerIsEngaged = false;
+            string attackerZoCState = $"ZoC{attacker.teamId}_{attacker.Id}";
+
             foreach (var state in targetHex.States)
             {
                 if (state.StartsWith(allyZoCPrefix))
                 {
-                    allyZoCCount++;
+                    engagedAlliesCount++;
+                    if (state == attackerZoCState)
+                    {
+                        attackerIsEngaged = true;
+                    }
                 }
             }
             
-            score += Mathf.Max(0, allyZoCCount - 1) * surroundBonus;
+            int effectiveSurroundCount = attackerIsEngaged ? engagedAlliesCount - 1 : engagedAlliesCount;
+            score += effectiveSurroundCount * surroundBonus;
 
             return Mathf.Clamp(score / 100f, 0f, 1f);
         }

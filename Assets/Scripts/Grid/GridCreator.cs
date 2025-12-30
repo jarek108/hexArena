@@ -112,6 +112,10 @@ namespace HexGame
         {
             if (gridManager == null) return;
 
+            #if UNITY_EDITOR
+            if (!Application.isPlaying) Undo.RegisterCompleteObjectUndo(this, "Clear Grid");
+            #endif
+
             // Clear direct children (Hexes)
             for (int i = gridManager.transform.childCount - 1; i >= 0; i--)
             {
@@ -121,6 +125,8 @@ namespace HexGame
 
             if (gridManager.Grid != null) gridManager.Grid.Clear();
             gridManager.Grid = null;
+
+            MarkDirty();
         }
 
         public void GenerateGrid()
@@ -129,6 +135,10 @@ namespace HexGame
             {
                 return;
             }
+
+            #if UNITY_EDITOR
+            if (!Application.isPlaying) Undo.RegisterCompleteObjectUndo(this, "Generate Grid");
+            #endif
 
             ClearGrid();
 
@@ -193,6 +203,8 @@ namespace HexGame
 
             // Relink units to new hexes
             UnitManager.Instance?.RelinkUnitsToGrid();
+
+            MarkDirty();
         }
 
         public void SaveGrid(string path)
@@ -234,6 +246,10 @@ namespace HexGame
                 return;
             }
 
+            #if UNITY_EDITOR
+            if (!Application.isPlaying) Undo.RegisterCompleteObjectUndo(this, "Load Grid");
+            #endif
+
             ClearGrid();
 
             string json = File.ReadAllText(path);
@@ -259,6 +275,22 @@ namespace HexGame
 
             // Relink units
             UnitManager.Instance?.RelinkUnitsToGrid();
+
+            MarkDirty();
+        }
+
+        private void MarkDirty()
+        {
+            #if UNITY_EDITOR
+            if (!Application.isPlaying)
+            {
+                EditorUtility.SetDirty(this);
+                if (this.gameObject.scene.IsValid())
+                {
+                    UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(this.gameObject.scene);
+                }
+            }
+            #endif
         }
     }
 }
