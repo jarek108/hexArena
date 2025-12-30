@@ -41,13 +41,13 @@ namespace HexGame
 
         public AttackType currentAttackType = AttackType.None;
 
-        private HexGame.Units.UnitVisualization pathGhost;
-        private Unit lastGhostSource;
+        private Unit lastPathfindingUnit;
         private List<HexData> currentAoAHexes = new List<HexData>();
 
         public override void OnStartPathfinding(HexData target, Unit unit)
         {
             base.OnStartPathfinding(target, unit);
+            lastPathfindingUnit = unit;
             
             currentAttackType = AttackType.None;
             if (target.Unit != null && unit != null)
@@ -58,9 +58,15 @@ namespace HexGame
             }
         }
 
+        public override void OnStartPathfinding(IEnumerable<HexData> targets, Unit unit)
+        {
+            base.OnStartPathfinding(targets, unit);
+            lastPathfindingUnit = unit;
+        }
+
         public override void OnUnitSelected(Unit unit)
         {
-            OnClearPathfindingVisuals();
+            ClearAoA(unit);
             EnsureResources(unit);
         }
 
@@ -75,7 +81,7 @@ namespace HexGame
 
         public override void OnUnitDeselected(Unit unit)
         {
-            OnClearPathfindingVisuals();
+            ClearAoA(unit);
         }
 
         public override List<PotentialHit> GetPotentialHits(Unit attacker, Unit target, HexData fromHex = null)
@@ -455,7 +461,7 @@ namespace HexGame
             if (unit == null || toHex == null) return;
             EnsureResources(unit);
 
-            // Cleanup old footprint from the PREVIOUS hex
+            // Cleanup tactical states from the PREVIOUS position
             if (fromHex != null)
             {
                 fromHex.RemoveUnit(unit);
@@ -617,48 +623,17 @@ namespace HexGame
 
         public override void OnFinishPathfinding(Unit unit, List<HexData> path, bool success)
         {
+            lastPathfindingUnit = unit;
             if (!success || unit == null || path == null)
             {
-                OnClearPathfindingVisuals();
+                ClearAoA(unit);
                 return;
             }
 
             int stopIndex = GetMoveStopIndex(unit, path);
-            
-            // Show AoA regardless of whether ghost is shown (as long as we have a stop hex)
             if (stopIndex > 0)
             {
                 ShowAoA(unit, path[stopIndex - 1]);
-            }
-
-            // Ghost visibility logic
-            if (stopIndex <= 1)
-            {
-                // Hide ghost but keep AoA
-                if (pathGhost != null) pathGhost.gameObject.SetActive(false);
-                return; 
-            }
-
-            if (pathGhost == null || lastGhostSource != unit)
-            {
-                OnClearPathfindingVisuals();
-                // Re-calling ShowAoA because OnClearPathfindingVisuals clears it
-                SpawnGhost(unit);
-                if (stopIndex > 0) ShowAoA(unit, path[stopIndex - 1]);
-            }
-
-            if (pathGhost != null)
-            {
-                HexData ghostHex = path[stopIndex - 1];
-                var manager = GridVisualizationManager.Instance;
-                Hex hexView = manager.GetHex(ghostHex.Q, ghostHex.R);
-                if (hexView != null)
-                {
-                    Vector3 pos = hexView.transform.position;
-                    pos.y += pathGhost.yOffset;
-                    pathGhost.transform.position = pos;
-                    pathGhost.gameObject.SetActive(true);
-                }
             }
         }
 
@@ -703,51 +678,9 @@ namespace HexGame
 
         public override void OnClearPathfindingVisuals()
         {
-            ClearAoA(lastGhostSource);
-            if (pathGhost != null)
+            if (lastPathfindingUnit != null)
             {
-                if (Application.isPlaying) Destroy(pathGhost.gameObject);
-                else DestroyImmediate(pathGhost.gameObject);
-                pathGhost = null;
-            }
-            lastGhostSource = null;
-        }
-
-        private void SpawnGhost(Unit sourceUnit)
-        {
-            var sourceViz = sourceUnit.GetComponentInChildren<HexGame.Units.UnitVisualization>();
-            if (sourceViz == null) return;
-
-            var unitManager = UnitManager.Instance;
-            if (unitManager == null) return;
-
-            pathGhost = Instantiate(sourceViz, unitManager.transform);
-            pathGhost.gameObject.name = "Pathfinding_PreviewGhost_BB";
-            pathGhost.SetPreviewIdentity(sourceUnit.UnitName);
-            lastGhostSource = sourceUnit;
-
-            ApplyGhostVisuals(pathGhost.gameObject);
-        }
-
-        private void ApplyGhostVisuals(GameObject ghostObj)
-        {
-            Renderer[] renderers = ghostObj.GetComponentsInChildren<Renderer>();
-            foreach (var r in renderers)
-            {
-                r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-
-                MaterialPropertyBlock mpb = new MaterialPropertyBlock();
-                r.GetPropertyBlock(mpb);
-                
-                Color color = Color.white;
-                if (r.sharedMaterial.HasProperty("_BaseColor"))
-                {
-                    color = r.sharedMaterial.GetColor("_BaseColor");
-                }
-
-                color.a = 0.5f; 
-                mpb.SetColor("_BaseColor", color);
-                r.SetPropertyBlock(mpb);
+                ClearAoA(lastPathfindingUnit);
             }
         }
 
