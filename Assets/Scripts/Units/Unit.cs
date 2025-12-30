@@ -221,9 +221,9 @@ namespace HexGame
         public void SetHex(Hex hex)
         {
             HexData previousData = CurrentHex != null ? CurrentHex.Data : null;
-            if (previousData != null && previousData.Unit == this)
+            if (previousData != null)
             {
-                previousData.Unit = null;
+                previousData.RemoveUnit(this);
             }
 
             // If leaving the grid (moving to null), clear our projected footprint.
@@ -245,7 +245,7 @@ namespace HexGame
                 else
                 {
                     // Fallback if no ruleset exists
-                    CurrentHex.Data.Unit = this;
+                    CurrentHex.Data.AddUnit(this);
                 }
 
                 transform.position = CurrentHex.transform.position + new Vector3(0, currentView != null ? currentView.yOffset : 0, 0);

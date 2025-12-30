@@ -47,6 +47,7 @@ We follow a **Data-Driven Architecture** prioritizing strict Logic/View separati
 5.  **Testing** Run the tests. MAKE SURE to inspect console errors
 6.  **Correction loop** Go to 4 till tests pass, and you MADE SURE there is no console errors. Confirm with user you are done
 7.  **Verification & finalization:** Once user confirms feature is done, update documentation, PROPOSE committing.
+8.  **Test Persistence:** Always store created tests as permanent artifacts in the codebase as long as they remain relevant and the feature they test exists. Never delete tests after verification unless explicitly requested.
 
 ## Python coding
 1. When writing Python, be very concise and prefer brevity over handling all errors etc.

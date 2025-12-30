@@ -53,7 +53,7 @@ public class UnitPlacementTests
         unit.SetHex(hex);
 
         Assert.AreEqual(hex, unit.CurrentHex);
-        Assert.AreEqual(unit, hex.Unit);
+        Assert.AreEqual(unit, hex.Data.Unit);
     }
 
     [Test]
@@ -74,13 +74,13 @@ public class UnitPlacementTests
         hex2.AssignData(data2);
         
         unit.SetHex(hex);
-        Assert.AreEqual(unit, hex.Unit);
+        Assert.AreEqual(unit, hex.Data.Unit);
 
         unit.SetHex(hex2);
         
-        Assert.IsNull(hex.Unit);
+        Assert.IsNull(hex.Data.Unit);
         Assert.AreEqual(hex2, unit.CurrentHex);
-        Assert.AreEqual(unit, hex2.Unit);
+        Assert.AreEqual(unit, hex2.Data.Unit);
 
         Object.DestroyImmediate(hex2GO);
     }

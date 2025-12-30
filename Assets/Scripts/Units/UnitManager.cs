@@ -104,11 +104,19 @@ namespace HexGame
         {
             foreach (var hexData in hexes)
             {
-                if (hexData.Unit != null)
+                if (hexData.Units.Count > 0)
                 {
-                    if (Application.isPlaying) Destroy(hexData.Unit.gameObject);
-                    else DestroyImmediate(hexData.Unit.gameObject);
-                    hexData.Unit = null;
+                    // Create a copy because we are about to destroy them
+                    var unitsToDestroy = new List<Unit>(hexData.Units);
+                    foreach (var u in unitsToDestroy)
+                    {
+                        if (u != null)
+                        {
+                            if (Application.isPlaying) Destroy(u.gameObject);
+                            else DestroyImmediate(u.gameObject);
+                        }
+                    }
+                    hexData.Unit = null; // Clears the list
                 }
             }
         }

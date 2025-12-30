@@ -45,7 +45,43 @@ namespace HexGame
             }
         }
         
-        public Unit Unit;
+        
+        private List<Unit> _units = new List<Unit>();
+        public List<Unit> Units => _units;
+
+        /// <summary>
+        /// Compatibility property. 
+        /// Get: Returns the first unit in the list or null.
+        /// Set: Clears the list and adds the assigned unit (if not null).
+        /// </summary>
+        public Unit Unit
+        {
+            get => _units.Count > 0 ? _units[0] : null;
+            set
+            {
+                _units.Clear();
+                if (value != null)
+                {
+                    _units.Add(value);
+                }
+            }
+        }
+
+        public void AddUnit(Unit unit)
+        {
+            if (unit != null && !_units.Contains(unit))
+            {
+                _units.Add(unit);
+            }
+        }
+
+        public void RemoveUnit(Unit unit)
+        {
+            if (unit != null)
+            {
+                _units.Remove(unit);
+            }
+        }
 
         private HashSet<string> _states;
         public HashSet<string> States 

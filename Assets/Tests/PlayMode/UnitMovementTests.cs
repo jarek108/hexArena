@@ -114,5 +114,52 @@ namespace HexGame.Tests
             Assert.AreEqual(unit, targetHex.Data.Unit, "Target hex should hold the unit reference after traversal.");
             Assert.IsTrue(targetHex.Data.States.Contains($"Occupied0_{unit.Id}"), "Target hex should have the Occupied state string.");
         }
+
+        [UnityTest]
+        public IEnumerator UnitTraversal_PassesThroughAlly()
+        {
+            // Arrange
+            Hex hex1 = CreateHex(0, 0);
+            Hex hex2 = CreateHex(1, 0); // Ally here
+            Hex hex3 = CreateHex(2, 0); // Destination
+
+            // Setup Main Unit
+            unit.SetHex(hex1);
+
+            // Setup Ally Unit
+            GameObject allyGO = new GameObject("AllyUnit");
+            Unit ally = allyGO.AddComponent<Unit>();
+            allyGO.AddComponent<SimpleUnitVisualization>();
+            ally.Initialize(0, 0); // Team 0 (Same as unit)
+            ally.SetHex(hex2);
+
+            // Verify setup
+            Assert.AreEqual(1, hex2.Data.Units.Count, "Ally hex should have 1 unit.");
+            Assert.AreEqual(ally, hex2.Data.Unit, "Ally hex should contain ally.");
+
+            // Path: 0,0 -> 1,0 -> 2,0
+            List<HexData> path = new List<HexData> { hex1.Data, hex2.Data, hex3.Data };
+
+            // Act
+            unit.MoveAlongPath(path, 100f, 0f);
+
+            // Wait
+            float timeout = 2f;
+            while (unit.IsMoving && timeout > 0)
+            {
+                timeout -= Time.deltaTime;
+                yield return null;
+            }
+
+            // Assert
+            Assert.IsFalse(unit.IsMoving, "Unit should have finished moving.");
+            Assert.AreEqual(hex3.Data, unit.CurrentHex.Data, "Unit should reach destination.");
+            Assert.AreEqual(1, hex2.Data.Units.Count, "Ally hex should still have 1 unit (Ally).");
+            Assert.AreEqual(ally, hex2.Data.Unit, "Ally hex should still contain ally.");
+            Assert.IsFalse(hex2.Data.Units.Contains(unit), "Ally hex should NOT contain main unit after pass-through.");
+            
+            // Cleanup
+            Object.Destroy(allyGO);
+        }
     }
 }

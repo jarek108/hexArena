@@ -184,7 +184,7 @@ namespace HexGame
             if (unit == null || path == null) return;
 
             unit.MoveAlongPath(path, transitionSpeed, transitionPause, () => {
-                if (targetHex != null && targetHex.Unit != null && targetHex.Unit.teamId != unit.teamId)
+                if (targetHex != null && targetHex.Data.Unit != null && targetHex.Data.Unit.teamId != unit.teamId)
                 {
                     // Basic Check: Do we have resources to attack?
                     int cap = unit.GetStat("CAP");
@@ -197,7 +197,7 @@ namespace HexGame
 
                     if (canAffordAP && canAffordFatigue)
                     {
-                        PerformAttack(unit, targetHex.Unit);
+                        PerformAttack(unit, targetHex.Data.Unit);
                         if (!ignoreAPs) unit.Stats["CAP"] -= attackCost;
                         if (!ignoreFatigue) unit.Stats["CFAT"] += unit.GetStat("AFAT", 10);
                     }
@@ -310,7 +310,7 @@ namespace HexGame
             
             if (unit.CurrentHex != null)
             {
-                unit.CurrentHex.Data.Unit = null;
+                unit.CurrentHex.Data.RemoveUnit(unit);
             }
 
             if (Application.isPlaying) Destroy(unit.gameObject);
@@ -321,17 +321,28 @@ namespace HexGame
         {
             if (toHex == currentSearchTarget)
             {
-                bool isEnemy = toHex.Unit != null && unit != null && toHex.Unit.teamId != unit.teamId;
-                
-                if (isEnemy)
+                if (unit != null)
                 {
-                    int mat = unit.GetStat("MAT", 0);
-                    if (mat > 0) // Melee check
+                    foreach (var u in toHex.Units)
                     {
-                        float attackDelta = fromHex != null ? Mathf.Abs(toHex.Elevation - fromHex.Elevation) : 0f;
-                        if (attackDelta > maxElevationDelta) return float.PositiveInfinity;
+                        if (u == unit) continue;
+                        if (u.teamId != unit.teamId)
+                        {
+                            // Enemy: Attack logic
+                            int mat = unit.GetStat("MAT", 0);
+                            if (mat > 0) // Melee check
+                            {
+                                float attackDelta = fromHex != null ? Mathf.Abs(toHex.Elevation - fromHex.Elevation) : 0f;
+                                if (attackDelta > maxElevationDelta) return float.PositiveInfinity;
+                            }
+                            return 0f;
+                        }
+                        else
+                        {
+                            // Ally: Cannot stop on ally
+                            return float.PositiveInfinity;
+                        }
                     }
-                    return 0f;
                 }
             }
 
@@ -409,10 +420,14 @@ namespace HexGame
             if (delta > maxElevationDelta) return MoveVerification.Failure("Elevation delta too high.");
 
             // 2. Occupation check
-            if (toHex.Unit != null && toHex.Unit != unit)
+            if (toHex.Units.Count > 0)
             {
-                if (toHex.Unit.teamId != unit.teamId) return MoveVerification.Failure("Hex occupied by enemy.");
-                else return MoveVerification.Failure("Hex occupied by ally.");
+                foreach (var occupant in toHex.Units)
+                {
+                    if (occupant == unit) continue;
+                    if (occupant.teamId != unit.teamId) return MoveVerification.Failure("Hex occupied by enemy.");
+                    // Allies: Allowed to pass through (VerifyMove is step-logic, not stop-logic)
+                }
             }
 
             // 3. Resource check
@@ -443,7 +458,7 @@ namespace HexGame
             // Cleanup old footprint from the PREVIOUS hex
             if (fromHex != null)
             {
-                if (fromHex.Unit == unit) fromHex.Unit = null;
+                fromHex.RemoveUnit(unit);
                 unit.ClearOwnedHexStates();
             }
 
@@ -456,7 +471,7 @@ namespace HexGame
             }
 
             // Apply new footprint on current hex
-            toHex.Unit = unit;
+            toHex.AddUnit(unit);
             unit.AddOwnedHexState(toHex, $"Occupied{unit.teamId}_{unit.Id}");
 
             // Project ZoC if unit has melee range
@@ -484,7 +499,18 @@ namespace HexGame
             EnsureResources(unit);
             HexData lastHex = path[path.Count - 1];
             
-            if (lastHex.Unit != null && lastHex.Unit.teamId != unit.teamId)
+            // Check for enemy at end of path (Attack logic)
+            bool enemyAtEnd = false;
+            foreach (var u in lastHex.Units)
+            {
+                if (u.teamId != unit.teamId)
+                {
+                    enemyAtEnd = true;
+                    break;
+                }
+            }
+
+            if (enemyAtEnd)
             {
                 int range = unit.GetStat("RNG", 1);
 
@@ -505,18 +531,42 @@ namespace HexGame
                 }
             }
 
-            // Default: Find furthest affordable step in path
-            if (ignoreAPs) return path.Count;
-
-            float runningCost = 0;
-            for (int i = 1; i < path.Count; i++)
+            // Standard Move: Find furthest affordable AND valid stop
+            int maxReachableIndex = 0;
+            if (ignoreAPs)
             {
-                float stepCost = GetPathfindingMoveCost(unit, path[i - 1], path[i]);
-                if (runningCost + stepCost > unit.GetStat("CAP")) return i;
-                runningCost += stepCost;
+                maxReachableIndex = path.Count - 1;
+            }
+            else
+            {
+                float runningCost = 0;
+                for (int i = 1; i < path.Count; i++)
+                {
+                    float stepCost = GetPathfindingMoveCost(unit, path[i - 1], path[i]);
+                    if (runningCost + stepCost > unit.GetStat("CAP")) break;
+                    runningCost += stepCost;
+                    maxReachableIndex = i;
+                }
             }
 
-            return path.Count;
+            // Backtrack if the reachable hex is occupied by an ally
+            for (int i = maxReachableIndex; i > 0; i--)
+            {
+                HexData hex = path[i];
+                bool occupiedByAlly = false;
+                foreach (var u in hex.Units)
+                {
+                    if (u != unit && u.teamId == unit.teamId)
+                    {
+                        occupiedByAlly = true;
+                        break;
+                    }
+                }
+
+                if (!occupiedByAlly) return i + 1;
+            }
+
+            return 1; // Fallback: Stay at start
         }
 
         private float GetTerrainCost(TerrainType type)
