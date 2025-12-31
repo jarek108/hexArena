@@ -355,6 +355,7 @@ namespace HexGame
             float delta = fromHex != null ? Mathf.Abs(toHex.Elevation - fromHex.Elevation) : 0f;
             if (delta > maxElevationDelta) return float.PositiveInfinity;
 
+            bool isOccupiedByTeammate = false;
             if (unit != null)
             {
                 foreach (var state in toHex.States)
@@ -370,6 +371,7 @@ namespace HexGame
                                 if (occupiedTeamId != unit.teamId) return float.PositiveInfinity;
                                 else
                                 {
+                                    isOccupiedByTeammate = true;
                                     // It's a friendly unit. 
                                     // We can path THROUGH them, but we cannot STOP on them.
                                     // 'toHex == currentSearchTarget' handles the final destination.
@@ -384,7 +386,7 @@ namespace HexGame
             float cost = GetTerrainCost(toHex.TerrainType);
             if (fromHex != null && toHex.Elevation > fromHex.Elevation) cost += uphillPenalty;
 
-            if (unit != null)
+            if (unit != null && !isOccupiedByTeammate)
             {
                 foreach (var state in toHex.States)
                 {

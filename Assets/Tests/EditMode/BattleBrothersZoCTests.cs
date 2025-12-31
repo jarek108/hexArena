@@ -207,5 +207,60 @@ namespace HexGame.Tests
             Assert.AreEqual(0f, cost, "Ranged attack should bypass elevation check for the final target hex.");
             Object.DestroyImmediate(targetGO);
         }
+
+
+        [Test]
+        public void GetMoveCost_EnemyZoC_TeammatePresent_NoPenalty()
+        {
+            // Enemy Team 1 ZoC
+            hexEnd.Data.AddState("ZoC1_999");
+            // Friendly Teammate Occupied state (Team 0)
+            hexEnd.Data.AddState("Occupied0_888");
+
+            float cost = ruleset.GetPathfindingMoveCost(unit, hexStart.Data, hexEnd.Data);
+            Assert.AreEqual(2.0f, cost, "Cost should be base plains cost (2) because teammate is present, ignoring enemy ZoC.");
+        }
+
+
+        [Test]
+        public void FindPath_ChoosesPathThroughTeammate_InEnemyZoC()
+        {
+            // Setup a 3-hex line: Start(0,0) -> Mid(1,-1) -> End(1,-2)
+            // Mid is the choke point with Enemy ZoC + Teammate
+            
+            // Create target hex (1, -2)
+            var hexTargetGO = new GameObject("HexTarget");
+            var hexTarget = hexTargetGO.AddComponent<Hex>();
+            HexData targetData = new HexData(1, -2);
+            targetData.TerrainType = TerrainType.Plains;
+            hexTarget.AssignData(targetData);
+            grid.AddHex(targetData);
+
+            // Configure Mid Hex (hexEnd from SetUp is at 1, -1)
+            hexEnd.Data.AddState("ZoC1_999"); // Enemy ZoC (Expensive!)
+            hexEnd.Data.AddState("Occupied0_888"); // Teammate (Should negate ZoC)
+
+            // Ensure grid neighbors are linked
+            // Note: Grid(10,10) creates (0,0) to (9,9). 
+            // (1,-1) and (1,-2) might be outside the default loops in SetUp if we relied on that, 
+            // but we added them manually. HexMath.Distance checks coords. 
+            // Pathfinder uses grid.GetNeighbors. We need to verify GetNeighbors returns our new hexes.
+            // Grid dictionary keys are likely hashes. We manually added them, so they should be in the dict.
+            
+            // Run Pathfinder
+            PathResult result = Pathfinder.FindPath(grid, unit, hexStart.Data, targetData);
+
+            // Assert
+            Assert.IsTrue(result.Success, "Pathfinder should find a path.");
+            // Expected Cost: 
+            // Start -> Mid (2.0 Base, ZoC ignored due to Teammate)
+            // Mid -> Target (2.0 Base)
+            // Total = 4.0
+            Assert.AreEqual(4.0f, result.TotalCost, 0.1f, "Pathfinder should choose the cheap path through teammate (ignoring ZoC).");
+
+            Object.DestroyImmediate(hexTargetGO);
+        }
+
+
     }
 }
