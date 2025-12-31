@@ -40,7 +40,10 @@ namespace HexGame.Tests
             gameMaster = gameMasterGO.AddComponent<GameMaster>();
             
             ruleset = ScriptableObject.CreateInstance<BattleBrothersRuleset>();
-            ruleset.plainsCost = 2.0f;
+            ruleset.movement = ScriptableObject.CreateInstance<MovementModule>();
+            ruleset.combat = ScriptableObject.CreateInstance<CombatModule>();
+            ruleset.tactical = ScriptableObject.CreateInstance<TacticalModule>();
+            ruleset.movement.plainsCost = 2.0f;
             gameMaster.ruleset = ruleset;
 
             grid = new Grid(10, 10);

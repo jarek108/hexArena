@@ -28,13 +28,28 @@ public class CombatTests
         attacker = attackerObj.AddComponent<Unit>();
         attacker.Stats["HP"] = 100;
         attacker.Stats["MAT"] = 50;
+        attacker.Stats["ABY"] = 20;
+        attacker.Stats["ADM"] = 100;
 
         targetObj = new GameObject("Target");
         target = targetObj.AddComponent<Unit>();
         target.Stats["HP"] = 100;
         target.Stats["MDF"] = 0;
 
+        // Setup Names via Set
+        var unitSet = ScriptableObject.CreateInstance<UnitSet>();
+        unitSet.units = new List<UnitType> { 
+            new UnitType { Name = "Attacker" },
+            new UnitType { Name = "Target" }
+        };
+        unitManager.ActiveUnitSet = unitSet;
+        attacker.Initialize(0, 1);
+        target.Initialize(1, 2);
+
         ruleset = ScriptableObject.CreateInstance<BattleBrothersRuleset>();
+        ruleset.movement = ScriptableObject.CreateInstance<MovementModule>();
+        ruleset.combat = ScriptableObject.CreateInstance<CombatModule>();
+        ruleset.tactical = ScriptableObject.CreateInstance<TacticalModule>();
     }
 
     [TearDown]
@@ -51,7 +66,10 @@ public class CombatTests
     public void OnHit_ReducesHP()
     {
         // Arrange
+        attacker.Stats["HP"] = 100;
+        target.Stats["HP"] = 100;
         attacker.Stats["ABY"] = 100;
+        attacker.Stats["ADM"] = 100;
 
         // Act
         ruleset.OnHit(attacker, target, 20);
@@ -80,6 +98,6 @@ public class CombatTests
     {
         // Just verify no crash
         ruleset.OnAttacked(attacker, target);
-        LogAssert.Expect(LogType.Log, $"[Ruleset] {attacker.UnitName} attacks {target.UnitName}");
+        LogAssert.Expect(LogType.Log, "[Ruleset] Attacker attacks Target");
     }
 }

@@ -37,6 +37,9 @@ namespace HexGame.Tests
             gameMasterGO = new GameObject("GameMaster");
             gameMaster = gameMasterGO.AddComponent<GameMaster>();
             ruleset = ScriptableObject.CreateInstance<BattleBrothersRuleset>();
+            ruleset.movement = ScriptableObject.CreateInstance<MovementModule>();
+            ruleset.combat = ScriptableObject.CreateInstance<CombatModule>();
+            ruleset.tactical = ScriptableObject.CreateInstance<TacticalModule>();
             gameMaster.ruleset = ruleset;
 
             grid = new Grid(10, 10);
@@ -56,6 +59,7 @@ namespace HexGame.Tests
         public IEnumerator TearDown()
         {
             typeof(UnitManager).GetProperty("Instance").SetValue(null, null);
+            typeof(GridVisualizationManager).GetProperty("Instance").SetValue(null, null);
             Object.DestroyImmediate(managerGO);
             Object.DestroyImmediate(unitManagerGO);
             Object.DestroyImmediate(gameMasterGO);
@@ -76,6 +80,9 @@ namespace HexGame.Tests
             unitSet.units = new List<UnitType> { type };
             unitManager.ActiveUnitSet = unitSet;
             unit.Initialize(0, teamId);
+            unit.Stats["CAP"] = 100;
+            unit.Stats["MFAT"] = 100;
+            unit.Stats["CFAT"] = 0;
         }
 
         private HexData CreateHex(int q, int r, float elevation = 0)
@@ -115,7 +122,7 @@ namespace HexGame.Tests
             SetupUnit(0, 1, 0);
             HexData start = CreateHex(0, 0);
             HexData stop = CreateHex(1, 0);
-            HexData target = CreateHex(2, 0);
+            HexData target = CreateHex(1, -1); // neighbor of stop
 
             List<HexData> path = new List<HexData> { start, stop };
             ruleset.OnFinishPathfinding(unit, path, true);
@@ -132,7 +139,7 @@ namespace HexGame.Tests
         public IEnumerator MeleeAoA_RespectsElevation()
         {
             SetupUnit(0, 1, 0);
-            ruleset.maxElevationDelta = 1.0f;
+            ruleset.movement.maxElevationDelta = 1.0f;
             
             HexData stop = CreateHex(0, 0, 0);
             HexData low = CreateHex(1, 0, 0);

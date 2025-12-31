@@ -43,6 +43,9 @@ namespace HexGame.Tests
             gameMaster = gameMasterGO.AddComponent<GameMaster>();
             
             ruleset = ScriptableObject.CreateInstance<BattleBrothersRuleset>();
+            ruleset.movement = ScriptableObject.CreateInstance<MovementModule>();
+            ruleset.combat = ScriptableObject.CreateInstance<CombatModule>();
+            ruleset.tactical = ScriptableObject.CreateInstance<TacticalModule>();
             gameMaster.ruleset = ruleset;
 
             // 2. Setup Grid
@@ -128,7 +131,7 @@ namespace HexGame.Tests
         public void OnEntry_HighElevationDifference_NoZoC()
         {
             SetupUnitWithRange(1);
-            ruleset.maxElevationDelta = 1.0f;
+            ruleset.movement.maxElevationDelta = 1.0f;
             
             hex1.Data.Elevation = 0;
             hex2.Data.Elevation = 2.0f; // Too high
@@ -179,7 +182,7 @@ namespace HexGame.Tests
             // But verify elevation is 0
             hex1.Data.Elevation = 0;
             hex2.Data.Elevation = 0;
-            ruleset.plainsCost = 2.0f;
+            ruleset.movement.plainsCost = 2.0f;
             hex2.Data.TerrainType = TerrainType.Plains;
 
             // Act
@@ -194,7 +197,7 @@ namespace HexGame.Tests
         {
             // Arrange
             ruleset.ignoreAPs = true;
-            ruleset.plainsCost = 10f;
+            ruleset.movement.plainsCost = 10f;
             unit.Stats["CAP"] = 0; // Unit has no AP
 
             // Act
@@ -209,7 +212,7 @@ namespace HexGame.Tests
         {
             // Arrange
             ruleset.ignoreAPs = true;
-            ruleset.plainsCost = 5f;
+            ruleset.movement.plainsCost = 5f;
             unit.Stats["CAP"] = 10;
 
             // Act
@@ -225,7 +228,7 @@ namespace HexGame.Tests
             // Arrange
             ruleset.ignoreAPs = true;
             ruleset.ignoreFatigue = true;
-            ruleset.plainsCost = 10f;
+            ruleset.movement.plainsCost = 10f;
             unit.Stats["CFAT"] = 100;
             unit.Stats["FAT"] = 100; // Max fatigue reached
 
@@ -241,7 +244,7 @@ namespace HexGame.Tests
         {
             // Arrange
             ruleset.ignoreFatigue = true;
-            ruleset.plainsCost = 5f;
+            ruleset.movement.plainsCost = 5f;
             unit.Stats["CFAT"] = 0;
 
             // Act
@@ -256,7 +259,7 @@ namespace HexGame.Tests
         {
             // Arrange
             ruleset.ignoreAPs = true;
-            ruleset.plainsCost = 10f;
+            ruleset.movement.plainsCost = 10f;
             unit.Stats["CAP"] = 0;
             List<HexData> path = new List<HexData> { hex1.Data, hex2.Data };
 

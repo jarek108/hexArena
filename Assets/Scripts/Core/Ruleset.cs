@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
+using HexGame.Units;
 
 namespace HexGame
 {
@@ -35,6 +36,9 @@ namespace HexGame
 
     public abstract class Ruleset : ScriptableObject 
     {
+        [Header("Ruleset Core")]
+        public UnitSchema requiredSchema;
+
         [HideInInspector] public HexData currentSearchTarget;
         [HideInInspector] public List<HexData> currentSearchTargets = new List<HexData>();
 

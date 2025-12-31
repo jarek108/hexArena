@@ -26,6 +26,9 @@ namespace HexGame.Tests
             
             // Setup Ruleset
             ruleset = ScriptableObject.CreateInstance<BattleBrothersRuleset>();
+            ruleset.movement = ScriptableObject.CreateInstance<MovementModule>();
+            ruleset.combat = ScriptableObject.CreateInstance<CombatModule>();
+            ruleset.tactical = ScriptableObject.CreateInstance<TacticalModule>();
             gm.ruleset = ruleset;
 
             // Setup GridVisManager (needed for GetNeighbors etc if accessed via Instance)
@@ -63,7 +66,10 @@ namespace HexGame.Tests
             {
                 { "MAT", 50 },
                 { "RNG", 1 },
-                { "HP", 100 }
+                { "HP", 100 },
+                { "CAP", 100 },
+                { "MFAT", 100 },
+                { "CFAT", 0 }
             };
             return unit;
         }

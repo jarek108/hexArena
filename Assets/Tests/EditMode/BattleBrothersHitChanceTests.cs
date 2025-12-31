@@ -47,6 +47,9 @@ namespace HexGame.Tests
             manager.Grid = grid;
 
             ruleset = ScriptableObject.CreateInstance<BattleBrothersRuleset>();
+            ruleset.movement = ScriptableObject.CreateInstance<MovementModule>();
+            ruleset.combat = ScriptableObject.CreateInstance<CombatModule>();
+            ruleset.tactical = ScriptableObject.CreateInstance<TacticalModule>();
             gameMaster.ruleset = ruleset;
             
             unitSet = ScriptableObject.CreateInstance<UnitSet>();
@@ -127,7 +130,7 @@ namespace HexGame.Tests
         [Test]
         public void HitChance_AttackerHighGround_AddsBonus()
         {
-            ruleset.meleeHighGroundBonus = 15f;
+            ruleset.combat.meleeHighGroundBonus = 15f;
             Hex hAttacker = SetupHex(0, 0, 1.0f, null);
             Hex hTarget = SetupHex(1, 0, 0.0f, null);
             attacker.SetHex(hAttacker);
@@ -138,7 +141,7 @@ namespace HexGame.Tests
         [Test]
         public void HitChance_AttackerLowGround_AppliesPenalty()
         {
-            ruleset.meleeLowGroundPenalty = 20f;
+            ruleset.combat.meleeLowGroundPenalty = 20f;
             Hex hAttacker = SetupHex(0, 0, 0.0f, null);
             Hex hTarget = SetupHex(1, 0, 1.0f, null);
             attacker.SetHex(hAttacker);
@@ -149,7 +152,7 @@ namespace HexGame.Tests
         [Test]
         public void HitChance_SurroundBonus_AddsFivePerAlly()
         {
-            ruleset.surroundBonus = 7f;
+            ruleset.combat.surroundBonus = 7f;
             Hex hAttacker = SetupHex(0, 0, 0, null);
             Hex hTarget = SetupHex(1, 0, 0, null);
             Hex hAlly = SetupHex(2, -1, 0, null);
@@ -164,7 +167,7 @@ namespace HexGame.Tests
         {
             attacker = CreateUnit("Polearm", 1, 60, 0);
             attacker.Stats["RNG"] = 2;
-            ruleset.longWeaponProximityPenalty = 15f;
+            ruleset.combat.longWeaponProximityPenalty = 15f;
             SetupHex(0, 0, 0, attacker);
             SetupHex(1, 0, 0, target);
             Assert.AreEqual(0.35f, GetTotalHitChance(attacker, target), 0.001f);
@@ -220,8 +223,8 @@ namespace HexGame.Tests
             Hex hAttacker = SetupHex(0, 0, 0, archer);
             Hex hBlocker = SetupHex(2, 0, 0, blocker);
             Hex hTarget = SetupHex(3, 0, 0, target);
-            ruleset.coverMissChance = 0.75f;
-            ruleset.rangedDistancePenalty = 2f;
+            ruleset.combat.coverMissChance = 0.75f;
+            ruleset.combat.rangedDistancePenalty = 2f;
             Assert.AreEqual(0.135f, GetTotalHitChance(archer, target), 0.001f);
             Object.DestroyImmediate(archer.gameObject);
             Object.DestroyImmediate(blocker.gameObject);

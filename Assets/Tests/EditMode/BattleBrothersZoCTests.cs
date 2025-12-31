@@ -42,8 +42,11 @@ namespace HexGame.Tests
             gameMaster = gameMasterGO.AddComponent<GameMaster>();
             
             ruleset = ScriptableObject.CreateInstance<BattleBrothersRuleset>();
-            ruleset.plainsCost = 2.0f;
-            ruleset.zocPenalty = 50.0f;
+            ruleset.movement = ScriptableObject.CreateInstance<MovementModule>();
+            ruleset.combat = ScriptableObject.CreateInstance<CombatModule>();
+            ruleset.tactical = ScriptableObject.CreateInstance<TacticalModule>();
+            ruleset.movement.plainsCost = 2.0f;
+            ruleset.movement.zocPenalty = 50.0f;
             gameMaster.ruleset = ruleset;
 
             grid = new Grid(10, 10);
@@ -168,7 +171,7 @@ namespace HexGame.Tests
             hexEnd.Data.Unit = targetUnit;
 
             ruleset.OnStartPathfinding(hexEnd.Data, unit);
-            ruleset.maxElevationDelta = 1.0f;
+            ruleset.movement.maxElevationDelta = 1.0f;
             hexStart.Data.Elevation = 0;
             hexEnd.Data.Elevation = 2.0f; // Too high for melee
 
@@ -200,7 +203,7 @@ namespace HexGame.Tests
             hexEnd.Data.Unit = targetUnit;
 
             ruleset.OnStartPathfinding(hexEnd.Data, unit);
-            ruleset.maxElevationDelta = 1.0f;
+            ruleset.movement.maxElevationDelta = 1.0f;
             hexStart.Data.Elevation = 0;
             hexEnd.Data.Elevation = 2.0f; 
 

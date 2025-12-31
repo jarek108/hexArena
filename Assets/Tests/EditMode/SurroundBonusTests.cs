@@ -26,10 +26,13 @@ namespace HexGame.Tests
             
             // Setup Ruleset
             ruleset = ScriptableObject.CreateInstance<BattleBrothersRuleset>();
-            ruleset.surroundBonus = 5f;
-            ruleset.meleeHighGroundBonus = 0f;
-            ruleset.meleeLowGroundPenalty = 0f;
-            ruleset.longWeaponProximityPenalty = 0f;
+            ruleset.movement = ScriptableObject.CreateInstance<MovementModule>();
+            ruleset.combat = ScriptableObject.CreateInstance<CombatModule>();
+            ruleset.tactical = ScriptableObject.CreateInstance<TacticalModule>();
+            ruleset.combat.surroundBonus = 5f;
+            ruleset.combat.meleeHighGroundBonus = 0f;
+            ruleset.combat.meleeLowGroundPenalty = 0f;
+            ruleset.combat.longWeaponProximityPenalty = 0f;
             gm.ruleset = ruleset;
 
             // Setup GridVisualizationManager

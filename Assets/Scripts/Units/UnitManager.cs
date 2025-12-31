@@ -21,6 +21,15 @@ namespace HexGame
             get
             {
                 if (_activeSet == null) LoadActiveSet();
+                
+                // Override schema from Ruleset if available
+                var ruleset = GameMaster.Instance?.ruleset;
+                if (_activeSet != null && ruleset != null && ruleset.requiredSchema != null)
+                {
+                    _activeSet.schema = ruleset.requiredSchema;
+                    _activeSet.schemaId = ruleset.requiredSchema.id;
+                }
+                
                 return _activeSet;
             }
             set => _activeSet = value;
