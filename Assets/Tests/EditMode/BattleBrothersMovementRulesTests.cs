@@ -134,7 +134,7 @@ namespace HexGame.Tests
             Assert.AreEqual(float.PositiveInfinity, cost, "Pathfinding destination cannot be occupied hex.");
 
             // VerifyMove should also fail
-            var result = ruleset.VerifyMove(unit, hex0, hex1);
+            var result = ruleset.TryMoveStep(unit, hex0, hex1);
             Assert.IsFalse(result.isValid, "VerifyMove should reject stopping on occupied hex.");
 
             Object.DestroyImmediate(enemyGO);

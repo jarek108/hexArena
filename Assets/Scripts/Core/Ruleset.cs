@@ -58,9 +58,11 @@ namespace HexGame
         public abstract float GetPathfindingMoveCost(Unit unit, HexData fromHex, HexData toHex);
 
         /// <summary>
-        /// Validates if a unit can actually perform a move based on its current state (AP, Fatigue, etc.)
+        /// Attempts to move a unit from one hex to another. 
+        /// Validates preconditions (AP, Occupation) and executes interruption logic (ZoC attacks, Traps).
+        /// Returns Success if the move proceeds, or Failure if blocked/interrupted.
         /// </summary>
-        public abstract MoveVerification VerifyMove(Unit unit, HexData fromHex, HexData toHex);
+        public abstract MoveVerification TryMoveStep(Unit unit, HexData fromHex, HexData toHex);
 
         /// <summary>
         /// Executes the side effects of a move (deducting resources, updating grid footprints).

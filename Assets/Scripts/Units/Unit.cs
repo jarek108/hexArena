@@ -132,7 +132,7 @@ namespace HexGame
                 // 1. Logic Check (Can we still make this step?)
                 if (ruleset != null)
                 {
-                    var verification = ruleset.VerifyMove(this, previousData, targetData);
+                    var verification = ruleset.TryMoveStep(this, previousData, targetData);
                     if (!verification.isValid)
                     {
                         Debug.Log($"[Unit] Move stopped: {verification.reason}");

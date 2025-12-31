@@ -70,6 +70,10 @@ namespace HexGame.Tests
 
             unitGO = new GameObject("Unit");
             unit = unitGO.AddComponent<Unit>();
+            unit.Stats["HP"] = 100;
+            unit.Stats["CAP"] = 100;
+            unit.Stats["MFAT"] = 100;
+            unit.Stats["CFAT"] = 0;
             
             var type = new UnitType { Name = "TestUnit" };
             type.Stats = new List<UnitStatValue> { new UnitStatValue { id = "AP", value = 100 } };
@@ -116,7 +120,7 @@ namespace HexGame.Tests
             unit.Stats["CAP"] = 9; // Standard AP, less than 52
 
             // Act
-            var result = ruleset.VerifyMove(unit, hexStart.Data, hexEnd.Data);
+            var result = ruleset.TryMoveStep(unit, hexStart.Data, hexEnd.Data);
 
             // Assert
             Assert.IsFalse(result.isValid, "Move should be invalid due to high ZoC cost vs low AP.");
@@ -260,6 +264,64 @@ namespace HexGame.Tests
 
             Object.DestroyImmediate(hexTargetGO);
         }
+
+
+        [Test]
+        public void TryMoveStep_LeavingEnemyZoC_TriggerHit_Interrupted()
+        {
+            // Arrange
+            // 1. Setup Enemy Unit
+            var enemyGO = new GameObject("Enemy");
+            var enemy = enemyGO.AddComponent<Unit>();
+            // Initialize with high MAT for guaranteed hit
+            var type = new UnitType { Name = "EnemyUnit" };
+            type.Stats = new List<UnitStatValue> { 
+                new UnitStatValue { id = "MAT", value = 100 },
+                new UnitStatValue { id = "DMIN", value = 10 },
+                new UnitStatValue { id = "DMAX", value = 10 } 
+            };
+            unitSet.units.Add(type);
+            enemy.Initialize(unitSet.units.Count - 1, 1); // Team 1
+            enemy.Stats["MAT"] = 100;
+            enemy.Stats["DMIN"] = 10;
+            enemy.Stats["DMAX"] = 10;
+            
+            unit.SetHex(hexStart);
+
+            // 2. Place Enemy on a neighbor hex
+            // hexEnd is neighbor of hexStart (1,-1)
+            enemy.SetHex(hexEnd); 
+            
+            // 3. Ensure hexStart has Enemy ZoC state
+            hexStart.Data.AddState($"ZoC1_{enemy.Id}");
+            
+            // 4. Create destination hex (different from enemy hex)
+            var hexDestGO = new GameObject("HexDest");
+            var hexDest = hexDestGO.AddComponent<Hex>();
+            HexData destData = new HexData(0, 1);
+            destData.TerrainType = TerrainType.Plains;
+            hexDest.AssignData(destData);
+            grid.AddHex(destData);
+
+            int startHP = unit.GetStat("HP");
+            unit.Stats["CAP"] = 100;
+            unit.Stats["MFAT"] = 100;
+            unit.Stats["CFAT"] = 0;
+            ruleset.ignoreAPs = true;
+            ruleset.ignoreFatigue = true;
+
+            // Act
+            var result = ruleset.TryMoveStep(unit, hexStart.Data, destData);
+
+            // Assert
+            Assert.IsFalse(result.isValid, "Movement should be interrupted by ZoC hit.");
+            Assert.IsTrue(result.reason.Contains("Attack of Opportunity"), "Reason should mention AoO.");
+            Assert.Less(unit.GetStat("HP"), startHP, "Unit should have taken damage from the AoO.");
+
+            Object.DestroyImmediate(enemyGO);
+            Object.DestroyImmediate(hexDestGO);
+        }
+
 
 
     }

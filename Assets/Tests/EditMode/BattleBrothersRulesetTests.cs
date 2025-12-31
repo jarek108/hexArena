@@ -68,6 +68,10 @@ namespace HexGame.Tests
 
             unitGO = new GameObject("Unit");
             unit = unitGO.AddComponent<Unit>();
+            unit.Stats["HP"] = 100;
+            unit.Stats["CAP"] = 100;
+            unit.Stats["MFAT"] = 100;
+            unit.Stats["CFAT"] = 0;
         }
 
         [TearDown]
@@ -194,7 +198,7 @@ namespace HexGame.Tests
             unit.Stats["CAP"] = 0; // Unit has no AP
 
             // Act
-            var result = ruleset.VerifyMove(unit, hex1.Data, hex2.Data);
+            var result = ruleset.TryMoveStep(unit, hex1.Data, hex2.Data);
 
             // Assert
             Assert.IsTrue(result.isValid, "Move should be valid because ignoreAPs is true.");
@@ -226,7 +230,7 @@ namespace HexGame.Tests
             unit.Stats["FAT"] = 100; // Max fatigue reached
 
             // Act
-            var result = ruleset.VerifyMove(unit, hex1.Data, hex2.Data);
+            var result = ruleset.TryMoveStep(unit, hex1.Data, hex2.Data);
 
             // Assert
             Assert.IsTrue(result.isValid, "Move should be valid because ignoreFatigue is true.");

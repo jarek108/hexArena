@@ -412,7 +412,27 @@ namespace HexGame
             return cost;
         }
 
-        public override MoveVerification VerifyMove(Unit unit, HexData fromHex, HexData toHex)
+        private float GetHitChance(Unit attacker, Unit target)
+        {
+            if (attacker == null || target == null || attacker.CurrentHex == null || target.CurrentHex == null)
+            {
+                Debug.Log($"[Ruleset] GetHitChance early return: Attacker={attacker!=null}, Target={target!=null}, AttackerHex={attacker?.CurrentHex!=null}, TargetHex={target?.CurrentHex!=null}");
+                return 0f;
+            }
+            int dist = HexMath.Distance(attacker.CurrentHex.Data, target.CurrentHex.Data);
+            return CalculateMeleeHitChance(attacker, target, attacker.CurrentHex.Data, target.CurrentHex.Data, dist);
+        }
+
+        private float GetDamage(Unit attacker, Unit target, bool isHeadshot)
+        {
+            // Simple damage roll
+            int dmin = attacker.GetStat("DMIN", 30);
+            int dmax = attacker.GetStat("DMAX", 40);
+            return Random.Range(dmin, dmax + 1);
+        }
+
+
+        public override MoveVerification TryMoveStep(Unit unit, HexData fromHex, HexData toHex)
         {
             if (unit == null || fromHex == null || toHex == null) return MoveVerification.Failure("Invalid unit or hex.");
 
@@ -420,7 +440,6 @@ namespace HexGame
             if (!ignoreMoveOrder)
             {
                 // Placeholder for future turn management logic
-                // Currently, we don't have a turn manager, so we allow all moves
             }
 
             // 1. Elevation check
@@ -451,8 +470,61 @@ namespace HexGame
             if (!ignoreFatigue)
             {
                 int cfat = unit.GetStat("CFAT");
-                int mfat = unit.GetStat("FAT", 100);
+                int mfat = unit.GetStat("MFAT"); // Restored MFAT usage
                 if (cfat + cost > mfat) return MoveVerification.Failure("Too much fatigue.");
+            }
+
+            // 4. Attack of Opportunity (Always Active)
+            // Check if we are leaving a hex with Enemy ZoC
+            bool inEnemyZoC = false;
+            foreach (var state in fromHex.States)
+            {
+                if (state.StartsWith("ZoC"))
+                {
+                    // Check team
+                    if (int.TryParse(state.Substring(3, 1), out int teamId))
+                    {
+                        if (teamId != unit.teamId)
+                        {
+                            inEnemyZoC = true;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (inEnemyZoC)
+            {
+                var grid = GridVisualizationManager.Instance?.Grid;
+                if (grid != null)
+                {
+                    foreach (var neighbor in grid.GetNeighbors(fromHex))
+                    {
+                        var enemy = neighbor.Unit;
+                        if (enemy != null && enemy.teamId != unit.teamId && enemy.GetStat("MAT") > 0)
+                        {
+                            // Attacker found. Execute Attack.
+                            Debug.Log($"[Ruleset] Attack of Opportunity by {enemy.UnitName} against {unit.UnitName}!");
+                            
+                            float hitChance = GetHitChance(enemy, unit);
+                            float roll = Random.value;
+                            
+                            if (roll <= hitChance)
+                            {
+                                Debug.Log($"[Ruleset] AoO HIT! (Roll: {roll:F2} <= {hitChance:F2})");
+                                float damage = GetDamage(enemy, unit, false); // Basic attack
+                                OnHit(enemy, unit, damage);
+                                
+                                // Interrupt movement
+                                return MoveVerification.Failure("Stopped by Attack of Opportunity!");
+                            }
+                            else
+                            {
+                                Debug.Log($"[Ruleset] AoO MISSED. (Roll: {roll:F2} > {hitChance:F2})");
+                            }
+                        }
+                    }
+                }
             }
 
             return MoveVerification.Success();
