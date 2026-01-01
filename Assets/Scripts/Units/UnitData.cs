@@ -224,7 +224,14 @@ namespace HexGame.Units
         private UnitType ParseUnitJson(string json)
         {
             UnitType unit = new UnitType();
-            unit.id = ParseStringField(json, "id") ?? UnitType.GenerateId();
+            unit.id = ParseStringField(json, "id");
+            
+            if (string.IsNullOrEmpty(unit.id))
+            {
+                unit.id = UnitType.GenerateId();
+                Debug.LogWarning($"[UnitData] Unit '{ParseStringField(json, "Name") ?? "Unknown"}' is missing an ID! Generated temporary ID: {unit.id}. Save the UnitSet to persist this ID.");
+            }
+
             unit.Name = ParseStringField(json, "Name") ?? unit.Name;
 
             int statsStart = json.IndexOf("\"Stats\":");
