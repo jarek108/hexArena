@@ -82,7 +82,7 @@ public class CombatTests
     public void OnHit_KillsUnit_WhenHPDropsToZero()
     {
         // Arrange
-        target.Stats["HP"] = 10;
+        target.Stats["HP"] = 1000000;
         attacker.Stats["ABY"] = 100;
 
         // Act

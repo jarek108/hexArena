@@ -1,0 +1,14 @@
+{
+    "current_role": "ARCHITECT",
+    "status": "PLANNING",
+    "cycle_count": 0,
+    "last_handoff": {
+        "timestamp": "",
+        "files_changed": [],
+        "message": "System Ready"
+    },
+    "tester_feedback": {
+        "verdict": "",
+        "blockers": []
+    }
+}

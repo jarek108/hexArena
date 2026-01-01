@@ -11,24 +11,21 @@ namespace HexGame.Units
         public string setName = "NewSet";
         public string schemaId; // Referred to by ID
 
-        private UnitSchema _schema;
-        public UnitSchema schema
+        private List<UnitStatDefinition> _schemaDefinitions;
+        public List<UnitStatDefinition> schemaDefinitions
         {
             get
             {
-                if (_schema == null && !string.IsNullOrEmpty(schemaId))
+                if (_schemaDefinitions == null && !string.IsNullOrEmpty(schemaId))
                 {
-                    _schema = ResolveSchemaById(schemaId);
+                    _schemaDefinitions = ResolveSchemaDefinitionsById(schemaId);
                 }
-                return _schema;
+                return _schemaDefinitions;
             }
-            set
-            {
-                _schema = value;
-            }
+            set => _schemaDefinitions = value;
         }
 
-        private UnitSchema ResolveSchemaById(string id)
+        private List<UnitStatDefinition> ResolveSchemaDefinitionsById(string id)
         {
             string folder = "Assets/Data/Schemas";
             if (!Directory.Exists(folder)) return null;
@@ -37,13 +34,71 @@ namespace HexGame.Units
             foreach (var file in files)
             {
                 string json = File.ReadAllText(file);
-                // Quick check for ID without full parse if possible, or just parse
-                // Since these are small, full parse is safe
-                var tempSchema = ScriptableObject.CreateInstance<UnitSchema>();
-                tempSchema.FromJson(json);
-                if (tempSchema.id == id) return tempSchema;
+                // Check if this JSON has the matching ID
+                int idIdx = json.IndexOf("\"id\":");
+                if (idIdx != -1)
+                {
+                    int quoteStart = json.IndexOf("\"", idIdx + 5);
+                    if (quoteStart != -1)
+                    {
+                        int start = quoteStart + 1;
+                        int end = json.IndexOf("\"", start);
+                        if (end != -1)
+                        {
+                            string foundId = json.Substring(start, end - start);
+                            if (foundId == id) return ParseSchemaDefinitions(json);
+                        }
+                    }
+                }
             }
             return null;
+        }
+
+        private List<UnitStatDefinition> ParseSchemaDefinitions(string json)
+        {
+            List<UnitStatDefinition> definitions = new List<UnitStatDefinition>();
+            int defsStart = json.IndexOf("\"definitions\":");
+            if (defsStart == -1) return definitions;
+
+            int arrayStart = json.IndexOf("[", defsStart);
+            if (arrayStart == -1) return definitions;
+
+            int pos = arrayStart + 1;
+            while (true)
+            {
+                int objStart = json.IndexOf("{", pos);
+                if (objStart == -1) break;
+                int objEnd = FindMatchingBrace(json, objStart);
+                if (objEnd == -1) break;
+
+                string objJson = json.Substring(objStart, objEnd - objStart + 1);
+                UnitStatDefinition def = new UnitStatDefinition();
+                
+                // Parse ID
+                int idIdx = objJson.IndexOf("\"id\":");
+                if (idIdx != -1)
+                {
+                    int q1 = objJson.IndexOf("\"", idIdx + 4);
+                    int q2 = objJson.IndexOf("\"", q1 + 1);
+                    if (q1 != -1 && q2 != -1) def.id = objJson.Substring(q1 + 1, q2 - q1 - 1);
+                }
+                // Parse Name
+                int nameIdx = objJson.IndexOf("\"name\":");
+                if (nameIdx != -1)
+                {
+                    int q1 = objJson.IndexOf("\"", nameIdx + 6);
+                    int q2 = objJson.IndexOf("\"", q1 + 1);
+                    if (q1 != -1 && q2 != -1) def.name = objJson.Substring(q1 + 1, q2 - q1 - 1);
+                }
+
+                definitions.Add(def);
+                pos = objEnd + 1;
+
+                int arrayEnd = json.IndexOf("]", pos);
+                int nextObj = json.IndexOf("{", pos);
+                if (nextObj == -1 || (arrayEnd != -1 && arrayEnd < nextObj)) break;
+            }
+            return definitions;
         }
 
         public List<UnitType> units = new List<UnitType>();

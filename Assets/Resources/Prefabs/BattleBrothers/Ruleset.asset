@@ -10,34 +10,19 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 40706ac3d6a96c44e88aa272603d2500, type: 3}
-  m_Name: BattleBrothersRuleset
+  m_Name: Ruleset
   m_EditorClassIdentifier: HexGame::HexGame.BattleBrothersRuleset
+  schema: BattleBrothers
   currentSearchTarget:
     Q: 0
     R: 0
     S: 0
-    Unit: {fileID: 0}
+  currentSearchTargets: []
+  movement: {fileID: 11400000, guid: 6f18682b192704d47ba13375748bc148, type: 2}
+  combat: {fileID: 11400000, guid: 86d03f73bfbddd142a2098231d1d8968, type: 2}
+  tactical: {fileID: 11400000, guid: a23ff9eee5ee08941ac93ff513637eaa, type: 2}
   ignoreAPs: 1
   ignoreFatigue: 1
   ignoreMoveOrder: 1
-  maxElevationDelta: 1
-  uphillPenalty: 1
-  zocPenalty: 50
   transitionSpeed: 5
   transitionPause: 0.1
-  plainsCost: 2
-  waterCost: 100000000
-  mountainCost: 5
-  forestCost: 3
-  desertCost: 4
-  meleeHighGroundBonus: 10
-  meleeLowGroundPenalty: 10
-  rangedHighGroundBonus: 10
-  rangedLowGroundPenalty: 10
-  surroundBonus: 5
-  longWeaponProximityPenalty: 15
-  rangedDistancePenalty: 2
-  coverMissChance: 0.75
-  scatterHitPenalty: 15
-  scatterDamagePenalty: 0.25
-  currentAttackType: 0

@@ -36,8 +36,7 @@ namespace HexGame
 
     public abstract class Ruleset : ScriptableObject 
     {
-        [Header("Ruleset Core")]
-        public UnitSchema requiredSchema;
+        public string schema;
 
         [HideInInspector] public HexData currentSearchTarget;
         [HideInInspector] public List<HexData> currentSearchTargets = new List<HexData>();

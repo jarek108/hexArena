@@ -4,20 +4,17 @@ using HexGame.Units;
 
 namespace HexGame
 {
-    [CreateAssetMenu(fileName = "BattleBrothersRuleset", menuName = "HexGame/Ruleset/BattleBrothers")]
+    [CreateAssetMenu(fileName = "BattleBrothersRuleset", menuName = "HexGame/BattleBrothers")]
     public class BattleBrothersRuleset : Ruleset
     {
-        [Header("Modules")]
         public MovementModule movement;
         public CombatModule combat;
         public TacticalModule tactical;
 
-        [Header("Global Overrides")]
         public bool ignoreAPs = false;
         public bool ignoreFatigue = false;
         public bool ignoreMoveOrder = false;
 
-        [Header("Execution Settings")]
         public float transitionSpeed = 5.0f;
         public float transitionPause = 0.1f;
 

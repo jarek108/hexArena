@@ -10,9 +10,9 @@ namespace HexGame.Units.Editor
     public static class UnitEditorUI
     {
         private static ReorderableList schemaList;
-        private static UnitSchema lastSchema;
+        private static UnitSchemaData lastSchema;
 
-        public static void DrawSchemaEditor(UnitSchema schema, ref Vector2 scrollPos)
+        public static void DrawSchemaEditor(UnitSchemaData schema, ref Vector2 scrollPos)
         {
             if (schema == null) return;
 
@@ -45,12 +45,8 @@ namespace HexGame.Units.Editor
                     if (GUI.Button(new Rect(rect.x + width - 20, rect.y, 20, EditorGUIUtility.singleLineHeight), "x", EditorStyles.miniButton))
                     {
                         schema.definitions.RemoveAt(index);
-                        EditorUtility.SetDirty(schema);
+                        // Data is not an asset, no SetDirty needed for SO, but window will handle saving
                     }
-                };
-
-                schemaList.onChangedCallback = (ReorderableList list) => {
-                    EditorUtility.SetDirty(schema);
                 };
             }
 
@@ -62,14 +58,14 @@ namespace HexGame.Units.Editor
             if (set == null) return;
 
             // Missing Schema Handling
-            if (set.schema == null)
+            if (string.IsNullOrEmpty(set.schemaId))
             {
-                EditorGUILayout.HelpBox("Unit Set has no Schema assigned.", MessageType.Error);
+                EditorGUILayout.HelpBox("Unit Set has no Schema ID assigned.", MessageType.Error);
                 if (GUILayout.Button("Create Schema from Data"))
                 {
                     CreateSchemaFromSet(set);
                 }
-                return; // Stop drawing editor
+                // Allow editing even without schema, but warn
             }
 
             GUILayout.Space(10);
@@ -80,12 +76,14 @@ namespace HexGame.Units.Editor
             }
             EditorGUILayout.LabelField($"Units ({schemaName})", EditorStyles.boldLabel);
 
-            var schemaDefs = set.schema != null ? set.schema.definitions : null;
+            var schemaDefs = set.schemaDefinitions;
 
             if (schemaDefs == null)
             {
-                EditorGUILayout.HelpBox("Assign a valid Schema JSON path to edit units.", MessageType.Warning);
-                return;
+                EditorGUILayout.HelpBox($"Schema '{set.schemaId}' not found or invalid.", MessageType.Warning);
+                // Return or continue with empty defs?
+                // Let's continue so we can at least see units
+                schemaDefs = new List<UnitStatDefinition>();
             }
 
             // Check for extras and offer to add them
@@ -105,14 +103,7 @@ namespace HexGame.Units.Editor
             if (extraIds.Count > 0)
             {
                 GUI.backgroundColor = new Color(1f, 0.8f, 0.4f); // Light Orange
-                if (GUILayout.Button($"Add {extraIds.Count} Missing Columns to Schema"))
-                {
-                    foreach(var id in extraIds) 
-                    {
-                         set.schema.definitions.Add(new UnitStatDefinition { id = id, name = id });
-                    }
-                    EditorUtility.SetDirty(set.schema);
-                }
+                EditorGUILayout.HelpBox($"Found {extraIds.Count} stats not in schema. Add to schema manually via Unit Data Editor.", MessageType.Warning);
                 GUI.backgroundColor = Color.white;
             }
 
@@ -226,7 +217,6 @@ namespace HexGame.Units.Editor
              if (!Directory.Exists(folder)) Directory.CreateDirectory(folder);
 
              // 1. Analyze Name for Pattern [SchemaName]_[SetName]
-             // Use set.name (asset filename) as the source of truth, as set.setName might be out of sync
              string nameToAnalyze = set.name;
              string schemaNameCandidate = null;
              
@@ -250,10 +240,10 @@ namespace HexGame.Units.Editor
                          "Yes, Assign", "No, Create New"))
                      {
                          string json = File.ReadAllText(existingPath);
-                         var temp = ScriptableObject.CreateInstance<UnitSchema>();
+                         var temp = new UnitSchemaData();
                          temp.FromJson(json);
                          set.schemaId = temp.id;
-                         set.schema = null; // Force reload
+                         set.schemaDefinitions = null; // Force reload
                          EditorUtility.SetDirty(set);
                          return;
                      }
@@ -283,7 +273,7 @@ namespace HexGame.Units.Editor
              string path = Path.Combine(folder, baseName + ".json");
              path = AssetDatabase.GenerateUniqueAssetPath(path);
              
-             UnitSchema newSchema = ScriptableObject.CreateInstance<UnitSchema>();
+             UnitSchemaData newSchema = new UnitSchemaData();
              newSchema.id = Path.GetFileNameWithoutExtension(path);
              newSchema.definitions = new List<UnitStatDefinition>();
              foreach(var id in orderedIds)
@@ -296,7 +286,7 @@ namespace HexGame.Units.Editor
              
              // 4. Assign
              set.schemaId = newSchema.id;
-             set.schema = null; // Force reload
+             set.schemaDefinitions = null; // Force reload
              EditorUtility.SetDirty(set);
              
              Debug.Log("Created Schema JSON: " + path);

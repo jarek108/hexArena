@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace HexGame
 {
-    [CreateAssetMenu(fileName = "MovementModule", menuName = "HexGame/Ruleset/Modules/Movement")]
+    [CreateAssetMenu(fileName = "MovementModule", menuName = "HexGame/BattleBrothers/Modules/Movement")]
     public class MovementModule : ScriptableObject
     {
         [Header("Constraints")]

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace HexGame
 {
-    [CreateAssetMenu(fileName = "TacticalModule", menuName = "HexGame/Ruleset/Modules/Tactical")]
+    [CreateAssetMenu(fileName = "TacticalModule", menuName = "HexGame/BattleBrothers/Modules/Tactical")]
     public class TacticalModule : ScriptableObject
     {
         public void ProjectUnitInfluence(Unit unit, HexData targetHex, float maxElevationDelta)

@@ -4,6 +4,13 @@ using System.Collections.Generic;
 namespace HexGame.Units
 {
     [Serializable]
+    public class UnitStatDefinition
+    {
+        public string id;
+        public string name;
+    }
+
+    [Serializable]
     public struct UnitStatValue
     {
         public string id;

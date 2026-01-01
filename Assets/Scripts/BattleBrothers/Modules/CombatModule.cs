@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace HexGame
 {
-    [CreateAssetMenu(fileName = "CombatModule", menuName = "HexGame/Ruleset/Modules/Combat")]
+    [CreateAssetMenu(fileName = "CombatModule", menuName = "HexGame/BattleBrothers/Modules/Combat")]
     public class CombatModule : ScriptableObject
     {
         [Header("Melee Modifiers")]

@@ -18,7 +18,7 @@ namespace HexGame.Units.Editor
         private Vector2 editorScroll;
 
         private string selectedFilePath;
-        private object editingObject; // UnitSchema or UnitSet (transient)
+        private object editingObject; // UnitSchemaData or UnitSet (transient)
 
         private const string PREF_LAST_FILE = "HexArena_LastUnitDataFile";
         private const string PREF_LAST_MODE = "HexArena_LastUnitDataMode";
@@ -180,7 +180,7 @@ namespace HexGame.Units.Editor
 
             if (currentMode == Mode.Schemas)
             {
-                UnitSchema schema = CreateInstance<UnitSchema>();
+                UnitSchemaData schema = new UnitSchemaData();
                 schema.FromJson(json);
                 editingObject = schema;
             }
@@ -202,7 +202,7 @@ namespace HexGame.Units.Editor
             path = AssetDatabase.GenerateUniqueAssetPath(path);
 
             string content = "{}";
-            if (currentMode == Mode.Schemas) content = new UnitSchema().ToJson();
+            if (currentMode == Mode.Schemas) content = new UnitSchemaData().ToJson();
             else content = new UnitSet().ToJson();
 
             File.WriteAllText(path, content);
@@ -230,7 +230,7 @@ namespace HexGame.Units.Editor
 
             if (currentMode == Mode.Schemas)
             {
-                UnitSchema schema = (UnitSchema)editingObject;
+                UnitSchemaData schema = (UnitSchemaData)editingObject;
                 schema.id = EditorGUILayout.TextField("Schema ID", schema.id);
 
                 UnitEditorUI.DrawSchemaEditor(schema, ref editorScroll);
@@ -244,7 +244,7 @@ namespace HexGame.Units.Editor
                 if (newSchemaId != set.schemaId)
                 {
                     set.schemaId = newSchemaId;
-                    set.schema = null; // Force reload by ID
+                    set.schemaDefinitions = null; // Force reload by ID
                 }
 
                 UnitEditorUI.DrawUnitSetEditor(set, ref editorScroll);
@@ -263,7 +263,7 @@ namespace HexGame.Units.Editor
             if (editingObject == null || string.IsNullOrEmpty(selectedFilePath)) return;
 
             string json = "";
-            if (currentMode == Mode.Schemas) json = ((UnitSchema)editingObject).ToJson();
+            if (currentMode == Mode.Schemas) json = ((UnitSchemaData)editingObject).ToJson();
             else json = ((UnitSet)editingObject).ToJson();
 
             File.WriteAllText(selectedFilePath, json);

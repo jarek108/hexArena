@@ -9,7 +9,7 @@ namespace HexGame.Units.Editor
     public class UnitSetEditor : UnityEditor.Editor
     {
         private Vector2 scrollPos;
-        private UnitSchema pendingSchemaSelection;
+        // removed pendingSchemaSelection as UnitSchema is gone
 
         public override void OnInspectorGUI()
         {
@@ -54,7 +54,7 @@ namespace HexGame.Units.Editor
             if (newSchemaId != set.schemaId)
             {
                 set.schemaId = newSchemaId;
-                set.schema = null; // Force reload by ID
+                set.schemaDefinitions = null; // Force reload by ID
             }
 
             scrollPos = EditorGUILayout.BeginScrollView(scrollPos);

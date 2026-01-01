@@ -24,10 +24,10 @@ namespace HexGame
                 
                 // Override schema from Ruleset if available
                 var ruleset = GameMaster.Instance?.ruleset;
-                if (_activeSet != null && ruleset != null && ruleset.requiredSchema != null)
+                if (_activeSet != null && ruleset != null && !string.IsNullOrEmpty(ruleset.schema))
                 {
-                    _activeSet.schema = ruleset.requiredSchema;
-                    _activeSet.schemaId = ruleset.requiredSchema.id;
+                    _activeSet.schemaId = ruleset.schema;
+                    _activeSet.schemaDefinitions = null; // Force reload
                 }
                 
                 return _activeSet;
@@ -58,7 +58,7 @@ namespace HexGame
             
             // Note: If the JSON refers to a schema asset that was deleted, it will be null.
             // We might need to manually link it if we know where it is.
-            if (_activeSet.schema == null)
+            if (string.IsNullOrEmpty(_activeSet.schemaId))
             {
                 // Try to find a schema with the same name in Data/Schemas
                 // This is a bit hacky but helps with the transition

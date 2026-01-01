@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d977842e3b9499f40b760f05c1898779, type: 3}
+  m_Name: Module_Movement
+  m_EditorClassIdentifier: HexGame::HexGame.MovementModule
+  maxElevationDelta: 1
+  uphillPenalty: 1
+  zocPenalty: 50
+  plainsCost: 2
+  waterCost: 100000
+  mountainCost: 5
+  forestCost: 3
+  desertCost: 4
