@@ -53,7 +53,7 @@ namespace HexGame
             }
 
             string json = System.IO.File.ReadAllText(activeUnitSetPath);
-            _activeSet = ScriptableObject.CreateInstance<UnitSet>();
+            _activeSet = new UnitSet();
             _activeSet.FromJson(json);
             
             // Note: If the JSON refers to a schema asset that was deleted, it will be null.
@@ -263,7 +263,7 @@ namespace HexGame
             foreach (var file in files)
             {
                 string json = File.ReadAllText(file);
-                var tempSet = ScriptableObject.CreateInstance<UnitSet>();
+                var tempSet = new UnitSet();
                 tempSet.FromJson(json);
                 if (tempSet.setName == id) 
                 {

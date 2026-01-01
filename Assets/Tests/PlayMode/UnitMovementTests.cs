@@ -42,7 +42,7 @@ namespace HexGame.Tests
             grid = new Grid(10, 10);
             manager.Grid = grid;
 
-            unitSet = ScriptableObject.CreateInstance<UnitSet>();
+            unitSet = new UnitSet();
             unitManager.ActiveUnitSet = unitSet;
             var type = new UnitType { Name = "Test" };
             type.Stats = new List<UnitStatValue> { 
@@ -68,7 +68,6 @@ namespace HexGame.Tests
             Object.DestroyImmediate(unitManagerGO);
             Object.DestroyImmediate(gameMasterGO);
             Object.DestroyImmediate(ruleset);
-            Object.DestroyImmediate(unitSet);
             yield return null;
         }
 

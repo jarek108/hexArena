@@ -37,7 +37,7 @@ public class CombatTests
         target.Stats["MDF"] = 0;
 
         // Setup Names via Set
-        var unitSet = ScriptableObject.CreateInstance<UnitSet>();
+        var unitSet = new UnitSet();
         unitSet.units = new List<UnitType> { 
             new UnitType { Name = "Attacker" },
             new UnitType { Name = "Target" }
@@ -82,7 +82,7 @@ public class CombatTests
     public void OnHit_KillsUnit_WhenHPDropsToZero()
     {
         // Arrange
-        target.Stats["HP"] = 1000000;
+        target.Stats["HP"] = 10;
         attacker.Stats["ABY"] = 100;
 
         // Act

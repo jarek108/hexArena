@@ -68,9 +68,8 @@ namespace HexGame.Tests
             hexEnd.AssignData(data2);
             grid.AddHex(data2);
 
-            unitSet = ScriptableObject.CreateInstance<UnitSet>();
-            unitManager.ActiveUnitSet = unitSet;
-
+                    unitSet = new UnitSet();
+                    unitManager.ActiveUnitSet = unitSet;
             unitGO = new GameObject("Unit");
             unit = unitGO.AddComponent<Unit>();
             unit.Stats["HP"] = 100;
@@ -95,7 +94,6 @@ namespace HexGame.Tests
             Object.DestroyImmediate(hexEndGO);
             Object.DestroyImmediate(unitGO);
             Object.DestroyImmediate(ruleset);
-            Object.DestroyImmediate(unitSet);
         }
 
         [Test]

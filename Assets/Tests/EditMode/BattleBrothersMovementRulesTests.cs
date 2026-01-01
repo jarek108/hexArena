@@ -58,9 +58,8 @@ namespace HexGame.Tests
             grid.AddHex(hex1);
             grid.AddHex(hex2);
 
-            unitSet = ScriptableObject.CreateInstance<UnitSet>();
-            unitManager.ActiveUnitSet = unitSet;
-
+                    unitSet = new UnitSet();
+                    unitManager.ActiveUnitSet = unitSet;
             unitGO = new GameObject("Unit");
             unit = unitGO.AddComponent<Unit>();
             
@@ -80,7 +79,6 @@ namespace HexGame.Tests
             Object.DestroyImmediate(gameMasterGO);
             Object.DestroyImmediate(unitGO);
             Object.DestroyImmediate(ruleset);
-            Object.DestroyImmediate(unitSet);
         }
 
         [Test]

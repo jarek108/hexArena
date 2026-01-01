@@ -180,13 +180,13 @@ namespace HexGame.Units.Editor
 
             if (currentMode == Mode.Schemas)
             {
-                UnitSchemaData schema = new UnitSchemaData();
+                UnitSchema schema = new UnitSchema();
                 schema.FromJson(json);
                 editingObject = schema;
             }
             else
             {
-                UnitSet set = CreateInstance<UnitSet>();
+                UnitSet set = new UnitSet();
                 set.FromJson(json);
                 editingObject = set;
             }
@@ -202,7 +202,7 @@ namespace HexGame.Units.Editor
             path = AssetDatabase.GenerateUniqueAssetPath(path);
 
             string content = "{}";
-            if (currentMode == Mode.Schemas) content = new UnitSchemaData().ToJson();
+            if (currentMode == Mode.Schemas) content = new UnitSchema().ToJson();
             else content = new UnitSet().ToJson();
 
             File.WriteAllText(path, content);
@@ -230,7 +230,7 @@ namespace HexGame.Units.Editor
 
             if (currentMode == Mode.Schemas)
             {
-                UnitSchemaData schema = (UnitSchemaData)editingObject;
+                UnitSchema schema = (UnitSchema)editingObject;
                 schema.id = EditorGUILayout.TextField("Schema ID", schema.id);
 
                 UnitEditorUI.DrawSchemaEditor(schema, ref editorScroll);
@@ -263,7 +263,7 @@ namespace HexGame.Units.Editor
             if (editingObject == null || string.IsNullOrEmpty(selectedFilePath)) return;
 
             string json = "";
-            if (currentMode == Mode.Schemas) json = ((UnitSchemaData)editingObject).ToJson();
+            if (currentMode == Mode.Schemas) json = ((UnitSchema)editingObject).ToJson();
             else json = ((UnitSet)editingObject).ToJson();
 
             File.WriteAllText(selectedFilePath, json);

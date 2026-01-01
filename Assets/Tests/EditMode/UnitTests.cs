@@ -1,6 +1,8 @@
 using NUnit.Framework;
 using UnityEngine;
 using HexGame;
+using System.Collections.Generic;
+using HexGame.Units;
 
 [TestFixture]
 public class UnitPlacementTests
@@ -28,8 +30,10 @@ public class UnitPlacementTests
         hex.AssignData(data);
 
         // Create a dummy UnitSet for initialization
-        var testSet = ScriptableObject.CreateInstance<HexGame.Units.UnitSet>();
-        testSet.units.Add(new HexGame.Units.UnitType { Name = "Test" });
+        var testSet = new UnitSet();
+        testSet.setName = "TestSet";
+        testSet.units = new List<UnitType> { new UnitType { Name = "Unit" } };
+
         unitManager.ActiveUnitSet = testSet;
 
         unitGO = new GameObject("TestUnit");
@@ -41,7 +45,6 @@ public class UnitPlacementTests
     public void TearDown()
     {
         typeof(UnitManager).GetProperty("Instance").SetValue(null, null);
-        if (unitManager != null && unitManager.ActiveUnitSet != null) Object.DestroyImmediate(unitManager.ActiveUnitSet);
         Object.DestroyImmediate(unitManagerGO);
         Object.DestroyImmediate(hexGO);
         Object.DestroyImmediate(unitGO);

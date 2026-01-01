@@ -52,7 +52,7 @@ namespace HexGame.Tests
             ruleset.tactical = ScriptableObject.CreateInstance<TacticalModule>();
             gameMaster.ruleset = ruleset;
             
-            unitSet = ScriptableObject.CreateInstance<UnitSet>();
+            unitSet = new UnitSet();
             unitManager.ActiveUnitSet = unitSet;
             var type = new UnitType { Name = "Unit" };
             unitSet.units = new List<UnitType> { type };
@@ -73,7 +73,6 @@ namespace HexGame.Tests
             Object.DestroyImmediate(unitManagerGO);
             Object.DestroyImmediate(gameMasterGO);
             Object.DestroyImmediate(ruleset);
-            Object.DestroyImmediate(unitSet);
             if (attacker != null) Object.DestroyImmediate(attacker.gameObject);
             if (target != null) Object.DestroyImmediate(target.gameObject);
             if (ally != null) Object.DestroyImmediate(ally.gameObject);

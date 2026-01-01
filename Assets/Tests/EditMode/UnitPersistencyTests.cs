@@ -40,8 +40,8 @@ namespace HexGame.Tests
                     grid.AddHex(new HexData(q, r));
             manager.VisualizeGrid(grid);
 
-            testSet = ScriptableObject.CreateInstance<UnitSet>();
-            testSet.name = "TestSet";
+            testSet = new UnitSet();
+            testSet.setName = "TestSet";
             testSet.units = new List<UnitType> { new UnitType { Name = "Unit0" } };
 
             testVizGO = new GameObject("TestVizPrefab");
@@ -60,7 +60,6 @@ namespace HexGame.Tests
             Object.DestroyImmediate(managerGO);
             if (unitManagerGO != null) Object.DestroyImmediate(unitManagerGO);
             if (testVizGO != null) Object.DestroyImmediate(testVizGO);
-            Object.DestroyImmediate(testSet);
             if (File.Exists(testPath)) File.Delete(testPath);
         }
 
