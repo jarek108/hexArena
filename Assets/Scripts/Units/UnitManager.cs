@@ -82,12 +82,12 @@ namespace HexGame
             if (Instance == this) Instance = null;
         }
 
-        public void SpawnUnit(int index, int teamId, Hex targetHex)
+        public void SpawnUnit(string unitTypeId, int teamId, Hex targetHex)
         {
-            SpawnUnit(ActiveUnitSet, index, teamId, targetHex, unitVisualizationPrefab);
+            SpawnUnit(ActiveUnitSet, unitTypeId, teamId, targetHex, unitVisualizationPrefab);
         }
 
-        public void SpawnUnit(UnitSet set, int index, int teamId, Hex targetHex, UnitVisualization prefab)
+        public void SpawnUnit(UnitSet set, string unitTypeId, int teamId, Hex targetHex, UnitVisualization prefab)
         {
             if (targetHex == null || targetHex.Data == null || set == null || prefab == null) return;
 
@@ -99,13 +99,13 @@ namespace HexGame
                 targetHex.Data.Unit = null;
             }
 
-            if (index < 0 || index >= set.units.Count) return;
+            UnitType type = set.units.FirstOrDefault(u => u.id == unitTypeId);
+            if (type == null) return;
 
-            UnitType type = set.units[index];
             UnitVisualization vizInstance = Instantiate(prefab, transform);
 
             Unit unitComponent = vizInstance.gameObject.AddComponent<Unit>();
-            unitComponent.Initialize(index, teamId);
+            unitComponent.Initialize(unitTypeId, teamId);
             unitComponent.SetHex(targetHex);
         }
 
@@ -246,7 +246,7 @@ namespace HexGame
                     Hex hexView = gridManager.GetHexView(hexData);
                     if (hexView != null)
                     {
-                        SpawnUnit(set, data.typeIndex, data.teamId, hexView, visualizationPrefab);
+                        SpawnUnit(set, data.unitTypeId, data.teamId, hexView, visualizationPrefab);
                     }
                 }
             }

@@ -42,7 +42,7 @@ namespace HexGame.Tests
             // Create Test Data
             testSet = new UnitSet();
             testSet.setName = "TestSet";
-            testSet.units = new List<UnitType> { new UnitType { Name = "Unit0" } };
+            testSet.units = new List<UnitType> { new UnitType { id = "unit0", Name = "Unit0" } };
             
             // Create dummy visualization prefab
             testVizGO = new GameObject("TestViz");

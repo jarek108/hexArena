@@ -39,12 +39,12 @@ public class CombatTests
         // Setup Names via Set
         var unitSet = new UnitSet();
         unitSet.units = new List<UnitType> { 
-            new UnitType { Name = "Attacker" },
-            new UnitType { Name = "Target" }
+            new UnitType { id = "attacker", Name = "Attacker" },
+            new UnitType { id = "target", Name = "Target" }
         };
         unitManager.ActiveUnitSet = unitSet;
-        attacker.Initialize(0, 1);
-        target.Initialize(1, 2);
+        attacker.Initialize("attacker", 1);
+        target.Initialize("target", 2);
 
         ruleset = ScriptableObject.CreateInstance<BattleBrothersRuleset>();
         ruleset.movement = ScriptableObject.CreateInstance<MovementModule>();

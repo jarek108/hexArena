@@ -54,12 +54,12 @@ namespace HexGame.Tests
             
             unitSet = new UnitSet();
             unitManager.ActiveUnitSet = unitSet;
-            var type = new UnitType { Name = "Unit" };
+            var type = new UnitType { id = "unit", Name = "Unit" };
             unitSet.units = new List<UnitType> { type };
 
-            attacker = CreateUnit("Attacker", 1, 60, 0); // Team 1, MSKL 60
-            target = CreateUnit("Target", 2, 50, 10);   // Team 2, MDEF 10, RDEF 0
-            ally = CreateUnit("Ally", 1, 50, 0);       // Team 1
+            attacker = CreateUnit("Attacker", "attacker", 1, 60, 0); // Team 1, MSKL 60
+            target = CreateUnit("Target", "target", 2, 50, 10);   // Team 2, MDEF 10, RDEF 0
+            ally = CreateUnit("Ally", "ally", 1, 50, 0);       // Team 1
         }
 
         [TearDown]
@@ -78,12 +78,12 @@ namespace HexGame.Tests
             if (ally != null) Object.DestroyImmediate(ally.gameObject);
         }
 
-        private Unit CreateUnit(string name, int team, int mat, int mdf)
+        private Unit CreateUnit(string name, string typeId, int team, int mat, int mdf)
         {
             GameObject go = new GameObject(name);
             Unit u = go.AddComponent<Unit>();
             
-            var customType = new UnitType { Name = name };
+            var customType = new UnitType { id = typeId, Name = name };
             customType.Stats = new List<UnitStatValue>
             {
                 new UnitStatValue { id = "MAT", value = mat },
@@ -93,8 +93,8 @@ namespace HexGame.Tests
                 new UnitStatValue { id = "RNG", value = 1 }
             };
             
-            unitSet.units = new List<UnitType> { customType };
-            u.Initialize(0, team);
+            unitSet.units.Add(customType);
+            u.Initialize(typeId, team);
             
             return u;
         }
@@ -164,7 +164,7 @@ namespace HexGame.Tests
         [Test]
         public void HitChance_LongWeaponProximityPenalty_AppliesAtRangeOne()
         {
-            attacker = CreateUnit("Polearm", 1, 60, 0);
+            attacker = CreateUnit("Polearm", "polearm", 1, 60, 0);
             attacker.Stats["RNG"] = 2;
             ruleset.combat.longWeaponProximityPenalty = 15f;
             SetupHex(0, 0, 0, attacker);
@@ -175,8 +175,8 @@ namespace HexGame.Tests
         [Test]
         public void HitChance_RangedAlly_NoSurroundBonus()
         {
-            attacker = CreateUnit("Melee", 1, 60, 0);
-            Unit rangedAlly = CreateUnit("Archer", 1, 0, 0); // No MAT
+            attacker = CreateUnit("Melee", "melee", 1, 60, 0);
+            Unit rangedAlly = CreateUnit("Archer", "archer", 1, 0, 0); // No MAT
             rangedAlly.Stats["RAT"] = 50;
             SetupHex(0, 0, 0, attacker);
             SetupHex(1, 0, 0, target);
@@ -188,9 +188,9 @@ namespace HexGame.Tests
         [Test]
         public void HitChance_RangedBaseCalculation_IsCorrect()
         {
-            Unit archer = CreateUnit("Archer", 1, 0, 0); // No MAT
+            Unit archer = CreateUnit("Archer", "archer", 1, 0, 0); // No MAT
             archer.Stats["RAT"] = 60; archer.Stats["RNG"] = 5;
-            Unit rDefTarget = CreateUnit("Target", 2, 50, 0);
+            Unit rDefTarget = CreateUnit("Target", "target_rdef", 2, 50, 0);
             rDefTarget.Stats["RDF"] = 10;
             SetupHex(0, 0, 0, archer);
             SetupHex(2, 0, 0, rDefTarget);
@@ -202,9 +202,9 @@ namespace HexGame.Tests
         [Test]
         public void HitChance_RangedHighGround_AddsBonus()
         {
-            Unit archer = CreateUnit("Archer", 1, 0, 0); // No MAT
+            Unit archer = CreateUnit("Archer", "archer", 1, 0, 0); // No MAT
             archer.Stats["RAT"] = 60; archer.Stats["RNG"] = 5;
-            Unit rDefTarget = CreateUnit("Target", 2, 50, 0);
+            Unit rDefTarget = CreateUnit("Target", "target_rdef", 2, 50, 0);
             rDefTarget.Stats["RDF"] = 10;
             Hex hAttacker = SetupHex(0, 0, 1.0f, archer);
             Hex hTarget = SetupHex(2, 0, 0.0f, rDefTarget);
@@ -216,9 +216,9 @@ namespace HexGame.Tests
         [Test]
         public void HitChance_RangedCover_AppliesReduction()
         {
-            Unit archer = CreateUnit("Archer", 1, 0, 0); // No MAT
+            Unit archer = CreateUnit("Archer", "archer", 1, 0, 0); // No MAT
             archer.Stats["RAT"] = 60; archer.Stats["RNG"] = 5;
-            Unit blocker = CreateUnit("Blocker", 2, 50, 0);
+            Unit blocker = CreateUnit("Blocker", "blocker", 2, 50, 0);
             Hex hAttacker = SetupHex(0, 0, 0, archer);
             Hex hBlocker = SetupHex(2, 0, 0, blocker);
             Hex hTarget = SetupHex(3, 0, 0, target);
@@ -232,8 +232,8 @@ namespace HexGame.Tests
         [Test]
         public void HitChance_Clamping_Works()
         {
-            Unit god = CreateUnit("God", 1, 200, 100);
-            Unit peasant = CreateUnit("Peasant", 2, 10, 0);
+            Unit god = CreateUnit("God", "god", 1, 200, 100);
+            Unit peasant = CreateUnit("Peasant", "peasant", 2, 10, 0);
             SetupHex(0, 0, 0, god);
             SetupHex(1, 0, 0, peasant);
             Assert.AreEqual(1.0f, GetTotalHitChance(god, peasant), 0.001f);

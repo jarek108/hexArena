@@ -104,6 +104,7 @@ namespace HexGame.Units.Editor
 
             // Header
             EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.LabelField("ID", GUILayout.Width(60));
             EditorGUILayout.LabelField("Name", GUILayout.Width(120));
             foreach (var def in schemaDefs)
             {
@@ -131,6 +132,7 @@ namespace HexGame.Units.Editor
                 if (unit.Stats == null) unit.Stats = new List<UnitStatValue>();
 
                 EditorGUILayout.BeginHorizontal("box");
+                EditorGUILayout.LabelField(unit.id, EditorStyles.miniLabel, GUILayout.Width(60));
                 unit.Name = EditorGUILayout.TextField(unit.Name, GUILayout.Width(120));
 
                 foreach (var def in schemaDefs)
@@ -192,7 +194,9 @@ namespace HexGame.Units.Editor
 
             if (GUILayout.Button("Add Unit Type"))
             {
-                set.units.Add(new UnitType());
+                var newType = new UnitType();
+                newType.id = UnitType.GenerateId();
+                set.units.Add(newType);
             }
         }
 

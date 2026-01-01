@@ -32,13 +32,13 @@ public class UnitPlacementTests
         // Create a dummy UnitSet for initialization
         var testSet = new UnitSet();
         testSet.setName = "TestSet";
-        testSet.units = new List<UnitType> { new UnitType { Name = "Unit" } };
+        testSet.units = new List<UnitType> { new UnitType { id = "test_unit", Name = "Unit" } };
 
         unitManager.ActiveUnitSet = testSet;
 
         unitGO = new GameObject("TestUnit");
         unit = unitGO.AddComponent<Unit>();
-        unit.Initialize(0, 0);
+        unit.Initialize("test_unit", 0);
     }
 
     [TearDown]
@@ -96,7 +96,7 @@ public class UnitPlacementTests
         float offset = 0.5f;
         var viz = unitGO.AddComponent<HexGame.Units.SimpleUnitVisualization>();
         viz.yOffset = offset;
-        unit.Initialize(0, 0); // Re-init to pick up visualization
+        unit.Initialize("test_unit", 0); // Re-init to pick up visualization
 
         // Act
         float newElevation = 5f;

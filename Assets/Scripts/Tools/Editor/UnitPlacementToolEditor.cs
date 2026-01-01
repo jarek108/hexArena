@@ -41,8 +41,16 @@ namespace HexGame.Editor
             if (activeSet != null && activeSet.units.Count > 0)
             {
                 string[] unitNames = activeSet.units.Select((u, i) => $"[{i}] {u.Name}").ToArray();
-                SerializedProperty indexProp = serializedObject.FindProperty("selectedUnitIndex");
-                indexProp.intValue = EditorGUILayout.Popup("Unit Type", Mathf.Clamp(indexProp.intValue, 0, unitNames.Length - 1), unitNames);
+                SerializedProperty idProp = serializedObject.FindProperty("selectedUnitId");
+                
+                int currentIndex = activeSet.units.FindIndex(u => u.id == idProp.stringValue);
+                if (currentIndex == -1) currentIndex = 0;
+
+                int newIndex = EditorGUILayout.Popup("Unit Type", currentIndex, unitNames);
+                if (newIndex != currentIndex && newIndex >= 0 && newIndex < activeSet.units.Count)
+                {
+                    idProp.stringValue = activeSet.units[newIndex].id;
+                }
             }
 
             // 3. Team Selection (Simple ID)

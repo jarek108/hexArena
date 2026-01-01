@@ -44,7 +44,7 @@ namespace HexGame.Tests
 
             unitSet = new UnitSet();
             unitManager.ActiveUnitSet = unitSet;
-            var type = new UnitType { Name = "Test" };
+            var type = new UnitType { id = "test", Name = "Test" };
             type.Stats = new List<UnitStatValue> { 
                 new UnitStatValue { id = "AP", value = 100 },
                 new UnitStatValue { id = "MAT", value = 60 },
@@ -55,7 +55,7 @@ namespace HexGame.Tests
             GameObject unitGO = new GameObject("Unit");
             unit = unitGO.AddComponent<Unit>();
             unitGO.AddComponent<SimpleUnitVisualization>();
-            unit.Initialize(0, 0);
+            unit.Initialize("test", 0);
 
             yield return null;
         }
@@ -129,7 +129,7 @@ namespace HexGame.Tests
             GameObject allyGO = new GameObject("AllyUnit");
             Unit ally = allyGO.AddComponent<Unit>();
             allyGO.AddComponent<SimpleUnitVisualization>();
-            ally.Initialize(0, 0); // Team 0 (Same as unit)
+            ally.Initialize("test", 0); // Team 0 (Same as unit)
             ally.SetHex(hex2);
 
             // Verify setup

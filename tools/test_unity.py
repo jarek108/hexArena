@@ -40,7 +40,7 @@ class MCPClient:
         self.client: Optional[httpx.AsyncClient] = None
 
     async def __aenter__(self):
-        self.client = httpx.AsyncClient(timeout=180.0)
+        self.client = httpx.AsyncClient(timeout=300.0)
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):

@@ -2,6 +2,7 @@ using UnityEngine;
 using System.Collections.Generic;
 using HexGame.Units;
 using System.IO;
+using System.Linq;
 
 namespace HexGame
 {
@@ -19,16 +20,16 @@ namespace HexGame
         public int Id => gameObject.GetInstanceID();
 
         public int teamId;
-        [SerializeField] private int typeIndex;
+        [SerializeField] private string unitTypeId;
 
         public UnitSet unitSet => UnitManager.Instance?.ActiveUnitSet;
 
-        public int TypeIndex
+        public string UnitTypeId
         {
-            get => typeIndex;
+            get => unitTypeId;
             set
             {
-                typeIndex = value;
+                unitTypeId = value;
                 Initialize();
             }
         }
@@ -38,8 +39,8 @@ namespace HexGame
             get 
             {
                 var set = unitSet;
-                if (set != null && typeIndex >= 0 && typeIndex < set.units.Count)
-                    return set.units[typeIndex];
+                if (set != null && !string.IsNullOrEmpty(unitTypeId))
+                    return set.units.FirstOrDefault(u => u.id == unitTypeId);
                 return null;
             }
         }
@@ -187,9 +188,9 @@ namespace HexGame
         }
 
 
-        public void Initialize(int index, int team)
+        public void Initialize(string typeId, int team)
         {
-            typeIndex = index;
+            unitTypeId = typeId;
             teamId = team;
             Initialize();
         }
@@ -281,7 +282,7 @@ namespace HexGame
             {
                 q = lastQ,
                 r = lastR,
-                typeIndex = this.typeIndex,
+                unitTypeId = this.unitTypeId,
                 teamId = this.teamId
             };
         }
@@ -292,7 +293,7 @@ namespace HexGame
     {
         public int q;
         public int r;
-        public int typeIndex;
+        public string unitTypeId;
         public int teamId;
     }
 }

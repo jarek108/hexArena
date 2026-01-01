@@ -42,7 +42,7 @@ namespace HexGame.Tests
 
             testSet = new UnitSet();
             testSet.setName = "TestSet";
-            testSet.units = new List<UnitType> { new UnitType { Name = "Unit0" } };
+            testSet.units = new List<UnitType> { new UnitType { id = "unit0", Name = "Unit0" } };
 
             testVizGO = new GameObject("TestVizPrefab");
             testViz = testVizGO.AddComponent<SimpleUnitVisualization>();
@@ -70,7 +70,7 @@ namespace HexGame.Tests
             Hex targetHex = manager.GetHexView(manager.Grid.GetHexAt(1, 1));
             Assert.IsNotNull(targetHex, "Target hex view should exist.");
 
-            unitManager.SpawnUnit(0, 0, targetHex);
+            unitManager.SpawnUnit("unit0", 0, targetHex);
             Assert.IsNotNull(targetHex.Data.Unit, "Unit should be assigned to hex data.");
 
             // Act: Save and Load
@@ -94,7 +94,7 @@ namespace HexGame.Tests
             // 1. Place unit at (2, 2)
             HexData dataAt22 = manager.Grid.GetHexAt(2, 2);
             Hex hexAt22 = manager.GetHexView(dataAt22);
-            unitManager.SpawnUnit(0, 0, hexAt22);
+            unitManager.SpawnUnit("unit0", 0, hexAt22);
             
             Vector3 originalPos = hexAt22.transform.position;
             Assert.AreEqual(originalPos.x, hexAt22.Data.Unit.transform.position.x, 0.01f);

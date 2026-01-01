@@ -23,8 +23,14 @@ namespace HexGame.Units
     [Serializable]
     public class UnitType
     {
+        public string id; // Persistent 8-char ID
         public string Name = "New Unit";
         public List<UnitStatValue> Stats = new List<UnitStatValue>();
+
+        public static string GenerateId()
+        {
+            return Guid.NewGuid().ToString("n").Substring(0, 8);
+        }
     }
 
     [Serializable]
@@ -164,6 +170,7 @@ namespace HexGame.Units
             {
                 var unit = units[i];
                 sb.AppendLine("    {");
+                sb.AppendLine($"      \"id\": \"{unit.id}\",");
                 sb.AppendLine($"      \"Name\": \"{unit.Name}\",");
                 sb.AppendLine("      \"Stats\": {");
                 for (int j = 0; j < unit.Stats.Count; j++)
@@ -217,6 +224,7 @@ namespace HexGame.Units
         private UnitType ParseUnitJson(string json)
         {
             UnitType unit = new UnitType();
+            unit.id = ParseStringField(json, "id") ?? UnitType.GenerateId();
             unit.Name = ParseStringField(json, "Name") ?? unit.Name;
 
             int statsStart = json.IndexOf("\"Stats\":");

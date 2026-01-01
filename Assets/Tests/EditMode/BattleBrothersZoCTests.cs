@@ -68,8 +68,8 @@ namespace HexGame.Tests
             hexEnd.AssignData(data2);
             grid.AddHex(data2);
 
-                    unitSet = new UnitSet();
-                    unitManager.ActiveUnitSet = unitSet;
+            unitSet = new UnitSet();
+            unitManager.ActiveUnitSet = unitSet;
             unitGO = new GameObject("Unit");
             unit = unitGO.AddComponent<Unit>();
             unit.Stats["HP"] = 100;
@@ -77,10 +77,10 @@ namespace HexGame.Tests
             unit.Stats["MFAT"] = 100;
             unit.Stats["CFAT"] = 0;
             
-            var type = new UnitType { Name = "TestUnit" };
+            var type = new UnitType { id = "test", Name = "TestUnit" };
             type.Stats = new List<UnitStatValue> { new UnitStatValue { id = "AP", value = 100 } };
             unitSet.units = new List<UnitType> { type };
-            unit.Initialize(0, 0); // Team 0
+            unit.Initialize("test", 0); // Team 0
         }
 
         [TearDown]
@@ -154,13 +154,13 @@ namespace HexGame.Tests
         {
             // Arrange
             // Initialize unit with melee skill and range
-            var type = new UnitType { Name = "MeleeUnit" };
+            var type = new UnitType { id = "melee", Name = "MeleeUnit" };
             type.Stats = new List<UnitStatValue> { 
                 new UnitStatValue { id = "MAT", value = 60 },
                 new UnitStatValue { id = "RNG", value = 1 } 
             };
-            unitSet.units = new List<UnitType> { type };
-            unit.Initialize(0, 0); // Team 0
+            unitSet.units.Add(type);
+            unit.Initialize("melee", 0); // Team 0
 
             // Add dummy unit to target hex to trigger attack logic in ruleset
             var targetGO = new GameObject("Target");
@@ -186,13 +186,13 @@ namespace HexGame.Tests
         {
             // Arrange
             // Initialize unit with ranged range
-            var type = new UnitType { Name = "RangedUnit" };
+            var type = new UnitType { id = "ranged", Name = "RangedUnit" };
             type.Stats = new List<UnitStatValue> { 
                 new UnitStatValue { id = "RAT", value = 60 },
                 new UnitStatValue { id = "RNG", value = 5 } 
             };
-            unitSet.units = new List<UnitType> { type };
-            unit.Initialize(0, 0); // Team 0
+            unitSet.units.Add(type);
+            unit.Initialize("ranged", 0); // Team 0
 
             // Add dummy unit to target hex
             var targetGO = new GameObject("Target");
@@ -245,22 +245,11 @@ namespace HexGame.Tests
             hexEnd.Data.AddState("ZoC1_999"); // Enemy ZoC (Expensive!)
             hexEnd.Data.AddState("Occupied0_888"); // Teammate (Should negate ZoC)
 
-            // Ensure grid neighbors are linked
-            // Note: Grid(10,10) creates (0,0) to (9,9). 
-            // (1,-1) and (1,-2) might be outside the default loops in SetUp if we relied on that, 
-            // but we added them manually. HexMath.Distance checks coords. 
-            // Pathfinder uses grid.GetNeighbors. We need to verify GetNeighbors returns our new hexes.
-            // Grid dictionary keys are likely hashes. We manually added them, so they should be in the dict.
-            
             // Run Pathfinder
             PathResult result = Pathfinder.FindPath(grid, unit, hexStart.Data, targetData);
 
             // Assert
             Assert.IsTrue(result.Success, "Pathfinder should find a path.");
-            // Expected Cost: 
-            // Start -> Mid (2.0 Base, ZoC ignored due to Teammate)
-            // Mid -> Target (2.0 Base)
-            // Total = 4.0
             Assert.AreEqual(4.0f, result.TotalCost, 0.1f, "Pathfinder should choose the cheap path through teammate (ignoring ZoC).");
 
             Object.DestroyImmediate(hexTargetGO);
@@ -275,14 +264,14 @@ namespace HexGame.Tests
             var enemyGO = new GameObject("Enemy");
             var enemy = enemyGO.AddComponent<Unit>();
             // Initialize with high MAT for guaranteed hit
-            var type = new UnitType { Name = "EnemyUnit" };
+            var type = new UnitType { id = "enemy", Name = "EnemyUnit" };
             type.Stats = new List<UnitStatValue> { 
                 new UnitStatValue { id = "MAT", value = 100 },
                 new UnitStatValue { id = "DMIN", value = 10 },
                 new UnitStatValue { id = "DMAX", value = 10 } 
             };
             unitSet.units.Add(type);
-            enemy.Initialize(unitSet.units.Count - 1, 1); // Team 1
+            enemy.Initialize("enemy", 1); // Team 1
             enemy.Stats["MAT"] = 100;
             enemy.Stats["DMIN"] = 10;
             enemy.Stats["DMAX"] = 10;
@@ -322,8 +311,5 @@ namespace HexGame.Tests
             Object.DestroyImmediate(enemyGO);
             Object.DestroyImmediate(hexDestGO);
         }
-
-
-
     }
 }
