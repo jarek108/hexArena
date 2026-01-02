@@ -19,15 +19,15 @@ namespace HexGame.Editor
             if (set != null && set.units != null && set.units.Count > 0)
             {
                 var names = set.units.Select((u, i) => $"[{i}] {u.Name}").ToArray();
-                SerializedProperty typeIndexProp = serializedObject.FindProperty("typeIndex");
+                SerializedProperty typeIdProp = serializedObject.FindProperty("unitTypeId");
                 
-                int currentTypeIndex = typeIndexProp.intValue;
-                if (currentTypeIndex < 0 || currentTypeIndex >= names.Length) currentTypeIndex = 0;
+                int currentTypeIndex = set.units.FindIndex(u => u.id == typeIdProp.stringValue);
+                if (currentTypeIndex == -1) currentTypeIndex = 0;
 
                 int newTypeIndex = EditorGUILayout.Popup("Unit Type", currentTypeIndex, names);
                 if (newTypeIndex != currentTypeIndex)
                 {
-                    typeIndexProp.intValue = newTypeIndex;
+                    typeIdProp.stringValue = set.units[newTypeIndex].id;
                 }
             }
             else
@@ -35,9 +35,9 @@ namespace HexGame.Editor
                 EditorGUILayout.HelpBox("UnitManager has no valid Active Unit Set.", MessageType.Warning);
             }
 
-            // Read-only Type Index for reference
+            // Read-only Type ID for reference
             GUI.enabled = false;
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("typeIndex"));
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("unitTypeId"));
             GUI.enabled = true;
 
             EditorGUILayout.PropertyField(serializedObject.FindProperty("teamId"));

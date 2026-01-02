@@ -137,6 +137,12 @@ namespace HexGame
                 Transform child = transform.GetChild(i);
                 if (child.name.Contains("Ghost")) continue;
 
+                Unit unit = child.GetComponent<Unit>();
+                if (unit != null) unit.ClearOwnedHexStates();
+
+                // Detach immediately so systems like RelinkUnitsToGrid don't find it pending destruction
+                child.SetParent(null);
+
                 if (Application.isPlaying) Destroy(child.gameObject);
                 else DestroyImmediate(child.gameObject);
             }
@@ -201,10 +207,7 @@ namespace HexGame
 
         public void LoadUnits(string path, UnitSet fallbackSet, UnitVisualization visualizationPrefab)
         {
-            if (!System.IO.File.Exists(path))
-            {
-                return;
-            }
+            if (!System.IO.File.Exists(path)) return;
 
             string json = System.IO.File.ReadAllText(path);
             UnitSaveBatch batch = JsonUtility.FromJson<UnitSaveBatch>(json);
@@ -251,7 +254,6 @@ namespace HexGame
                 }
             }
             lastLayoutPath = path;
-            RelinkUnitsToGrid();
         }
 
         private UnitSet ResolveSetById(string id)

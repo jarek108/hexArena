@@ -71,10 +71,17 @@ namespace HexGame.Tests
             // Force Instance to null to simulate race condition/destruction order
             typeof(GridVisualizationManager).GetProperty("Instance").SetValue(null, null);
 
-            // 3. Trigger Erase (simulating the erase part of LoadUnits)
-            unitManager.EraseAllUnits();
+            // 3. Create Dummy Layout File
+            string dummyPath = Path.Combine(Application.temporaryCachePath, "dummy_layout.json");
+            File.WriteAllText(dummyPath, "{\"unitSetId\":\"ReproSet\",\"units\":[]}");
 
-            // 4. Assert Unit is gone
+            // 4. Trigger Load (which calls EraseAllUnits)
+            unitManager.LoadUnits(dummyPath);
+            
+            // Cleanup file
+            if(File.Exists(dummyPath)) File.Delete(dummyPath);
+
+            // 5. Assert Unit is gone
             Assert.IsNull(hexData.Unit);
             
             // 5. Assert State is gone

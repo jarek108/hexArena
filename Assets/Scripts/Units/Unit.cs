@@ -54,6 +54,7 @@ namespace HexGame
         public Dictionary<string, int> Stats = new Dictionary<string, int>();
         private UnitVisualization currentView;
         private Coroutine moveCoroutine;
+        private Grid _cachedGrid;
 
         [SerializeField, HideInInspector] private List<ProjectedHexState> ownedHexStates = new List<ProjectedHexState>();
 
@@ -82,7 +83,7 @@ namespace HexGame
 
         public void ClearOwnedHexStates()
         {
-            var grid = GridVisualizationManager.Instance?.Grid;
+            var grid = GridVisualizationManager.Instance?.Grid ?? _cachedGrid;
             if (grid == null || ownedHexStates.Count == 0) return;
 
             foreach (var projection in ownedHexStates)
@@ -95,7 +96,7 @@ namespace HexGame
 
         public void RemoveOwnedHexStatesByPrefix(string prefix)
         {
-            var grid = GridVisualizationManager.Instance?.Grid;
+            var grid = GridVisualizationManager.Instance?.Grid ?? _cachedGrid;
             if (grid == null || ownedHexStates.Count == 0) return;
 
             for (int i = ownedHexStates.Count - 1; i >= 0; i--)
@@ -198,6 +199,7 @@ namespace HexGame
         private void Initialize()
         {
             Stats.Clear();
+            _cachedGrid = GridVisualizationManager.Instance?.Grid;
 
             UnitType type = UnitType;
             if (type != null && type.Stats != null)
@@ -221,6 +223,8 @@ namespace HexGame
 
         public void SetHex(Hex hex)
         {
+            if (_cachedGrid == null) _cachedGrid = GridVisualizationManager.Instance?.Grid;
+
             HexData previousData = CurrentHex != null ? CurrentHex.Data : null;
             if (previousData != null)
             {

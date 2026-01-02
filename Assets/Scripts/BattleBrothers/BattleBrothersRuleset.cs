@@ -316,7 +316,6 @@ namespace HexGame
             }
 
             int stopIndex = GetMoveStopIndex(unit, path);
-            Debug.Log($"[Ruleset] OnFinishPathfinding: success={success}, unit={unit.UnitName}, pathCount={path.Count}, stopIndex={stopIndex}");
             if (stopIndex > 0) tactical.ShowAoA(unit, path[stopIndex - 1], movement.maxElevationDelta);
         }
 
