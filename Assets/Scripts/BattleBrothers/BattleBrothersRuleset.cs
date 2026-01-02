@@ -10,11 +10,21 @@ namespace HexGame
         public MovementModule movement;
         public CombatModule combat;
         public TacticalModule tactical;
+        public FlowModule flow;
 
         public float transitionSpeed = 5.0f;
         public float transitionPause = 0.1f;
 
         private Unit lastPathfindingUnit;
+
+        public override int RoundNumber => flow != null ? flow.roundNumber : 0;
+        public override Unit ActiveUnit => flow != null ? flow.activeUnit : null;
+        public override List<Unit> TurnQueue => flow != null ? flow.TurnQueue : new List<Unit>();
+
+        public override void StartCombat() => flow?.StartNewRound(this);
+        public override void AdvanceTurn() => flow?.AdvanceTurn(this);
+        public override void WaitTurn() => flow?.WaitCurrentTurn(this);
+        public override void StopCombat() => flow?.EndCombat();
 
         public override void OnStartPathfinding(HexData target, Unit unit)
         {

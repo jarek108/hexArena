@@ -92,6 +92,16 @@ namespace HexGame
         public virtual void OnTurnEnd(Unit unit) { }
         public virtual int GetTurnPriority(Unit unit) { return 0; }
 
+        // Turn Flow Interface for GameMaster
+        public virtual int RoundNumber => 0;
+        public virtual Unit ActiveUnit => null;
+        public virtual List<Unit> TurnQueue => new List<Unit>();
+
+        public virtual void StartCombat() { }
+        public virtual void AdvanceTurn() { }
+        public virtual void WaitTurn() { }
+        public virtual void StopCombat() { }
+
         public virtual List<PotentialHit> GetPotentialHits(Unit attacker, Unit target, HexData fromHex = null) 
         { 
             return new List<PotentialHit>(); 

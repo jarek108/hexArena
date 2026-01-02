@@ -15,6 +15,7 @@ namespace HexGame.Tests
         private UnitManager unitManager;
         private GameObject unitManagerGO;
         private UnitSet unitSet;
+        private FlowModule flowModule;
         private List<GameObject> createdObjects = new List<GameObject>();
 
         [SetUp]
@@ -34,13 +35,14 @@ namespace HexGame.Tests
             ruleset.movement = ScriptableObject.CreateInstance<MovementModule>();
             ruleset.combat = ScriptableObject.CreateInstance<CombatModule>();
             ruleset.tactical = ScriptableObject.CreateInstance<TacticalModule>();
+            flowModule = ScriptableObject.CreateInstance<FlowModule>();
+            ruleset.flow = flowModule;
             gm.ruleset = ruleset;
 
             unitManagerGO = new GameObject("UnitManager");
             createdObjects.Add(unitManagerGO);
             unitManager = unitManagerGO.AddComponent<UnitManager>();
             
-            // Critical: Erase any existing units from previous tests
             unitManager.EraseAllUnits();
 
             unitSet = new UnitSet();
@@ -58,6 +60,7 @@ namespace HexGame.Tests
             createdObjects.Clear();
 
             Object.DestroyImmediate(ruleset);
+            Object.DestroyImmediate(flowModule);
             typeof(GameMaster).GetProperty("Instance").SetValue(null, null);
             typeof(UnitManager).GetProperty("Instance").SetValue(null, null);
         }
@@ -91,9 +94,10 @@ namespace HexGame.Tests
             gm.StartNewRound();
 
             Assert.AreEqual("Fast", gm.activeUnit.UnitName, "Fastest unit should be active first.");
-            Assert.AreEqual(2, gm.TurnQueue.Count);
-            Assert.AreEqual("Medium", gm.TurnQueue[0].UnitName, "Medium unit should be next.");
-            Assert.AreEqual("Slow", gm.TurnQueue[1].UnitName, "Slowest unit should be last.");
+            Assert.AreEqual(3, gm.TurnQueue.Count);
+            Assert.AreEqual("Fast", gm.TurnQueue[0].UnitName);
+            Assert.AreEqual("Medium", gm.TurnQueue[1].UnitName, "Medium unit should be next.");
+            Assert.AreEqual("Slow", gm.TurnQueue[2].UnitName, "Slowest unit should be last.");
         }
 
         [Test]
@@ -129,113 +133,40 @@ namespace HexGame.Tests
 
             gm.AdvanceTurn(); // Active: u2
             Assert.AreEqual("Slow", gm.activeUnit.UnitName);
-            Assert.AreEqual(0, gm.TurnQueue.Count);
+            Assert.AreEqual(1, gm.TurnQueue.Count);
         }
 
-                [Test]
+        [Test]
+        public void AdvanceTurn_StartsNewRound_WhenQueueEmpty()
+        {
+            var u = CreateUnit("Unit", 100);
 
-                public void AdvanceTurn_StartsNewRound_WhenQueueEmpty()
+            gm.StartNewRound(); // Round 1. Active: u, Queue: [u]
+            Assert.AreEqual(1, gm.roundNumber);
 
-                {
-
-                    var u = CreateUnit("Unit", 100);
-
-        
-
-                    gm.roundNumber = 0; // Reset just in case
-
-                    gm.StartNewRound(); // Round 1. Active: u, Queue: empty
-
-                    Assert.AreEqual(1, gm.roundNumber);
-
-        
-
-                    gm.AdvanceTurn(); // Queue was empty, should start Round 2. roundNumber becomes 2
-
-                    Assert.AreEqual(2, gm.roundNumber);
-
-                    Assert.AreEqual("Unit", gm.activeUnit.UnitName);
-
-                }
-
-        
-
-                        [Test]
-
-        
-
-                        public void Wait_MovesUnitToEndOfRound()
-
-        
-
-                        {
-
-        
-
-                            var u1 = CreateUnit("Fast", 100);
-
-        
-
-                            var u2 = CreateUnit("Slow", 50);
-
-        
-
-                
-
-        
-
-                            gm.StartNewRound(); // Active: u1, Queue: u2
-
-        
-
-                            Assert.AreEqual("Fast", gm.activeUnit.UnitName);
-
-        
-
-                
-
-        
-
-                            gm.WaitCurrentTurn(); // Active: u2, u1 added back to queue with penalty
-
-        
-
-                            Assert.AreEqual("Slow", gm.activeUnit.UnitName);
-
-        
-
-                            Assert.AreEqual(1, gm.TurnQueue.Count);
-
-        
-
-                            Assert.AreEqual(u1, gm.TurnQueue[0]);
-
-        
-
-                
-
-        
-
-                            gm.AdvanceTurn(); // Main queue empty (or processed). Active: u1
-
-        
-
-                            Assert.AreEqual("Fast", gm.activeUnit.UnitName);
-
-        
-
-                            Assert.AreEqual(0, gm.TurnQueue.Count);
-
-        
-
-                        }
-
-        
-
-                
-
-            }
-
+            gm.AdvanceTurn(); // Main queue effectively empty, should start Round 2
+            Assert.AreEqual(2, gm.roundNumber);
+            Assert.AreEqual("Unit", gm.activeUnit.UnitName);
         }
 
-        
+        [Test]
+        public void Wait_MovesUnitToEndOfRound()
+        {
+            var u1 = CreateUnit("Fast", 100);
+            var u2 = CreateUnit("Slow", 50);
+
+            gm.StartNewRound(); // Active: u1, Queue: [u1, u2]
+            Assert.AreEqual("Fast", gm.activeUnit.UnitName);
+
+            gm.WaitCurrentTurn(); // Active: u2, u1 added back to queue with penalty. Queue: [u2, u1]
+            Assert.AreEqual("Slow", gm.activeUnit.UnitName);
+            Assert.AreEqual(2, gm.TurnQueue.Count);
+            Assert.AreEqual(u2, gm.TurnQueue[0]);
+            Assert.AreEqual(u1, gm.TurnQueue[1]);
+
+            gm.AdvanceTurn(); // Active: u1. Queue: [u1]
+            Assert.AreEqual("Fast", gm.activeUnit.UnitName);
+            Assert.AreEqual(1, gm.TurnQueue.Count);
+        }
+    }
+}

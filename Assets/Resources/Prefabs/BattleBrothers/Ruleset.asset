@@ -13,6 +13,9 @@ MonoBehaviour:
   m_Name: Ruleset
   m_EditorClassIdentifier: HexGame::HexGame.BattleBrothersRuleset
   schema: BattleBrothers
+  ignoreAPs: 1
+  ignoreFatigue: 1
+  ignoreMoveOrder: 1
   currentSearchTarget:
     Q: 0
     R: 0
@@ -21,8 +24,6 @@ MonoBehaviour:
   movement: {fileID: 11400000, guid: 6f18682b192704d47ba13375748bc148, type: 2}
   combat: {fileID: 11400000, guid: 86d03f73bfbddd142a2098231d1d8968, type: 2}
   tactical: {fileID: 11400000, guid: a23ff9eee5ee08941ac93ff513637eaa, type: 2}
-  ignoreAPs: 1
-  ignoreFatigue: 1
-  ignoreMoveOrder: 1
+  flow: {fileID: 11400000, guid: efce1ec40cad26f448589483b96b9e3c, type: 2}
   transitionSpeed: 5
   transitionPause: 0.1
