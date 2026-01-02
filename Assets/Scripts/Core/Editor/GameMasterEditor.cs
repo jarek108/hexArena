@@ -26,13 +26,19 @@ namespace HexGame.Editor
             EditorGUILayout.LabelField("Turn Management", EditorStyles.boldLabel);
             EditorGUILayout.BeginVertical("box");
             EditorGUILayout.LabelField($"Round: {gm.roundNumber}", EditorStyles.miniLabel);
-            EditorGUILayout.LabelField($"Active: {(gm.activeUnit != null ? gm.activeUnit.UnitName : "None")}", EditorStyles.miniBoldLabel);
             
             EditorGUILayout.BeginHorizontal();
             if (GUILayout.Button("Start Combat / Round"))
             {
                 gm.StartNewRound();
             }
+            if (GUILayout.Button("End Combat"))
+            {
+                gm.EndCombat();
+            }
+            EditorGUILayout.EndHorizontal();
+
+            EditorGUILayout.BeginHorizontal();
             if (GUILayout.Button("Wait"))
             {
                 gm.WaitCurrentTurn();
@@ -51,6 +57,7 @@ namespace HexGame.Editor
                 EditorGUILayout.Space();
                 EditorGUILayout.LabelField("Turn Queue", EditorStyles.boldLabel);
                 EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+                
                 for (int i = 0; i < queue.Count; i++)
                 {
                     var u = queue[i];
@@ -61,7 +68,19 @@ namespace HexGame.Editor
                     int fat = u.GetStat("FAT");
                     int mfat = u.GetBaseStat("FAT", 100);
 
-                    EditorGUILayout.LabelField($"{i+1}. {u.UnitName} (INI: {ini}, AP: {ap}, FAT: {fat}/{mfat})");
+                    EditorGUILayout.BeginHorizontal();
+                    
+                    // Column 1: Unit Selection Button
+                    if (GUILayout.Button($"{i + 1}. {u.UnitName}", EditorStyles.label, GUILayout.Width(150)))
+                    {
+                        Selection.activeGameObject = u.gameObject;
+                        EditorGUIUtility.PingObject(u.gameObject);
+                    }
+
+                    // Column 2: Stats
+                    EditorGUILayout.LabelField($"(INI: {ini}, AP: {ap}, FAT: {fat}/{mfat})", EditorStyles.miniLabel);
+                    
+                    EditorGUILayout.EndHorizontal();
                 }
                 EditorGUILayout.EndVertical();
             }

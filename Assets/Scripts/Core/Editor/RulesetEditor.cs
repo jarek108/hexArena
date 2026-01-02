@@ -169,9 +169,9 @@ namespace HexGame.Editor
             EditorGUILayout.BeginHorizontal();
             EditorGUILayout.LabelField("Ignore...", GUILayout.Width(60));
             
-            DrawSmallToggle("ignoreAPs", "APs", 60);
-            DrawSmallToggle("ignoreFatigue", "Fatigue", 80);
-            DrawSmallToggle("ignoreMoveOrder", "Move Order", 110);
+            DrawSmallToggle("ignoreAPs", "APs", 40);
+            DrawSmallToggle("ignoreFatigue", "Fatigue", 60);
+            DrawSmallToggle("ignoreMoveOrder", "Move Order", 80);
             
             EditorGUILayout.EndHorizontal();
             EditorGUILayout.Space(2);
@@ -181,38 +181,40 @@ namespace HexGame.Editor
         {
             EditorGUILayout.BeginHorizontal();
             
-            // Assuming we have transitionSpeed and transitionPause
-            DrawCompactProperty("transitionSpeed", "Speed", 60);
-            GUILayout.Space(10);
-            DrawCompactProperty("transitionPause", "Pause", 60);
+            DrawCompactProperty("transitionSpeed", "Speed", 50);
+            GUILayout.Space(20);
+            DrawCompactProperty("transitionPause", "Pause", 50);
             
             GUILayout.FlexibleSpace();
             EditorGUILayout.EndHorizontal();
             EditorGUILayout.Space(2);
         }
 
-        private void DrawCompactProperty(string propName, string label, float width)
+        private void DrawCompactProperty(string propName, string label, float labelWidth)
         {
             SerializedProperty prop = serializedObject.FindProperty(propName);
             if (prop == null) return;
 
-            EditorGUILayout.BeginHorizontal(GUILayout.Width(width + 50));
-            float originalLabelWidth = EditorGUIUtility.labelWidth;
-            EditorGUIUtility.labelWidth = width;
-            EditorGUILayout.PropertyField(prop, new GUIContent(label));
-            EditorGUIUtility.labelWidth = originalLabelWidth;
+            EditorGUILayout.BeginHorizontal(GUILayout.Width(labelWidth + 60));
+            EditorGUILayout.LabelField(label, GUILayout.Width(labelWidth));
+            EditorGUILayout.PropertyField(prop, GUIContent.none, GUILayout.Width(50));
             EditorGUILayout.EndHorizontal();
         }
 
-        private void DrawSmallToggle(string propName, string label, float width)
+        private void DrawSmallToggle(string propName, string label, float labelWidth)
         {
             SerializedProperty prop = serializedObject.FindProperty(propName);
             if (prop == null) return;
 
-            float originalLabelWidth = EditorGUIUtility.labelWidth;
-            EditorGUIUtility.labelWidth = width;
-            EditorGUILayout.PropertyField(prop, new GUIContent(label), GUILayout.Width(width + 20));
-            EditorGUIUtility.labelWidth = originalLabelWidth;
+            EditorGUILayout.BeginHorizontal(GUILayout.Width(labelWidth + 30));
+            EditorGUILayout.LabelField(label, GUILayout.Width(labelWidth));
+            EditorGUI.BeginChangeCheck();
+            bool val = EditorGUILayout.Toggle(prop.boolValue, GUILayout.Width(20));
+            if (EditorGUI.EndChangeCheck())
+            {
+                prop.boolValue = val;
+            }
+            EditorGUILayout.EndHorizontal();
             GUILayout.Space(5);
         }
 

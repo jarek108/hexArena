@@ -11,13 +11,21 @@ namespace HexGame
 
         public Ruleset ruleset;
 
-        [Header("Turn Flow")]
-        public int roundNumber = 0;
-        public Unit activeUnit;
+        [HideInInspector] public int roundNumber = 0;
+        [HideInInspector] public Unit activeUnit;
         [SerializeField] private List<Unit> turnQueue = new List<Unit>();
         private HashSet<int> unitsWhoWaitedThisRound = new HashSet<int>();
 
-        public List<Unit> TurnQueue => turnQueue;
+        public List<Unit> TurnQueue 
+        {
+            get
+            {
+                var displayQueue = new List<Unit>();
+                if (activeUnit != null) displayQueue.Add(activeUnit);
+                displayQueue.AddRange(turnQueue);
+                return displayQueue;
+            }
+        }
 
         private void OnEnable()
         {
@@ -135,6 +143,19 @@ namespace HexGame
         public void EndCurrentTurn()
         {
             AdvanceTurn();
+        }
+
+        public void EndCombat()
+        {
+            if (activeUnit != null)
+            {
+                activeUnit.RemoveOwnedHexStatesByPrefix("Active");
+            }
+            activeUnit = null;
+            turnQueue.Clear();
+            unitsWhoWaitedThisRound.Clear();
+            roundNumber = 0;
+            Debug.Log("[GameMaster] Combat ended.");
         }
     }
 }
