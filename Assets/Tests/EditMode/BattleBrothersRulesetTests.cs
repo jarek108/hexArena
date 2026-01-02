@@ -69,10 +69,9 @@ namespace HexGame.Tests
 
             unitGO = new GameObject("Unit");
             unit = unitGO.AddComponent<Unit>();
-            unit.Stats["HP"] = 100;
-            unit.Stats["CAP"] = 100;
-            unit.Stats["MFAT"] = 100;
-            unit.Stats["CFAT"] = 0;
+            unit.SetStat("HP", 100);
+            unit.SetStat("AP", 100);
+            unit.SetStat("FAT", 0);
         }
 
         [TearDown]
@@ -179,7 +178,7 @@ namespace HexGame.Tests
         {
             ruleset.ignoreAPs = true;
             ruleset.movement.plainsCost = 10f;
-            unit.Stats["CAP"] = 0;
+            unit.SetStat("AP", 0);
             var result = ruleset.TryMoveStep(unit, hex1.Data, hex2.Data);
             Assert.IsTrue(result.isValid, "Move should be valid because ignoreAPs is true.");
         }
@@ -189,9 +188,9 @@ namespace HexGame.Tests
         {
             ruleset.ignoreAPs = true;
             ruleset.movement.plainsCost = 5f;
-            unit.Stats["CAP"] = 10;
+            unit.SetStat("AP", 10);
             ruleset.PerformMove(unit, hex1.Data, hex2.Data);
-            Assert.AreEqual(10, unit.Stats["CAP"], "AP should NOT be deducted because ignoreAPs is true.");
+            Assert.AreEqual(10, unit.GetStat("AP"), "AP should NOT be deducted because ignoreAPs is true.");
         }
 
         [Test]
@@ -200,8 +199,15 @@ namespace HexGame.Tests
             ruleset.ignoreAPs = true;
             ruleset.ignoreFatigue = true;
             ruleset.movement.plainsCost = 10f;
-            unit.Stats["CFAT"] = 100;
-            unit.Stats["FAT"] = 100;
+            unit.SetStat("FAT", 100);
+            
+            // Set max fatigue via prototype for GetBaseStat
+            var type = new UnitType { id = "fatigue_test", Name = "FatigueTest" };
+            type.Stats.Add(new UnitStatValue { id = "FAT", value = 100 });
+            unitSet.units.Add(type);
+            unit.Initialize("fatigue_test", 1);
+            unit.SetStat("FAT", 100); // Current fatigue at max
+
             var result = ruleset.TryMoveStep(unit, hex1.Data, hex2.Data);
             Assert.IsTrue(result.isValid, "Move should be valid because ignoreFatigue is true.");
         }
@@ -211,9 +217,9 @@ namespace HexGame.Tests
         {
             ruleset.ignoreFatigue = true;
             ruleset.movement.plainsCost = 5f;
-            unit.Stats["CFAT"] = 0;
+            unit.SetStat("FAT", 0);
             ruleset.PerformMove(unit, hex1.Data, hex2.Data);
-            Assert.AreEqual(0, unit.Stats["CFAT"], "Fatigue should NOT be added because ignoreFatigue is true.");
+            Assert.AreEqual(0, unit.GetStat("FAT"), "Fatigue should NOT be added because ignoreFatigue is true.");
         }
 
         [Test]
@@ -221,7 +227,7 @@ namespace HexGame.Tests
         {
             ruleset.ignoreAPs = true;
             ruleset.movement.plainsCost = 10f;
-            unit.Stats["CAP"] = 0;
+            unit.SetStat("AP", 0);
             List<HexData> path = new List<HexData> { hex1.Data, hex2.Data };
             int stopIndex = ruleset.GetMoveStopIndex(unit, path);
             Assert.AreEqual(2, stopIndex, "Should NOT truncate path because ignoreAPs is true.");

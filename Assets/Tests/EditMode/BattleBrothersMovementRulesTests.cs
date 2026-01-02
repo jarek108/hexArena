@@ -47,6 +47,7 @@ namespace HexGame.Tests
             unitSet = new UnitSet();
             unitManager.ActiveUnitSet = unitSet;
             var type = new UnitType { id = "unit", Name = "Unit" };
+            type.Stats = new List<UnitStatValue> { new UnitStatValue { id = "AP", value = 9 } };
             unitSet.units = new List<UnitType> { type };
         }
 
@@ -156,7 +157,7 @@ namespace HexGame.Tests
             Unit u = uGO.AddComponent<Unit>();
             u.Initialize("unit", 0);
             u.SetHex(h1);
-            u.Stats["CAP"] = 2;
+            u.SetStat("AP", 2);
 
             ruleset.movement.plainsCost = 2.0f;
 

@@ -81,6 +81,12 @@ namespace HexGame
         public virtual void OnUnitSelected(Unit unit) { }
         public virtual void OnUnitDeselected(Unit unit) { }
 
+        // Turn Flow Hooks
+        public virtual void OnRoundStart(IEnumerable<Unit> allUnits) { }
+        public virtual void OnTurnStart(Unit unit) { }
+        public virtual void OnTurnEnd(Unit unit) { }
+        public virtual int GetTurnPriority(Unit unit) { return 0; }
+
         public virtual List<PotentialHit> GetPotentialHits(Unit attacker, Unit target, HexData fromHex = null) 
         { 
             return new List<PotentialHit>(); 

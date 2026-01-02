@@ -41,6 +41,16 @@ namespace HexGame.Tools
         {
             if (!IsEnabled) return;
 
+            // Auto-select active unit if turn flow is active and nothing is selected
+            var activeUnit = GameMaster.Instance?.activeUnit;
+            if (activeUnit != null && (SourceHex == null || SourceHex.Data.Unit != activeUnit))
+            {
+                if (activeUnit.CurrentHex != null)
+                {
+                    SetSource(activeUnit.CurrentHex);
+                }
+            }
+
             // Prevent input if a unit is currently moving
             if (SourceHex != null && SourceHex.Data.Unit != null && SourceHex.Data.Unit.IsMoving) 
             {
@@ -53,7 +63,20 @@ namespace HexGame.Tools
             {
                 if (Mouse.current.leftButton.wasPressedThisFrame)
                 {
-                    if (hoveredHex != null) SetSource(hoveredHex);
+                    if (hoveredHex != null) 
+                    {
+                        // In turn flow, we can only click the already active unit (to toggle selection off/on)
+                        // or click empty space to clear. But if activeUnit is forced, we shouldn't allow selecting others.
+                        if (activeUnit != null)
+                        {
+                            if (hoveredHex.Data.Unit == activeUnit) SetSource(hoveredHex);
+                            else if (hoveredHex.Data.Unit == null) ClearAll();
+                        }
+                        else
+                        {
+                            SetSource(hoveredHex);
+                        }
+                    }
                     else ClearAll();
                 }
                 else if (Mouse.current.rightButton.wasPressedThisFrame)

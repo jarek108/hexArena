@@ -125,7 +125,7 @@ namespace HexGame.Editor
                 
                 // Grouping Logic
                 string targetGroup = "";
-                if (iterator.name.StartsWith("ignore")) targetGroup = "Global Overrides";
+                if (iterator.name.StartsWith("ignore")) targetGroup = "Flow";
                 else if (iterator.name.Contains("transition") || iterator.name.Contains("Speed") || iterator.name.Contains("Pause")) targetGroup = "Execution Settings";
 
                 if (targetGroup != currentGroupName)
@@ -137,17 +137,83 @@ namespace HexGame.Editor
                         string key = currentGroupName.Replace(" ", "_").ToLower() + "_foldout";
                         groupFoldout = BeginGroup(currentGroupName, key);
                         inGroup = true;
+
+                        if (currentGroupName == "Flow" && groupFoldout)
+                        {
+                            DrawFlowRow();
+                        }
+                        if (currentGroupName == "Execution Settings" && groupFoldout)
+                        {
+                            DrawExecutionSettings();
+                        }
                     }
                 }
 
                 if (!inGroup || groupFoldout)
                 {
+                    if (currentGroupName == "Flow" && iterator.name.StartsWith("ignore"))
+                        continue;
+                    if (currentGroupName == "Execution Settings" && (iterator.name.Contains("transition") || iterator.name.Contains("Speed") || iterator.name.Contains("Pause")))
+                        continue;
+
                     EditorGUILayout.PropertyField(iterator);
                 }
             }
             EndGroup();
 
             serializedObject.ApplyModifiedProperties();
+        }
+
+        private void DrawFlowRow()
+        {
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.LabelField("Ignore...", GUILayout.Width(60));
+            
+            DrawSmallToggle("ignoreAPs", "APs", 60);
+            DrawSmallToggle("ignoreFatigue", "Fatigue", 80);
+            DrawSmallToggle("ignoreMoveOrder", "Move Order", 110);
+            
+            EditorGUILayout.EndHorizontal();
+            EditorGUILayout.Space(2);
+        }
+
+        private void DrawExecutionSettings()
+        {
+            EditorGUILayout.BeginHorizontal();
+            
+            // Assuming we have transitionSpeed and transitionPause
+            DrawCompactProperty("transitionSpeed", "Speed", 60);
+            GUILayout.Space(10);
+            DrawCompactProperty("transitionPause", "Pause", 60);
+            
+            GUILayout.FlexibleSpace();
+            EditorGUILayout.EndHorizontal();
+            EditorGUILayout.Space(2);
+        }
+
+        private void DrawCompactProperty(string propName, string label, float width)
+        {
+            SerializedProperty prop = serializedObject.FindProperty(propName);
+            if (prop == null) return;
+
+            EditorGUILayout.BeginHorizontal(GUILayout.Width(width + 50));
+            float originalLabelWidth = EditorGUIUtility.labelWidth;
+            EditorGUIUtility.labelWidth = width;
+            EditorGUILayout.PropertyField(prop, new GUIContent(label));
+            EditorGUIUtility.labelWidth = originalLabelWidth;
+            EditorGUILayout.EndHorizontal();
+        }
+
+        private void DrawSmallToggle(string propName, string label, float width)
+        {
+            SerializedProperty prop = serializedObject.FindProperty(propName);
+            if (prop == null) return;
+
+            float originalLabelWidth = EditorGUIUtility.labelWidth;
+            EditorGUIUtility.labelWidth = width;
+            EditorGUILayout.PropertyField(prop, new GUIContent(label), GUILayout.Width(width + 20));
+            EditorGUIUtility.labelWidth = originalLabelWidth;
+            GUILayout.Space(5);
         }
 
         private bool BeginGroup(string label, string foldoutKey)

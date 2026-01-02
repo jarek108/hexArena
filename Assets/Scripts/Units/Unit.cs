@@ -22,7 +22,12 @@ namespace HexGame
         public int teamId;
         [SerializeField] private string unitTypeId;
 
-        public UnitSet unitSet => UnitManager.Instance?.ActiveUnitSet;
+        private UnitSet _unitSet;
+        public UnitSet unitSet
+        {
+            get => _unitSet ?? UnitManager.Instance?.ActiveUnitSet;
+            set => _unitSet = value;
+        }
 
         public string UnitTypeId
         {
@@ -39,9 +44,8 @@ namespace HexGame
             get 
             {
                 var set = unitSet;
-                if (set != null && !string.IsNullOrEmpty(unitTypeId))
-                    return set.units.FirstOrDefault(u => u.id == unitTypeId);
-                return null;
+                if (set == null || string.IsNullOrEmpty(unitTypeId)) return null;
+                return set.units.FirstOrDefault(u => u.id == unitTypeId);
             }
         }
 
@@ -51,7 +55,7 @@ namespace HexGame
         [SerializeField, HideInInspector] private int lastQ;
         [SerializeField, HideInInspector] private int lastR;
         
-        public Dictionary<string, int> Stats = new Dictionary<string, int>();
+        [SerializeField] private List<UnitStatValue> currentStats = new List<UnitStatValue>();
         private UnitVisualization currentView;
         private Coroutine moveCoroutine;
         private Grid _cachedGrid;
@@ -196,7 +200,7 @@ namespace HexGame
 
         private void Initialize()
         {
-            Stats.Clear();
+            currentStats.Clear();
             _cachedGrid = GridVisualizationManager.Instance?.Grid;
 
             UnitType type = UnitType;
@@ -204,7 +208,8 @@ namespace HexGame
             {
                 foreach (var stat in type.Stats)
                 {
-                    Stats[stat.id] = stat.value;
+                    // Copy stat struct from prototype to current instance
+                    currentStats.Add(new UnitStatValue { id = stat.id, value = stat.value });
                 }
             }
 
@@ -272,10 +277,42 @@ namespace HexGame
             transform.position = pos;
         }
         
-        public int GetStat(string statName, int defaultValue = 0)
+        public int GetStat(string statId, int defaultValue = 0)
         {
-            if (Stats.TryGetValue(statName, out int val)) return val;
+            for (int i = 0; i < currentStats.Count; i++)
+            {
+                if (currentStats[i].id == statId) return currentStats[i].value;
+            }
             return defaultValue;
+        }
+
+        public int GetBaseStat(string statId, int defaultValue = 0)
+        {
+            UnitType type = UnitType;
+            if (type == null || type.Stats == null) return defaultValue;
+
+            for (int i = 0; i < type.Stats.Count; i++)
+            {
+                if (type.Stats[i].id == statId) return type.Stats[i].value;
+            }
+            return defaultValue;
+        }
+
+        public void SetStat(string statId, int value)
+        {
+            for (int i = 0; i < currentStats.Count; i++)
+            {
+                if (currentStats[i].id == statId)
+                {
+                    var s = currentStats[i];
+                    s.value = value;
+                    currentStats[i] = s;
+                    return;
+                }
+            }
+            
+            // If stat didn't exist (uncommon but possible for resources like CFAT), add it
+            currentStats.Add(new UnitStatValue { id = statId, value = value });
         }
 
         public UnitSaveData GetSaveData()

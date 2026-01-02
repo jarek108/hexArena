@@ -20,7 +20,59 @@ namespace HexGame.Editor
             serializedObject.Update();
 
             // Draw the GameMaster properties (like the ruleset field itself)
-            DrawPropertiesExcluding(serializedObject, "m_Script");
+            DrawPropertiesExcluding(serializedObject, "m_Script", "ruleset", "turnQueue");
+
+            EditorGUILayout.Space();
+            EditorGUILayout.LabelField("Turn Management", EditorStyles.boldLabel);
+            EditorGUILayout.BeginVertical("box");
+            EditorGUILayout.LabelField($"Round: {gm.roundNumber}", EditorStyles.miniLabel);
+            EditorGUILayout.LabelField($"Active: {(gm.activeUnit != null ? gm.activeUnit.UnitName : "None")}", EditorStyles.miniBoldLabel);
+            
+            EditorGUILayout.BeginHorizontal();
+            if (GUILayout.Button("Start Combat / Round"))
+            {
+                gm.StartNewRound();
+            }
+            if (GUILayout.Button("Wait"))
+            {
+                gm.WaitCurrentTurn();
+            }
+            if (GUILayout.Button("End Turn"))
+            {
+                gm.EndCurrentTurn();
+            }
+            EditorGUILayout.EndHorizontal();
+            EditorGUILayout.EndVertical();
+
+            // Queue display
+            var queue = gm.TurnQueue;
+            if (queue != null && queue.Count > 0)
+            {
+                EditorGUILayout.Space();
+                EditorGUILayout.LabelField("Turn Queue", EditorStyles.boldLabel);
+                EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+                for (int i = 0; i < queue.Count; i++)
+                {
+                    if (queue[i] == null) continue;
+                    EditorGUILayout.LabelField($"{i+1}. {queue[i].UnitName} (INI: {gm.ruleset?.GetTurnPriority(queue[i])})");
+                }
+                EditorGUILayout.EndVertical();
+            }
+
+            // Waiting Queue display
+            var waiting = gm.WaitingQueue;
+            if (waiting != null && waiting.Count > 0)
+            {
+                EditorGUILayout.Space();
+                EditorGUILayout.LabelField("Waiting Queue", EditorStyles.boldLabel);
+                EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+                for (int i = 0; i < waiting.Count; i++)
+                {
+                    if (waiting[i] == null) continue;
+                    EditorGUILayout.LabelField($"{i+1}. {waiting[i].UnitName} (INI: {gm.ruleset?.GetTurnPriority(waiting[i])})");
+                }
+                EditorGUILayout.EndVertical();
+            }
 
             if (gm.ruleset != null)
             {
