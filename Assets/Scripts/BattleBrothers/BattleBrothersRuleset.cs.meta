@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 40706ac3d6a96c44e88aa272603d2500
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - movement: {fileID: 11400000, guid: 6f18682b192704d47ba13375748bc148, type: 2}
+  - combat: {fileID: 11400000, guid: 86d03f73bfbddd142a2098231d1d8968, type: 2}
+  - tactical: {fileID: 11400000, guid: a23ff9eee5ee08941ac93ff513637eaa, type: 2}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

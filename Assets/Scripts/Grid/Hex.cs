@@ -7,33 +7,21 @@ namespace HexGame
     {
         public HexData Data { get; private set; }
 
-        // Serialized backing fields for persistence (View memory)
-        [SerializeField, HideInInspector] private int viewQ;
-        [SerializeField, HideInInspector] private int viewR;
-        [SerializeField, HideInInspector] private int viewS;
-        [SerializeField, HideInInspector] private float viewElevation;
-        [SerializeField, HideInInspector] private TerrainType viewTerrainType;
-
         private TerrainType? _previewTerrain;
 
-        // Properties: Read from Data (Logic) if active, otherwise Backup (View)
-        public int Q => Data != null ? Data.Q : viewQ;
-        public int R => Data != null ? Data.R : viewR;
-        public int S => Data != null ? Data.S : viewS;
+        // Properties: Read directly from Data
+        public int Q => Data != null ? Data.Q : 0;
+        public int R => Data != null ? Data.R : 0;
+        public int S => Data != null ? Data.S : 0;
 
         public float Elevation
         {
-            get => Data != null ? Data.Elevation : viewElevation;
+            get => Data != null ? Data.Elevation : 0f;
             set
             {
                 if (Data != null) 
                 {
                     Data.Elevation = value;
-                }
-                else
-                {
-                    viewElevation = value; 
-                    UpdatePosition();
                 }
             }
         }
@@ -43,18 +31,13 @@ namespace HexGame
             get 
             {
                 if (_previewTerrain.HasValue) return _previewTerrain.Value;
-                return Data != null ? Data.TerrainType : viewTerrainType;
+                return Data != null ? Data.TerrainType : TerrainType.Plains;
             }
             set
             {
                 if (Data != null)
                 {
                     Data.TerrainType = value;
-                }
-                else
-                {
-                    viewTerrainType = value; 
-                    UpdateVisuals();
                 }
             }
         }
@@ -68,13 +51,12 @@ namespace HexGame
             }
         }
 
+        public System.Collections.Generic.List<Unit> Units => Data?.Units;
+
         public Unit Unit
         {
             get => Data?.Unit;
-            set
-            {
-                if (Data != null) Data.Unit = value;
-            }
+            set { if (Data != null) Data.Unit = value; }
         }
 
         public void AssignData(HexData data)
@@ -95,14 +77,7 @@ namespace HexGame
                 Data.OnElevationChanged += HandleElevationChanged;
             }
 
-            // Sync View Memory with Data
-            viewQ = data.Q;
-            viewR = data.R;
-            viewS = data.S;
-            viewElevation = data.Elevation;
-            viewTerrainType = data.TerrainType;
-
-            name = $"Hex ({data.Q}, {data.R})";
+            name = $"Hex ({Q}, {R})";
             UpdatePosition();
             UpdateVisuals();
             HandleStateChanged(); // Ensure initial state (Default) is applied
@@ -142,21 +117,20 @@ namespace HexGame
 
         private void HandleTerrainChanged()
         {
-            // Sync View Memory
-            viewTerrainType = Data.TerrainType;
             UpdateVisuals();
         }
 
         private void HandleElevationChanged()
         {
-            // Sync View Memory
-            viewElevation = Data.Elevation;
             UpdatePosition();
 
             // Trigger unit repositioning if present
-            if (Unit != null)
+            if (Data != null && Data.Units != null)
             {
-                Unit.UpdateVisualPosition();
+                foreach (var unit in Data.Units)
+                {
+                    if (unit != null) unit.UpdateVisualPosition();
+                }
             }
         }
         

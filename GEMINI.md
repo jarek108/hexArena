@@ -3,7 +3,7 @@
 
 # Development environment
 - Machine: Windows 10 pro
-- Unity 6000.214f1; 3D project using URP.
+- Unity 6000.3.2f1; 3D project using URP.
 - Target platform: PC
 - C# gameplay logic separated from UI/presentation.
 
@@ -47,6 +47,7 @@ We follow a **Data-Driven Architecture** prioritizing strict Logic/View separati
 5.  **Testing** Run the tests. MAKE SURE to inspect console errors
 6.  **Correction loop** Go to 4 till tests pass, and you MADE SURE there is no console errors. Confirm with user you are done
 7.  **Verification & finalization:** Once user confirms feature is done, update documentation, PROPOSE committing.
+8.  **Test Persistence:** Always store created tests as permanent artifacts in the codebase as long as they remain relevant and the feature they test exists. Never delete tests after verification unless explicitly requested.
 
 ## Python coding
 1. When writing Python, be very concise and prefer brevity over handling all errors etc.
@@ -59,22 +60,16 @@ We follow a **Data-Driven Architecture** prioritizing strict Logic/View separati
 *   **Menu**: Centralize specialized project tools under the **`HexArena`** top-level menu. Avoid creating multiple proprietary menu categories.
 
 # Tool Usage
-0. **Shell Commands**: NEVER use `&&` to chain multiple shell commands (e.g., `git status && git diff`). This syntax is often rejected by the shell parser. Always execute each command independently in its own tool call.
-1. **Game Screenshots** - run `python tools/unityGameScreenshot.py` without any arguments to capture screenshots (and not unity-mcp). NEVER provide a custom filename. You MUST use the filename provided in the tool's stdout output when referring to the screenshot. *Note: This script automatically moves the screenshot outside the Assets folder to `Screenshots`. Captures Game View only. Edit Mode screenshots are ok, but Play Mode may be unreliable; ask user for manual verification if needed.*
-2. **Waiting** - in interactions where you suspect some ongoing process needs to finish use `python tools/waitFewSeconds.py`. It accepts a single integer - the number of seconds to wait before returning. Useful in interactions where a delay is needed, for example, to allow Unity to recompile scripts or process asset changes. Wait minimum 40 seconds before testing.
-3. **Window Activation** - run `python tools/windowActivator.py "<title_substring>"` to bring windows containing the substring in their title to the foreground. Useful for switching back to Unity or the Game view.
-4. **Testing** Prefer `EditMode` over `PlayMode` testing. Always follow this testing sequence:
-    *   **Activate Unity**: ALWAYS run `python tools/windowActivator.py "Unity 6.2"` before running any tests or commands that require Unity's attention.
-    *   **Initial Console Check** BEFORE ruining the tests always use unity-mcp's `read_console` (types: `['error', 'warning']`). In case of any console errors abandon testing till they are resolved.
-    *   **Test run** always use unity-mcp's `run_tests`. *Troubleshooting: If 'No Unity plugins connected' error occurs, try waiting 60s or more for recompilation.*
-    *   **Post-test Console Check** BEFORE reporting test results further, check the console again. In Unity errors may indicate unreliable tests results
-4.  **Git Usage:** 
-    *   **CRITICAL:** NEVER commit or push without explicit consultation. 
-    *   You may only propose commit messages after a major feature/bug fix is verified and the user has been consulted.
-    *   **Propose first:** Always present the list of files and the proposed message, then wait for explicit confirmation.
-    *   Prepare commit messages based on conversation context and a list of modified files. Do not do long git diff HEAD analysis etc.
-    *   Use simple language and list all areas of change.
-    *   **Independent Commands**: Run each git command independently. NEVER chain them with `&&`.
-    *   **Pushing**: Only push after a confirmed commit, and ensure each push is also part of the confirmed sequence.
-5.  **Scene inspection/Management:** - Use use unity-mcp's `manage_gameobject` (action: `get_components`) or `manage_scene` (action: `get_hierarchy`) to inspect scene
-6. **Editing** - while using edit replacing 'old_string' with new always break long edits into smaller to avoid tool issues due to the errors in the replaced strings ('The exact text in old_string was not found')
+0. **Shell Commands**: NEVER use `&&` to chain multiple shell commands. Execute each independently.
+1. **Screenshots & Visual Inspection** - NEVER use MCP for screenshots. ALWAYS use `python tools/capture_unity.py "<purpose>"` to capture the Unity window.
+2. **Testing & Diagnostics** -  NEVER use MCP's  `read_console`, `run_tests`, or manual window activation tools. ALWAYS use `python tools/test_unity.py`. The diagnostic script automatically:
+    1. Checks for console errors/exceptions.
+    2. Saves the active scene.
+    3. Runs all EditMode tests and reports results.
+    If the script fails (exit code 1), fix the reported errors before proceeding.
+3. **Git Usage**: 
+    * **CRITICAL**: NEVER commit or push without explicit confirmation.
+    * Propose commit messages first, listing all modified files.
+    * Run each git command independently.
+4. **Scene inspection/Management**: Use `manage_gameobject` or `manage_scene`.
+5. **Editing**: Break long edits into smaller ones to avoid context matching issues.

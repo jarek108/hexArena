@@ -22,7 +22,6 @@
   "mcpServers": {
     "unity-mcp": {
       "httpUrl": "http://localhost:8080/mcp",
-      "transport": "http",
       "timeout": 180000
     }
   },

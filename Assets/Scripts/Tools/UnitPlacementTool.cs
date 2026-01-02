@@ -2,13 +2,14 @@ using UnityEngine;
 using System.Collections.Generic;
 using UnityEngine.InputSystem;
 using HexGame.Units;
+using System.Linq;
 
 namespace HexGame.Tools
 {
     public class UnitPlacementTool : BrushTool
     {
         [Header("Selection Settings")]
-        [SerializeField] private int selectedUnitIndex = 0;
+        [SerializeField] private string selectedUnitId = "";
         [SerializeField] private int selectedTeamId = 0;
 
         public override bool CheckRequirements(out string reason)
@@ -27,12 +28,23 @@ namespace HexGame.Tools
         [SerializeField] private bool disableGhostShadows = true;
 
         private List<UnitVisualization> previewGhosts = new List<UnitVisualization>();
-        private int lastGhostIndex = -1;
+        private string lastGhostId = "";
         private UnitVisualization lastGhostPrefab = null;
 
         public override void OnActivate()
         {
             base.OnActivate();
+            
+            // Ensure we have a valid selection
+            if (string.IsNullOrEmpty(selectedUnitId))
+            {
+                var unitManager = UnitManager.Instance;
+                if (unitManager != null && unitManager.ActiveUnitSet != null && unitManager.ActiveUnitSet.units.Count > 0)
+                {
+                    selectedUnitId = unitManager.ActiveUnitSet.units[0].id;
+                }
+            }
+
             RefreshGhostPool();
         }
 
@@ -81,8 +93,13 @@ namespace HexGame.Tools
 
             if (direction != 0)
             {
-                int count = unitManager.ActiveUnitSet.units.Count;
-                selectedUnitIndex = (selectedUnitIndex + direction + count) % count;
+                var units = unitManager.ActiveUnitSet.units;
+                int currentIndex = units.FindIndex(u => u.id == selectedUnitId);
+                if (currentIndex == -1) currentIndex = 0;
+
+                int count = units.Count;
+                currentIndex = (currentIndex + direction + count) % count;
+                selectedUnitId = units[currentIndex].id;
                 
                 RefreshGhostPool();
 
@@ -144,16 +161,16 @@ namespace HexGame.Tools
         private void RefreshGhostPool()
         {
             var unitManager = UnitManager.Instance;
-            if (unitManager == null || unitManager.unitVisualizationPrefab == null || unitManager.ActiveUnitSet == null || selectedUnitIndex < 0 || selectedUnitIndex >= unitManager.ActiveUnitSet.units.Count)
+            if (unitManager == null || unitManager.unitVisualizationPrefab == null || unitManager.ActiveUnitSet == null || string.IsNullOrEmpty(selectedUnitId))
             {
                 ClearGhostPool();
                 return;
             }
 
-            if (lastGhostIndex != selectedUnitIndex || lastGhostPrefab != unitManager.unitVisualizationPrefab)
+            if (lastGhostId != selectedUnitId || lastGhostPrefab != unitManager.unitVisualizationPrefab)
             {
                 ClearGhostPool();
-                lastGhostIndex = selectedUnitIndex;
+                lastGhostId = selectedUnitId;
                 lastGhostPrefab = unitManager.unitVisualizationPrefab;
             }
         }
@@ -169,7 +186,7 @@ namespace HexGame.Tools
                 }
             }
             previewGhosts.Clear();
-            lastGhostIndex = -1;
+            lastGhostId = "";
             lastGhostPrefab = null;
         }
 
@@ -190,9 +207,13 @@ namespace HexGame.Tools
             ghost.gameObject.name = "UnitPlacement_PreviewGhost";
             ghost.gameObject.SetActive(false);
             
-            if (unitManager.ActiveUnitSet != null && selectedUnitIndex >= 0 && selectedUnitIndex < unitManager.ActiveUnitSet.units.Count)
+            if (unitManager.ActiveUnitSet != null)
             {
-                ghost.SetPreviewIdentity(unitManager.ActiveUnitSet.units[selectedUnitIndex].Name);
+                var unitType = unitManager.ActiveUnitSet.units.FirstOrDefault(u => u.id == selectedUnitId);
+                if (unitType != null)
+                {
+                    ghost.SetPreviewIdentity(unitType.Name);
+                }
             }
 
             ApplyGhostVisuals(ghost.gameObject);
@@ -237,7 +258,7 @@ namespace HexGame.Tools
             foreach (var hexData in affectedHexes)
             {
                 Hex targetHex = manager.GetHexView(hexData);
-                unitManager.SpawnUnit(selectedUnitIndex, selectedTeamId, targetHex);
+                unitManager.SpawnUnit(selectedUnitId, selectedTeamId, targetHex);
             }
         }
     }

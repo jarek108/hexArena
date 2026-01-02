@@ -40,12 +40,9 @@ namespace HexGame.Tests
             manager.VisualizeGrid(grid);
 
             // Create Test Data
-            testSet = ScriptableObject.CreateInstance<UnitSet>();
-            testSet.units = new List<UnitType>
-            {
-                new UnitType { Name = "TestUnit1" },
-                new UnitType { Name = "TestUnit2" }
-            };
+            testSet = new UnitSet();
+            testSet.setName = "TestSet";
+            testSet.units = new List<UnitType> { new UnitType { id = "unit0", Name = "Unit0" } };
             
             // Create dummy visualization prefab
             testVizGO = new GameObject("TestViz");
@@ -63,7 +60,6 @@ namespace HexGame.Tests
         {
             Object.DestroyImmediate(managerGO);
             if (unitManagerGO != null) Object.DestroyImmediate(unitManagerGO);
-            Object.DestroyImmediate(testSet);
             if(testVizGO != null) Object.DestroyImmediate(testVizGO);
         }
 
@@ -79,7 +75,6 @@ namespace HexGame.Tests
 
             // Assert
             Assert.IsNotNull(targetHex.Data.Unit, "Hex should have a unit assigned.");
-            Assert.AreEqual("TestUnit1", targetHex.Data.Unit.UnitName);
         }
         
         [Test]

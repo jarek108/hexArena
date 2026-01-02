@@ -545,7 +545,7 @@
         {
             "q": 10,
             "r": 4,
-            "elevation": 1.0,
+            "elevation": 2.0,
             "terrainType": 0
         },
         {
@@ -665,7 +665,7 @@
         {
             "q": 10,
             "r": 5,
-            "elevation": 1.0,
+            "elevation": 2.0,
             "terrainType": 0
         },
         {

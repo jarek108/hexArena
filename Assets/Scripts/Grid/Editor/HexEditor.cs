@@ -50,7 +50,22 @@ namespace HexGame.Editor
             }
 
             GUI.enabled = false;
-            EditorGUILayout.ObjectField("Unit", targetHex.Unit, typeof(Unit), true);
+            
+            // Units Section
+            if (targetHex.Units != null && targetHex.Units.Count > 0)
+            {
+                EditorGUILayout.Space();
+                EditorGUILayout.LabelField($"Units ({targetHex.Units.Count})", EditorStyles.miniBoldLabel);
+                foreach (var unit in targetHex.Units)
+                {
+                    EditorGUILayout.ObjectField(unit, typeof(Unit), true);
+                }
+            }
+            else
+            {
+                EditorGUILayout.LabelField("Units: None", EditorStyles.miniLabel);
+            }
+            
             GUI.enabled = true;
             
             EditorGUILayout.EndVertical();

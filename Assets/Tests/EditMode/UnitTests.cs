@@ -1,6 +1,8 @@
 using NUnit.Framework;
 using UnityEngine;
 using HexGame;
+using System.Collections.Generic;
+using HexGame.Units;
 
 [TestFixture]
 public class UnitPlacementTests
@@ -18,6 +20,7 @@ public class UnitPlacementTests
         unitManagerGO = new GameObject("UnitManager");
         unitManager = unitManagerGO.AddComponent<UnitManager>();
         unitManager.activeUnitSetPath = ""; // Prevent loading real data
+        typeof(UnitManager).GetProperty("Instance").SetValue(null, unitManager);
 
         hexGO = new GameObject("TestHex");
         hex = hexGO.AddComponent<Hex>();
@@ -27,19 +30,21 @@ public class UnitPlacementTests
         hex.AssignData(data);
 
         // Create a dummy UnitSet for initialization
-        var testSet = ScriptableObject.CreateInstance<HexGame.Units.UnitSet>();
-        testSet.units.Add(new HexGame.Units.UnitType { Name = "Test" });
+        var testSet = new UnitSet();
+        testSet.setName = "TestSet";
+        testSet.units = new List<UnitType> { new UnitType { id = "test_unit", Name = "Unit" } };
+
         unitManager.ActiveUnitSet = testSet;
 
         unitGO = new GameObject("TestUnit");
         unit = unitGO.AddComponent<Unit>();
-        unit.Initialize(0, 0);
+        unit.Initialize("test_unit", 0);
     }
 
     [TearDown]
     public void TearDown()
     {
-        if (unitManager != null && unitManager.ActiveUnitSet != null) Object.DestroyImmediate(unitManager.ActiveUnitSet);
+        typeof(UnitManager).GetProperty("Instance").SetValue(null, null);
         Object.DestroyImmediate(unitManagerGO);
         Object.DestroyImmediate(hexGO);
         Object.DestroyImmediate(unitGO);
@@ -51,7 +56,7 @@ public class UnitPlacementTests
         unit.SetHex(hex);
 
         Assert.AreEqual(hex, unit.CurrentHex);
-        Assert.AreEqual(unit, hex.Unit);
+        Assert.AreEqual(unit, hex.Data.Unit);
     }
 
     [Test]
@@ -72,13 +77,13 @@ public class UnitPlacementTests
         hex2.AssignData(data2);
         
         unit.SetHex(hex);
-        Assert.AreEqual(unit, hex.Unit);
+        Assert.AreEqual(unit, hex.Data.Unit);
 
         unit.SetHex(hex2);
         
-        Assert.IsNull(hex.Unit);
+        Assert.IsNull(hex.Data.Unit);
         Assert.AreEqual(hex2, unit.CurrentHex);
-        Assert.AreEqual(unit, hex2.Unit);
+        Assert.AreEqual(unit, hex2.Data.Unit);
 
         Object.DestroyImmediate(hex2GO);
     }
@@ -91,7 +96,7 @@ public class UnitPlacementTests
         float offset = 0.5f;
         var viz = unitGO.AddComponent<HexGame.Units.SimpleUnitVisualization>();
         viz.yOffset = offset;
-        unit.Initialize(0, 0); // Re-init to pick up visualization
+        unit.Initialize("test_unit", 0); // Re-init to pick up visualization
 
         // Act
         float newElevation = 5f;

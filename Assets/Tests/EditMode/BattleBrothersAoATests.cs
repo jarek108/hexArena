@@ -4,7 +4,6 @@ using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
 using HexGame;
-using HexGame.Tools;
 using HexGame.Units;
 
 namespace HexGame.Tests
@@ -19,7 +18,6 @@ namespace HexGame.Tests
         private GameMaster gameMaster;
         private BattleBrothersRuleset ruleset;
         private Grid grid;
-        private Unit unit;
         private UnitSet unitSet;
 
         [UnitySetUp]
@@ -27,28 +25,34 @@ namespace HexGame.Tests
         {
             managerGO = TestHelper.CreateTestManager();
             manager = managerGO.GetComponent<GridVisualizationManager>();
-            typeof(GridVisualizationManager).GetProperty("Instance").SetValue(null, manager);
+            
+            // Force instance singleton
+            var instanceProp = typeof(GridVisualizationManager).GetProperty("Instance", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+            instanceProp.SetValue(null, manager);
 
             unitManagerGO = new GameObject("UnitManager");
             unitManager = unitManagerGO.AddComponent<UnitManager>();
             unitManager.activeUnitSetPath = ""; // Prevent loading real data
-            typeof(UnitManager).GetProperty("Instance").SetValue(null, unitManager);
+            
+            var umInstanceProp = typeof(UnitManager).GetProperty("Instance", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+            umInstanceProp.SetValue(null, unitManager);
 
             gameMasterGO = new GameObject("GameMaster");
             gameMaster = gameMasterGO.AddComponent<GameMaster>();
-            ruleset = ScriptableObject.CreateInstance<BattleBrothersRuleset>();
-            gameMaster.ruleset = ruleset;
+            var gmInstanceProp = typeof(GameMaster).GetProperty("Instance", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+            gmInstanceProp.SetValue(null, gameMaster);
 
             grid = new Grid(10, 10);
             manager.Grid = grid;
 
-            unitSet = ScriptableObject.CreateInstance<UnitSet>();
+            ruleset = ScriptableObject.CreateInstance<BattleBrothersRuleset>();
+            ruleset.movement = ScriptableObject.CreateInstance<MovementModule>();
+            ruleset.combat = ScriptableObject.CreateInstance<CombatModule>();
+            ruleset.tactical = ScriptableObject.CreateInstance<TacticalModule>();
+            gameMaster.ruleset = ruleset;
+
+            unitSet = new UnitSet();
             unitManager.ActiveUnitSet = unitSet;
-
-            GameObject unitGO = new GameObject("Unit");
-            unit = unitGO.AddComponent<Unit>();
-            unitGO.AddComponent<SimpleUnitVisualization>();
-
             yield return null;
         }
 
@@ -56,94 +60,140 @@ namespace HexGame.Tests
         public IEnumerator TearDown()
         {
             typeof(UnitManager).GetProperty("Instance").SetValue(null, null);
+            typeof(GridVisualizationManager).GetProperty("Instance").SetValue(null, null);
+            typeof(GameMaster).GetProperty("Instance").SetValue(null, null);
+
             Object.DestroyImmediate(managerGO);
             Object.DestroyImmediate(unitManagerGO);
             Object.DestroyImmediate(gameMasterGO);
             Object.DestroyImmediate(ruleset);
-            Object.DestroyImmediate(unitSet);
             yield return null;
         }
 
-        private void SetupUnit(int teamId, int mrng, int rrng)
+        private Unit SetupUnit(int teamId, int mrng, int rrng)
         {
-            var type = new UnitType { Name = "Test" };
-            type.Stats = new List<UnitStatValue>
-            {
-                new UnitStatValue { id = "MRNG", value = mrng },
-                new UnitStatValue { id = "RRNG", value = rrng }
+            GameObject go = new GameObject("Unit");
+            Unit u = go.AddComponent<Unit>();
+            
+            var type = new UnitType { id = "unit_" + teamId + "_" + mrng + "_" + rrng, Name = "Unit" };
+            type.Stats = new List<UnitStatValue> { 
+                new UnitStatValue { id = "MAT", value = mrng > 0 ? 60 : 0 },
+                new UnitStatValue { id = "RAT", value = rrng > 0 ? 60 : 0 },
+                new UnitStatValue { id = "RNG", value = mrng > 0 ? mrng : rrng }
             };
-            unitSet.units = new List<UnitType> { type };
-            unitManager.ActiveUnitSet = unitSet;
-            unit.Initialize(0, teamId);
+            unitSet.units.Add(type);
+            u.Initialize(type.id, teamId);
+            return u;
         }
 
-        private HexData CreateHex(int q, int r, float elevation = 0)
+        private void AddNeighborsInRange(HexData center, int range)
         {
-            HexData data = new HexData(q, r);
-            data.Elevation = elevation;
-            grid.AddHex(data);
-            
-            GameObject go = new GameObject($"Hex_{q}_{r}");
-            go.transform.SetParent(manager.transform);
-            Hex hexView = go.AddComponent<Hex>();
-            hexView.AssignData(data);
-            
-            return data;
+            for (int q = -range; q <= range; q++)
+            {
+                for (int r = Mathf.Max(-range, -q - range); r <= Mathf.Min(range, -q + range); r++)
+                {
+                    if (q == 0 && r == 0) continue;
+                    int targetQ = center.Q + q;
+                    int targetR = center.R + r;
+                    if (grid.GetHexAt(targetQ, targetR) == null)
+                    {
+                        grid.AddHex(new HexData(targetQ, targetR));
+                    }
+                }
+            }
         }
 
-        [UnityTest]
-        public IEnumerator OnFinishPathfinding_AddsAoAState()
+        [Test]
+        public void AoA_MeleeUnit_ShowsCorrectRange()
         {
-            SetupUnit(0, 1, 0); // Team 0, Melee range 1
-            HexData start = CreateHex(0, 0);
-            HexData stop = CreateHex(1, 0);
-            HexData target = CreateHex(2, 0);
+            HexData h = new HexData(0, 0);
+            grid.AddHex(h);
+            AddNeighborsInRange(h, 1);
 
-            List<HexData> path = new List<HexData> { start, stop };
+            Unit u = SetupUnit(0, 1, 0);
+            u.SetHex(manager.GetHexView(h));
+
+            ruleset.tactical.ShowAoA(u, h, ruleset.movement.maxElevationDelta);
             
-            ruleset.OnFinishPathfinding(unit, path, true);
+            int aoaCount = 0;
+            foreach (var hex in grid.GetAllHexes())
+            {
+                if (hex.States.Contains($"AoA{u.teamId}_{u.Id}")) aoaCount++;
+            }
             
-            Assert.IsTrue(target.States.Contains($"AoA0_{unit.Id}"), "Neighbor hex should have AoA state");
-            
-            yield return null;
+            Assert.AreEqual(6, aoaCount, "Melee unit with range 1 should have 6 AoA states.");
         }
 
-        [UnityTest]
-        public IEnumerator OnClearPathfindingVisuals_RemovesAoAState()
+        [Test]
+        public void AoA_RangedUnit_ShowsCorrectRange()
         {
-            SetupUnit(0, 1, 0);
-            HexData start = CreateHex(0, 0);
-            HexData stop = CreateHex(1, 0);
-            HexData target = CreateHex(2, 0);
+            HexData h = new HexData(0, 0);
+            grid.AddHex(h);
+            AddNeighborsInRange(h, 3);
 
-            List<HexData> path = new List<HexData> { start, stop };
-            ruleset.OnFinishPathfinding(unit, path, true);
-            Assert.IsTrue(target.States.Contains($"AoA0_{unit.Id}"));
+            Unit u = SetupUnit(0, 0, 3);
+            u.SetHex(manager.GetHexView(h));
 
-            ruleset.OnClearPathfindingVisuals();
+            ruleset.tactical.ShowAoA(u, h, ruleset.movement.maxElevationDelta);
             
-            Assert.IsFalse(target.States.Contains($"AoA0_{unit.Id}"), "AoA state should be removed after clearing");
+            int aoaCount = 0;
+            foreach (var hex in grid.GetAllHexes())
+            {
+                if (hex.States.Contains($"AoA{u.teamId}_{u.Id}")) aoaCount++;
+            }
             
-            yield return null;
+            Assert.AreEqual(36, aoaCount, "Ranged unit with range 3 should have 36 AoA states.");
         }
 
-        [UnityTest]
-        public IEnumerator MeleeAoA_RespectsElevation()
+        [Test]
+        public void AoA_MeleeUnit_RespectsElevation()
         {
-            SetupUnit(0, 1, 0);
-            ruleset.maxElevationDelta = 1.0f;
-            
-            HexData stop = CreateHex(0, 0, 0);
-            HexData low = CreateHex(1, 0, 0);
-            HexData high = CreateHex(0, 1, 2.0f); // Too high
+            HexData h = new HexData(0, 0);
+            grid.AddHex(h);
+            AddNeighborsInRange(h, 1);
 
-            List<HexData> path = new List<HexData> { stop };
-            ruleset.OnFinishPathfinding(unit, path, true);
+            // Set one neighbor to very high elevation
+            var neighbors = grid.GetNeighbors(h);
+            neighbors[0].Elevation = 5.0f;
+            ruleset.movement.maxElevationDelta = 1.0f;
 
-            Assert.IsTrue(low.States.Contains($"AoA0_{unit.Id}"), "Same level hex should be in AoA");
-            Assert.IsFalse(high.States.Contains($"AoA0_{unit.Id}"), "Too high hex should NOT be in AoA");
+            Unit u = SetupUnit(0, 1, 0);
+            u.SetHex(manager.GetHexView(h));
+
+            ruleset.tactical.ShowAoA(u, h, ruleset.movement.maxElevationDelta);
             
-            yield return null;
+            int aoaCount = 0;
+            foreach (var hex in grid.GetAllHexes())
+            {
+                if (hex.States.Contains($"AoA{u.teamId}_{u.Id}")) aoaCount++;
+            }
+            
+            Assert.AreEqual(5, aoaCount, "Melee unit should only see 5 neighbors within elevation limit.");
+        }
+
+        [Test]
+        public void AoA_RangedUnit_IgnoresElevation()
+        {
+            HexData h = new HexData(0, 0);
+            grid.AddHex(h);
+            AddNeighborsInRange(h, 1);
+
+            var neighbors = grid.GetNeighbors(h);
+            neighbors[0].Elevation = 5.0f;
+            ruleset.movement.maxElevationDelta = 1.0f;
+
+            Unit u = SetupUnit(0, 0, 1);
+            u.SetHex(manager.GetHexView(h));
+
+            ruleset.tactical.ShowAoA(u, h, ruleset.movement.maxElevationDelta);
+            
+            int aoaCount = 0;
+            foreach (var hex in grid.GetAllHexes())
+            {
+                if (hex.States.Contains($"AoA{u.teamId}_{u.Id}")) aoaCount++;
+            }
+            
+            Assert.AreEqual(6, aoaCount, "Ranged unit should ignore elevation for AoA visualization.");
         }
     }
 }

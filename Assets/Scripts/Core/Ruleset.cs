@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
+using HexGame.Units;
 
 namespace HexGame
 {
@@ -24,18 +25,52 @@ namespace HexGame
         }
     }
 
+    public struct MoveVerification
+    {
+        public bool isValid;
+        public string reason;
+
+        public static MoveVerification Success() => new MoveVerification { isValid = true, reason = "" };
+        public static MoveVerification Failure(string reason) => new MoveVerification { isValid = false, reason = reason };
+    }
+
     public abstract class Ruleset : ScriptableObject 
     {
+        public string schema;
+
         [HideInInspector] public HexData currentSearchTarget;
+        [HideInInspector] public List<HexData> currentSearchTargets = new List<HexData>();
 
         public virtual void OnStartPathfinding(HexData target, Unit unit)
         {
             currentSearchTarget = target;
+            currentSearchTargets.Clear();
+            currentSearchTargets.Add(target);
         }
 
-        public abstract float GetMoveCost(Unit unit, HexData fromHex, HexData toHex);
-        public abstract bool OnEntry(Unit unit, HexData hex);
-        public abstract bool OnDeparture(Unit unit, HexData hex);
+        public virtual void OnStartPathfinding(IEnumerable<HexData> targets, Unit unit)
+        {
+            currentSearchTargets = new List<HexData>(targets);
+            currentSearchTarget = currentSearchTargets.Count > 0 ? currentSearchTargets[0] : null;
+        }
+
+        /// <summary>
+        /// Returns the tactical weight of a move for pathfinding. 
+        /// Should ONLY return Infinity for physical blockers, not resource constraints.
+        /// </summary>
+        public abstract float GetPathfindingMoveCost(Unit unit, HexData fromHex, HexData toHex);
+
+        /// <summary>
+        /// Attempts to move a unit from one hex to another. 
+        /// Validates preconditions (AP, Occupation) and executes interruption logic (ZoC attacks, Traps).
+        /// Returns Success if the move proceeds, or Failure if blocked/interrupted.
+        /// </summary>
+        public abstract MoveVerification TryMoveStep(Unit unit, HexData fromHex, HexData toHex);
+
+        /// <summary>
+        /// Executes the side effects of a move (deducting resources, updating grid footprints).
+        /// </summary>
+        public abstract void PerformMove(Unit unit, HexData fromHex, HexData toHex);
 
         public abstract void OnAttacked(Unit attacker, Unit target);
         public abstract void OnHit(Unit attacker, Unit target, float damage);
@@ -57,6 +92,20 @@ namespace HexGame
         public virtual int GetMoveStopIndex(Unit unit, List<HexData> path)
         {
             return path != null ? path.Count : 0;
+        }
+
+        /// <summary>
+        /// Returns a list of hexes from which the attacker can strike the target.
+        /// By default returns the target's own hex (direct targeting).
+        /// </summary>
+        public virtual List<HexData> GetValidAttackPositions(Unit attacker, Unit target)
+        {
+            var results = new List<HexData>();
+            if (target != null && target.CurrentHex != null)
+            {
+                results.Add(target.CurrentHex.Data);
+            }
+            return results;
         }
     }
 }

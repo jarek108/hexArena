@@ -21,6 +21,15 @@ namespace HexGame
             get
             {
                 if (_activeSet == null) LoadActiveSet();
+                
+                // Override schema from Ruleset if available
+                var ruleset = GameMaster.Instance?.ruleset;
+                if (_activeSet != null && ruleset != null && !string.IsNullOrEmpty(ruleset.schema))
+                {
+                    _activeSet.schemaId = ruleset.schema;
+                    _activeSet.schemaDefinitions = null; // Force reload
+                }
+                
                 return _activeSet;
             }
             set => _activeSet = value;
@@ -44,12 +53,12 @@ namespace HexGame
             }
 
             string json = System.IO.File.ReadAllText(activeUnitSetPath);
-            _activeSet = ScriptableObject.CreateInstance<UnitSet>();
+            _activeSet = new UnitSet();
             _activeSet.FromJson(json);
             
             // Note: If the JSON refers to a schema asset that was deleted, it will be null.
             // We might need to manually link it if we know where it is.
-            if (_activeSet.schema == null)
+            if (string.IsNullOrEmpty(_activeSet.schemaId))
             {
                 // Try to find a schema with the same name in Data/Schemas
                 // This is a bit hacky but helps with the transition
@@ -73,12 +82,12 @@ namespace HexGame
             if (Instance == this) Instance = null;
         }
 
-        public void SpawnUnit(int index, int teamId, Hex targetHex)
+        public void SpawnUnit(string unitTypeId, int teamId, Hex targetHex)
         {
-            SpawnUnit(ActiveUnitSet, index, teamId, targetHex, unitVisualizationPrefab);
+            SpawnUnit(ActiveUnitSet, unitTypeId, teamId, targetHex, unitVisualizationPrefab);
         }
 
-        public void SpawnUnit(UnitSet set, int index, int teamId, Hex targetHex, UnitVisualization prefab)
+        public void SpawnUnit(UnitSet set, string unitTypeId, int teamId, Hex targetHex, UnitVisualization prefab)
         {
             if (targetHex == null || targetHex.Data == null || set == null || prefab == null) return;
 
@@ -90,13 +99,13 @@ namespace HexGame
                 targetHex.Data.Unit = null;
             }
 
-            if (index < 0 || index >= set.units.Count) return;
+            UnitType type = set.units.FirstOrDefault(u => u.id == unitTypeId);
+            if (type == null) return;
 
-            UnitType type = set.units[index];
             UnitVisualization vizInstance = Instantiate(prefab, transform);
 
             Unit unitComponent = vizInstance.gameObject.AddComponent<Unit>();
-            unitComponent.Initialize(index, teamId);
+            unitComponent.Initialize(unitTypeId, teamId);
             unitComponent.SetHex(targetHex);
         }
 
@@ -104,11 +113,19 @@ namespace HexGame
         {
             foreach (var hexData in hexes)
             {
-                if (hexData.Unit != null)
+                if (hexData.Units.Count > 0)
                 {
-                    if (Application.isPlaying) Destroy(hexData.Unit.gameObject);
-                    else DestroyImmediate(hexData.Unit.gameObject);
-                    hexData.Unit = null;
+                    // Create a copy because we are about to destroy them
+                    var unitsToDestroy = new List<Unit>(hexData.Units);
+                    foreach (var u in unitsToDestroy)
+                    {
+                        if (u != null)
+                        {
+                            if (Application.isPlaying) Destroy(u.gameObject);
+                            else DestroyImmediate(u.gameObject);
+                        }
+                    }
+                    hexData.Unit = null; // Clears the list
                 }
             }
         }
@@ -119,6 +136,12 @@ namespace HexGame
             {
                 Transform child = transform.GetChild(i);
                 if (child.name.Contains("Ghost")) continue;
+
+                Unit unit = child.GetComponent<Unit>();
+                if (unit != null) unit.ClearOwnedHexStates();
+
+                // Detach immediately so systems like RelinkUnitsToGrid don't find it pending destruction
+                child.SetParent(null);
 
                 if (Application.isPlaying) Destroy(child.gameObject);
                 else DestroyImmediate(child.gameObject);
@@ -184,10 +207,7 @@ namespace HexGame
 
         public void LoadUnits(string path, UnitSet fallbackSet, UnitVisualization visualizationPrefab)
         {
-            if (!System.IO.File.Exists(path))
-            {
-                return;
-            }
+            if (!System.IO.File.Exists(path)) return;
 
             string json = System.IO.File.ReadAllText(path);
             UnitSaveBatch batch = JsonUtility.FromJson<UnitSaveBatch>(json);
@@ -229,12 +249,11 @@ namespace HexGame
                     Hex hexView = gridManager.GetHexView(hexData);
                     if (hexView != null)
                     {
-                        SpawnUnit(set, data.typeIndex, data.teamId, hexView, visualizationPrefab);
+                        SpawnUnit(set, data.unitTypeId, data.teamId, hexView, visualizationPrefab);
                     }
                 }
             }
             lastLayoutPath = path;
-            RelinkUnitsToGrid();
         }
 
         private UnitSet ResolveSetById(string id)
@@ -246,7 +265,7 @@ namespace HexGame
             foreach (var file in files)
             {
                 string json = File.ReadAllText(file);
-                var tempSet = ScriptableObject.CreateInstance<UnitSet>();
+                var tempSet = new UnitSet();
                 tempSet.FromJson(json);
                 if (tempSet.setName == id) 
                 {

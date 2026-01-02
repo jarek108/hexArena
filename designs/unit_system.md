@@ -5,23 +5,24 @@ The Unit System manages dynamic game entities ("Units") that occupy the grid. It
 
 ## Core Principles
 1.  **JSON-Driven Prototypes:** Unit attributes (Type, Base Stats) are defined in JSON files (`Assets/Data/Sets/*.json`), linked to Schemas (`Assets/Data/Schemas/*.json`).
-2.  **Centralized Management:** `UnitManager` acts as the single source of truth for the active `UnitSet`. Units resolve their stats and definitions logically from the manager's active set.
-3.  **View Abstraction:** The `Unit` logic class handles gameplay state, while `UnitVisualization` handles rendering.
-4.  **Grid Integration:** Units are spatially aware agents linked strictly to `HexData`.
-5.  **Ruleset Driven:** Rulesets manage movement costs and combat side-effects (e.g., ZoC).
+2.  **Stable Identity:** `UnitType` prototypes use a persistent 8-character random string `id`. This ensures that unit references in save files remain valid even if lists are reordered or units are deleted.
+3.  **Centralized Management:** `UnitManager` acts as the single source of truth for the active `UnitSet`. Units resolve their stats and definitions logically from the manager's active set.
+4.  **View Abstraction:** The `Unit` logic class handles gameplay state, while `UnitVisualization` handles rendering.
+5.  **Grid Integration:** Units are spatially aware agents linked strictly to `HexData`.
+6.  **Ruleset Driven:** Rulesets manage movement costs and combat side-effects (e.g., ZoC).
 
 ## Architecture Structure
 
 ### 1. Data Definition Layer (JSON)
-*   **`UnitSchema`**: Defines the stat structure (ID and Name). Loaded from JSON into a transient SO.
+*   **`UnitSchema`**: Defines the stat structure (ID and Name). Loaded from JSON into POCO objects.
 *   **`UnitSet`**: A collection of `UnitType` prototypes. Resolves its schema by ID from the Schemas folder.
-*   **`UnitType`**: Individual unit prototype with specific stat values.
+*   **`UnitType`**: Individual unit prototype with specific stat values and a unique stable `id`.
 
 ### 2. Logic & State Layer (MonoBehaviour)
 *   **`Unit`**:
     *   **Identity**: Unique `Id` (GetInstanceID). GameObject named `UnitName_ID`.
-    *   **State**: `typeIndex`, `teamId`. Resolves `unitSet` and `Stats` from `UnitManager.Instance.ActiveUnitSet`.
-    *   **Lifecycle**: Re-initializes stats and visualization on index or set changes.
+    *   **State**: `unitTypeId` (string), `teamId` (int). Resolves `unitSet` and `Stats` from `UnitManager.Instance.ActiveUnitSet` using the ID.
+    *   **Lifecycle**: Re-initializes stats and visualization on ID or set changes.
     *   **Movement**: `MoveAlongPath` interpolation.
 
 ### 3. View Layer (MonoBehaviour)
@@ -31,32 +32,13 @@ The Unit System manages dynamic game entities ("Units") that occupy the grid. It
 ### 4. Management & Rules Layer
 *   **`UnitManager`**: 
     *   Holds `activeUnitSetPath` (JSON path).
-    *   Provides `ActiveUnitSet` (transient transient SO).
+    *   Provides `ActiveUnitSet` (transient POCO).
     *   Handles layout saving/loading, ensuring the correct UnitSet is restored with the unit positions.
     *   Tracks `lastLayoutPath` for quick saving (overwriting the active file).
-*   **`UnitDataEditorWindow`**: Centralized UI (HexArena menu) for creating and editing Schemas/Sets with auto-save and draggable stat reordering.
+*   **`UnitDataEditorWindow`**: Centralized UI (HexArena menu) for creating and editing Schemas/Sets with auto-save and automatic ID generation.
 *   **`Ruleset` (Abstract SO)**: Game brain handling costs and combat flow.
 *   **`BattleBrothersRuleset`**: BB-specific implementation (ZoC, AoA, bucket-based probability).
 
-## Key Interactions
-
-### Pathfinding & Combat Flow
-1.  **Selection**: `PathfindingTool` identifies a unit.
-2.  **Hover**: Calculates path and AoA. Ruleset hides movement ghost if stationary.
-3.  **Execution**: `ruleset.ExecutePath` with completion callback to maintain selection.
-4.  **Attack**: `PerformAttack` uses bucket-based resolution. `OnHit` applies HP damage and triggers `OnDie`.
-
-### Persistence Strategy
-*   **Unit Layouts**: Serialized to `UnitSaveBatch` JSON, including the `unitSetId` to ensure logical consistency on reload.
-*   **Auto-Save**: The Unit Data Editor automatically writes changes to JSON files on every field modification.
-    *   **Layout Persistence UI**:
-    *   **Row 1**: [Layout Dropdown] [Refresh] (Quick-access to Data/UnitLayouts).
-    *   **Row 2**: 
-        *   **Save**: Overwrites the `lastLayoutPath`.
-        *   **Save As**: Prompt for a new filename.
-        *   **Reload**: Loads the file selected in the Row 1 dropdown.
-        *   **Load...**: Opens a file browser to load any JSON.
-    *   **Operations**: [Relink Units] [Erase All] consolidated into a single compact row.
 ## Key Interactions
 
 ### Pathfinding & Combat Flow
@@ -71,7 +53,7 @@ The Unit System manages dynamic game entities ("Units") that occupy the grid. It
     *   Calculates **Area of Attack (AoA)**: Highlights all hexes within the unit's max range from the stopping hex.
 5.  **Execution**: On click, the tool calls `ruleset.ExecutePath`. 
     *   The unit calls `MoveAlongPath`.
-    *   At each step, `OnDeparture` and `OnEntry` manage `Occupied` and `ZoC` states.
+    *   At each step, `ruleset.TryMoveStep` and `ruleset.PerformMove` manage resource deduction, `Occupied` states, and `ZoC` triggers.
     *   If the target was an enemy, the unit performs an `OnAttack` sequence upon reaching the stop position.
 6.  **Attack Resolution**:
     *   `PerformAttack` generates the probability buckets via `GetPotentialHits`.
@@ -80,13 +62,21 @@ The Unit System manages dynamic game entities ("Units") that occupy the grid. It
 
 ### Spawning & Relinking
 1.  **Placement**: `Unit.SetHex(hex)` is called.
-2.  **Departure**: Previous hex is notified via `ruleset.OnDeparture(this, oldHex)`.
-3.  **Entry**: New hex is notified via `ruleset.OnEntry(this, newHex)`. In `BattleBrothersRuleset`, this adds a unit-unique state (e.g., `Occupied0_123`). If the unit has `MRNG > 0` (Melee Range), it also adds `ZoCT_U` states to reachable neighbors.
-4.  **Visualization**: Unit snaps to world position + `yOffset`.
+2.  **Ruleset Integration**: The Ruleset handles occupancy and influence projection during `PerformMove`. In `BattleBrothersRuleset`, this adds unit-unique states (e.g., `Occupied0_123`). If the unit has `MAT > 0`, it also adds `ZoCT_U` states to reachable neighbors.
+3.  **Visualization**: Unit snaps to world position + `yOffset`.
 
 ### Real-Time Refresh
 The `UnitEditor` ensures that any manual change to a Unit's properties in the Inspector triggers a re-initialization and a `SetHex` call, keeping the Ruleset and Grid states perfectly in sync during Edit Mode.
 
 ## Persistence Strategy
-*   **Saving**: Serializes `UnitSaveData` (Coords, Type Index, TeamID).
+*   **Saving**: Serializes `UnitSaveData` (Coords, `unitTypeId` string, TeamID).
 *   **Loading**: Re-instantiates units. `RelinkUnitsToGrid` is called at `Start` or after loading to ensure `OnEntry` is fired for every unit, restoring transient grid states (like ZoC) that aren't saved to JSON.
+*   **Auto-Save**: The Unit Data Editor automatically writes changes to JSON files on every field modification.
+    *   **Layout Persistence UI**:
+    *   **Row 1**: [Layout Dropdown] [Refresh] (Quick-access to Data/UnitLayouts).
+    *   **Row 2**: 
+        *   **Save**: Overwrites the `lastLayoutPath`.
+        *   **Save As**: Prompt for a new filename.
+        *   **Reload**: Loads the file selected in the Row 1 dropdown.
+        *   **Load...**: Opens a file browser to load any JSON.
+    *   **Operations**: [Relink Units] [Erase All] consolidated into a single compact row.
