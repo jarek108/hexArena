@@ -260,8 +260,8 @@ namespace HexGame
                 // Must be empty (or the attacker themselves)
                 if (h.Units.Count > 0 && !h.Units.Contains(attacker)) continue;
 
-                // Respect elevation delta
-                if (movement != null)
+                // Respect elevation delta for melee attacks (RNG 1)
+                if (movement != null && rng == 1)
                 {
                     float delta = Mathf.Abs(h.Elevation - targetHex.Elevation);
                     if (delta > movement.maxElevationDelta) continue;

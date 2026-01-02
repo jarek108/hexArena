@@ -137,15 +137,13 @@ namespace HexGame
                     var verification = ruleset.TryMoveStep(this, previousData, targetData);
                     if (!verification.isValid)
                     {
-                        Debug.Log($"[Unit] Move stopped: {verification.reason}");
+                        Debug.Log($"[Unit] Move interrupted: {verification.reason}");
                         break; 
                     }
                 }
 
                 var manager = GridVisualizationManager.Instance;
                 Hex targetHex = manager.GetHex(targetData.Q, targetData.R);
-
-                Debug.Log($"[Unit] Moving to step {i}/{stopIndex-1}: {targetData.Q},{targetData.R}");
 
                 if (targetHex != null)
                 {
