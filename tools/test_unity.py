@@ -140,7 +140,7 @@ class DiagnosticsFormatter:
 
 # --- Execution Logic ---
 async def run_diagnostics():
-    max_retries = 3
+    max_retries = 4
     retry_delay = 2
     
     for attempt in range(max_retries):
@@ -199,7 +199,14 @@ async def run_diagnostics():
                     print(f"{Style.RED}{Style.BOLD}!!! TEST RUN FAILED !!!{Style.RESET}")
                     for item in res["result"].get("content", []):
                         print(item.get("text", ""))
-                    sys.exit(1)
+                    
+                    if attempt < max_retries - 1:
+                        wait_time = (attempt + 1) * 60
+                        print(f"{Style.YELLOW}Unity might be busy. Waiting {wait_time}s before retry {attempt + 2}/{max_retries}...{Style.RESET}")
+                        await asyncio.sleep(wait_time)
+                        continue
+                    else:
+                        sys.exit(1)
 
                 test_data = None
                 if res and "result" in res:
