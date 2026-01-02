@@ -1,6 +1,20 @@
 {
     "settings": [
         {
+            "state": "Active",
+            "priority": 50,
+            "visuals": {
+                "color": {
+                    "r": 1.0,
+                    "g": 1.0,
+                    "b": 1.0,
+                    "a": 1.0
+                },
+                "width": 0.25,
+                "pulsation": 3.0
+            }
+        },
+        {
             "state": "Path",
             "priority": 100,
             "visuals": {

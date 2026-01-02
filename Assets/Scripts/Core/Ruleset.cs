@@ -38,6 +38,11 @@ namespace HexGame
     {
         public string schema;
 
+        [Header("Flow Controls")]
+        public bool ignoreAPs = false;
+        public bool ignoreFatigue = false;
+        public bool ignoreMoveOrder = false;
+
         [HideInInspector] public HexData currentSearchTarget;
         [HideInInspector] public List<HexData> currentSearchTargets = new List<HexData>();
 

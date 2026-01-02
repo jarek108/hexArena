@@ -160,41 +160,79 @@ namespace HexGame.Tests
 
         
 
-                [Test]
-
-                public void Wait_MovesUnitToEndOfRound()
-
-                {
-
-                    var u1 = CreateUnit("Fast", 100);
-
-                    var u2 = CreateUnit("Slow", 50);
+                        [Test]
 
         
 
-                    gm.StartNewRound(); // Active: u1, Queue: u2
-
-                    Assert.AreEqual("Fast", gm.activeUnit.UnitName);
+                        public void Wait_MovesUnitToEndOfRound()
 
         
 
-                    gm.WaitCurrentTurn(); // Active: u2, Waiting: u1
-
-                    Assert.AreEqual("Slow", gm.activeUnit.UnitName);
-
-                    Assert.AreEqual(1, gm.WaitingQueue.Count);
-
-                    Assert.AreEqual(u1, gm.WaitingQueue[0]);
+                        {
 
         
 
-                    gm.AdvanceTurn(); // Main queue empty, processes Waiting queue. Active: u1
+                            var u1 = CreateUnit("Fast", 100);
 
-                    Assert.AreEqual("Fast", gm.activeUnit.UnitName);
+        
 
-                    Assert.AreEqual(0, gm.WaitingQueue.Count);
+                            var u2 = CreateUnit("Slow", 50);
 
-                }
+        
+
+                
+
+        
+
+                            gm.StartNewRound(); // Active: u1, Queue: u2
+
+        
+
+                            Assert.AreEqual("Fast", gm.activeUnit.UnitName);
+
+        
+
+                
+
+        
+
+                            gm.WaitCurrentTurn(); // Active: u2, u1 added back to queue with penalty
+
+        
+
+                            Assert.AreEqual("Slow", gm.activeUnit.UnitName);
+
+        
+
+                            Assert.AreEqual(1, gm.TurnQueue.Count);
+
+        
+
+                            Assert.AreEqual(u1, gm.TurnQueue[0]);
+
+        
+
+                
+
+        
+
+                            gm.AdvanceTurn(); // Main queue empty (or processed). Active: u1
+
+        
+
+                            Assert.AreEqual("Fast", gm.activeUnit.UnitName);
+
+        
+
+                            Assert.AreEqual(0, gm.TurnQueue.Count);
+
+        
+
+                        }
+
+        
+
+                
 
             }
 

@@ -30,6 +30,12 @@ namespace HexGame
                     }
                 }
             }
+
+            // 3. Active Turn Highlight
+            if (GameMaster.Instance != null && GameMaster.Instance.activeUnit == unit)
+            {
+                unit.AddOwnedHexState(targetHex, "Active");
+            }
         }
 
         public void ShowAoA(Unit unit, HexData stopHex, float maxElevationDelta)

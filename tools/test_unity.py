@@ -202,6 +202,10 @@ async def run_diagnostics():
 
                 print(f"{Style.GREEN}[OK] Console is clean of errors.{Style.RESET}")
 
+                # Wait for recompilation
+                print(f"{Style.YELLOW}[*] Waiting 60s for recompilation/stabilization...{Style.RESET}")
+                await asyncio.sleep(60)
+
                 # 2. SAVE SCENE
                 print(f"[*] Saving current scene...")
                 await mcp.call_tool("manage_scene", {"action": "save"})

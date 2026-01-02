@@ -15,11 +15,9 @@ namespace HexGame
         public int roundNumber = 0;
         public Unit activeUnit;
         [SerializeField] private List<Unit> turnQueue = new List<Unit>();
-        [SerializeField] private List<Unit> waitingQueue = new List<Unit>();
         private HashSet<int> unitsWhoWaitedThisRound = new HashSet<int>();
 
         public List<Unit> TurnQueue => turnQueue;
-        public List<Unit> WaitingQueue => waitingQueue;
 
         private void OnEnable()
         {
@@ -33,9 +31,15 @@ namespace HexGame
 
         public void StartNewRound()
         {
+            if (ruleset != null)
+            {
+                ruleset.ignoreAPs = false;
+                ruleset.ignoreFatigue = false;
+                ruleset.ignoreMoveOrder = false;
+            }
+
             roundNumber++;
             unitsWhoWaitedThisRound.Clear();
-            waitingQueue.Clear();
             
             // 1. Gather all units
             // Prefer UnitManager if available to ensure we only get units in the active layout
@@ -69,28 +73,17 @@ namespace HexGame
             // End turn hook for previous unit
             if (activeUnit != null)
             {
+                activeUnit.RemoveOwnedHexStatesByPrefix("Active");
                 ruleset?.OnTurnEnd(activeUnit);
             }
 
-            // Cleanup queues (remove null units that might have died)
+            // Cleanup queue (remove null units that might have died)
             turnQueue.RemoveAll(u => u == null);
-            waitingQueue.RemoveAll(u => u == null);
 
             if (turnQueue.Count == 0)
             {
-                if (waitingQueue.Count > 0)
-                {
-                    // Process waiting queue in initiative order
-                    turnQueue = waitingQueue
-                        .OrderByDescending(u => ruleset?.GetTurnPriority(u) ?? 0)
-                        .ToList();
-                    waitingQueue.Clear();
-                }
-                else
-                {
-                    StartNewRound();
-                    return;
-                }
+                StartNewRound();
+                return;
             }
 
             // Pop next unit
@@ -99,6 +92,12 @@ namespace HexGame
 
             // Start turn hook (e.g. AP restoration)
             ruleset?.OnTurnStart(activeUnit);
+
+            // Force influence projection to show "Active" highlight immediately
+            if (activeUnit != null && activeUnit.CurrentHex != null)
+            {
+                ruleset?.PerformMove(activeUnit, null, activeUnit.CurrentHex.Data);
+            }
 
             Debug.Log($"[GameMaster] Round {roundNumber} - Starting turn for: {activeUnit.UnitName}");
         }
@@ -116,12 +115,20 @@ namespace HexGame
             }
 
             unitsWhoWaitedThisRound.Add(activeUnit.Id);
-            waitingQueue.Add(activeUnit);
             
-            // We don't call OnTurnEnd here because the turn isn't strictly "over" yet, 
-            // but we need to transition to the next unit in the current queue.
+            // Add back to queue
+            turnQueue.Add(activeUnit);
+
+            // Re-sort queue. Units who are waiting get a -100 penalty to their priority.
+            turnQueue = turnQueue
+                .OrderByDescending(u => {
+                    int prio = ruleset?.GetTurnPriority(u) ?? 0;
+                    if (unitsWhoWaitedThisRound.Contains(u.Id)) prio -= 100;
+                    return prio;
+                })
+                .ToList();
             
-            activeUnit = null; // No active unit during transition
+            activeUnit = null; 
             AdvanceTurn();
         }
 

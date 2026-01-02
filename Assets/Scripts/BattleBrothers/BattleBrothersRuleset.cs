@@ -11,10 +11,6 @@ namespace HexGame
         public CombatModule combat;
         public TacticalModule tactical;
 
-        public bool ignoreAPs = false;
-        public bool ignoreFatigue = false;
-        public bool ignoreMoveOrder = false;
-
         public float transitionSpeed = 5.0f;
         public float transitionPause = 0.1f;
 
@@ -122,6 +118,10 @@ namespace HexGame
                 float rawDmg = Random.Range(attacker.GetStat("DMIN", 30), attacker.GetStat("DMAX", 40) + 1);
                 OnHit(attacker, target, rawDmg);
             }
+            else
+            {
+                Debug.Log($"[Combat] {attacker.UnitName} MISSES {target.UnitName} (Roll: {roll:P1} > Chance: {chance:P1})");
+            }
         }
 
         public override void OnAttacked(Unit attacker, Unit target)
@@ -160,6 +160,8 @@ namespace HexGame
             
             target.SetStat("HP", currentHP);
             target.SetStat("ARM", currentARM);
+
+            Debug.Log($"[Combat] {attacker.UnitName} HITS {target.UnitName} for {damage:F0} damage. Remaining HP: {currentHP}");
 
             var targetViz = target.GetComponent<HexGame.Units.UnitVisualization>();
             if (targetViz != null) targetViz.OnTakeDamage(Mathf.RoundToInt(damage));

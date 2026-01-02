@@ -53,23 +53,15 @@ namespace HexGame.Editor
                 EditorGUILayout.BeginVertical(EditorStyles.helpBox);
                 for (int i = 0; i < queue.Count; i++)
                 {
-                    if (queue[i] == null) continue;
-                    EditorGUILayout.LabelField($"{i+1}. {queue[i].UnitName} (INI: {gm.ruleset?.GetTurnPriority(queue[i])})");
-                }
-                EditorGUILayout.EndVertical();
-            }
+                    var u = queue[i];
+                    if (u == null) continue;
+                    
+                    int ini = gm.ruleset?.GetTurnPriority(u) ?? 0;
+                    int ap = u.GetStat("AP");
+                    int fat = u.GetStat("FAT");
+                    int mfat = u.GetBaseStat("FAT", 100);
 
-            // Waiting Queue display
-            var waiting = gm.WaitingQueue;
-            if (waiting != null && waiting.Count > 0)
-            {
-                EditorGUILayout.Space();
-                EditorGUILayout.LabelField("Waiting Queue", EditorStyles.boldLabel);
-                EditorGUILayout.BeginVertical(EditorStyles.helpBox);
-                for (int i = 0; i < waiting.Count; i++)
-                {
-                    if (waiting[i] == null) continue;
-                    EditorGUILayout.LabelField($"{i+1}. {waiting[i].UnitName} (INI: {gm.ruleset?.GetTurnPriority(waiting[i])})");
+                    EditorGUILayout.LabelField($"{i+1}. {u.UnitName} (INI: {ini}, AP: {ap}, FAT: {fat}/{mfat})");
                 }
                 EditorGUILayout.EndVertical();
             }

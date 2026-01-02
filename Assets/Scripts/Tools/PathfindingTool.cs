@@ -145,7 +145,6 @@ namespace HexGame.Tools
                 result = Pathfinder.FindPath(manager.Grid, SourceHex.Data.Unit, SourceHex.Data, hex.Data);
             }
 
-            Debug.Log("path found");
             if (result.Success)
             {
                 if (SourceHex.Data.Unit != null && ruleset != null)
