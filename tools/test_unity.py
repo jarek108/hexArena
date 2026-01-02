@@ -150,20 +150,35 @@ async def run_diagnostics():
 
                 # 1. CHECK CONSOLE ERRORS
                 print(f"[*] Checking Unity console...")
-                res = await mcp.call_tool("read_console", {"count": "100"})
+                res = await mcp.call_tool("read_console", {"count": "100", "format": "json"})
                 
                 all_entries = []
                 if res and "result" in res:
                     for item in res["result"].get("content", []):
                         if item.get("type") == "text":
-                            data = DiagnosticsFormatter.parse_complex_data(item["text"])
-                            if isinstance(data, dict):
-                                all_entries.extend(data.get("data", []))
+                            text_val = item.get("text", "")
+                            data = DiagnosticsFormatter.parse_complex_data(text_val)
+                            
+                            if isinstance(data, list):
+                                all_entries.extend(data)
+                            elif isinstance(data, dict):
+                                if "data" in data and isinstance(data["data"], list):
+                                    all_entries.extend(data["data"])
+                                elif "entries" in data and isinstance(data["entries"], list):
+                                    all_entries.extend(data["entries"])
+                                else:
+                                    # Might be a single entry wrapped in a dict
+                                    all_entries.append(data)
                 
                 # Filter false positives
                 def is_real_error(e):
-                    etype = e.get("type", "").upper()
-                    msg = e.get("message", "")
+                    etype = str(e.get("type", "")).upper()
+                    msg = str(e.get("message", ""))
+                    # Ignore known non-critical infrastructure errors
+                    if "WebSocket" in msg and "Connection failed" in msg:
+                        return False
+                    if "Undo after editor test run" in msg:
+                        return False
                     if etype == "EXCEPTION" and "Saving results to" in msg:
                         return False
                     return etype in ["ERROR", "EXCEPTION", "ASSERT"]
@@ -224,10 +239,20 @@ async def run_diagnostics():
                     return
 
                 # 4. FINAL REPORT
-                actual_test_data = test_data.get("data", test_data)
-                tests = actual_test_data.get("results", [])
-                passed = sum(1 for t in tests if t.get("state") == "Passed")
-                failed = sum(1 for t in tests if t.get("state") == "Failed")
+                if isinstance(test_data, dict) and "data" in test_data:
+                    actual_test_data = test_data["data"]
+                else:
+                    actual_test_data = test_data
+
+                if isinstance(actual_test_data, dict):
+                    tests = actual_test_data.get("results", [])
+                elif isinstance(actual_test_data, list):
+                    tests = actual_test_data
+                else:
+                    tests = []
+
+                passed = sum(1 for t in tests if isinstance(t, dict) and t.get("state") == "Passed")
+                failed = sum(1 for t in tests if isinstance(t, dict) and t.get("state") != "Passed")
                 total = len(tests)
 
                 print("\n" + Style.BOLD + "FINAL DIAGNOSTIC REPORT" + Style.RESET)
