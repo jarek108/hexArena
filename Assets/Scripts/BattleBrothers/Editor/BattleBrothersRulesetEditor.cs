@@ -9,8 +9,8 @@ namespace HexGame.Editor
     [CustomEditor(typeof(BattleBrothersRuleset))]
     public class BattleBrothersRulesetEditor : UnityEditor.Editor
     {
-        private string[] schemaIds;
-        private int selectedSchemaIndex = -1;
+        private string[] unitSchemaIds;
+        private int selectedUnitSchemaIndex = -1;
         private Dictionary<string, UnityEditor.Editor> moduleEditors = new Dictionary<string, UnityEditor.Editor>();
         private static Dictionary<string, bool> foldouts = new Dictionary<string, bool>();
 
@@ -28,17 +28,17 @@ namespace HexGame.Editor
         private void RefreshSchemaList()
         {
             string path = "Assets/Data/Schemas";
-            if (!Directory.Exists(path)) { schemaIds = new string[0]; return; }
+            if (!Directory.Exists(path)) { unitSchemaIds = new string[0]; return; }
 
-            schemaIds = Directory.GetFiles(path, "*.json")
+            unitSchemaIds = Directory.GetFiles(path, "*.json")
                 .Select(f => {
                     string json = File.ReadAllText(f);
                     return ParseId(json) ?? Path.GetFileNameWithoutExtension(f);
                 }).Distinct().ToArray();
 
             var ruleset = (Ruleset)target;
-            if (!string.IsNullOrEmpty(ruleset.schema))
-                selectedSchemaIndex = System.Array.IndexOf(schemaIds, ruleset.schema);
+            if (!string.IsNullOrEmpty(ruleset.unitSchema))
+                selectedUnitSchemaIndex = System.Array.IndexOf(unitSchemaIds, ruleset.unitSchema);
         }
 
         private string ParseId(string json)
@@ -59,11 +59,11 @@ namespace HexGame.Editor
             // 1. Schema Selection
             EditorGUILayout.BeginHorizontal();
             EditorGUI.BeginChangeCheck();
-            int newIndex = EditorGUILayout.Popup("Schema", selectedSchemaIndex, schemaIds);
+            int newIndex = EditorGUILayout.Popup("Unit schema", selectedUnitSchemaIndex, unitSchemaIds);
             if (EditorGUI.EndChangeCheck())
             {
-                selectedSchemaIndex = newIndex;
-                ruleset.schema = schemaIds[selectedSchemaIndex];
+                selectedUnitSchemaIndex = newIndex;
+                ruleset.unitSchema = unitSchemaIds[selectedUnitSchemaIndex];
                 EditorUtility.SetDirty(ruleset);
             }
             if (GUILayout.Button("Refresh", GUILayout.Width(60))) RefreshSchemaList();
@@ -72,8 +72,8 @@ namespace HexGame.Editor
             EditorGUILayout.Space();
 
             // 2. Flow Group (Ignore Flags)
-            bool flowFoldout = BeginGroup("Flow Settings", "flow_flags_foldout");
-            if (flowFoldout)
+            bool debugFoldout = BeginGroup("Debug Settings", "flow_flags_foldout");
+            if (debugFoldout)
             {
                 EditorGUILayout.BeginHorizontal();
                 EditorGUILayout.LabelField("Ignore...", GUILayout.Width(60));
@@ -82,7 +82,11 @@ namespace HexGame.Editor
                 DrawToggle(serializedObject.FindProperty("ignoreMoveOrder"), "Move Order", 80);
                 EditorGUILayout.EndHorizontal();
             }
-            EndGroup(flowFoldout);
+            EndGroup(debugFoldout);
+
+
+            // Special handling for Flow Module to include buttons and custom queue
+            DrawFlowModule(serializedObject.FindProperty("flow"), ruleset);
 
             // 3. Execution Group
             bool execFoldout = BeginGroup("Execution Settings", "exec_foldout");
@@ -101,8 +105,6 @@ namespace HexGame.Editor
             DrawModule(serializedObject.FindProperty("combat"));
             DrawModule(serializedObject.FindProperty("tactical"));
             
-            // Special handling for Flow Module to include buttons and custom queue
-            DrawFlowModule(serializedObject.FindProperty("flow"), ruleset);
 
             serializedObject.ApplyModifiedProperties();
         }

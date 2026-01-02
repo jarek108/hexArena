@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 40706ac3d6a96c44e88aa272603d2500, type: 3}
   m_Name: Ruleset
   m_EditorClassIdentifier: HexGame::HexGame.BattleBrothersRuleset
-  schema: BattleBrothers
+  unitSchema: 
   ignoreAPs: 1
   ignoreFatigue: 1
   ignoreMoveOrder: 1
@@ -25,5 +25,5 @@ MonoBehaviour:
   combat: {fileID: 11400000, guid: 86d03f73bfbddd142a2098231d1d8968, type: 2}
   tactical: {fileID: 11400000, guid: a23ff9eee5ee08941ac93ff513637eaa, type: 2}
   flow: {fileID: 11400000, guid: efce1ec40cad26f448589483b96b9e3c, type: 2}
-  transitionSpeed: 5
+  transitionSpeed: 10
   transitionPause: 0.1

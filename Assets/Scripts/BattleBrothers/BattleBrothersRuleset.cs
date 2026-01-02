@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
+using System.Linq;
 using HexGame.Units;
 
 namespace HexGame
@@ -62,7 +63,7 @@ namespace HexGame
         {
             if (unit == null) return 0;
             // EffectiveINI = INI - CFAT
-            return unit.GetBaseStat("INI", 100) - unit.GetStat("FAT");
+            return unit.GetBaseStat("INI", 100) - unit.GetStat("CFAT");
         }
 
         public override void OnRoundStart(IEnumerable<Unit> allUnits)
@@ -71,8 +72,8 @@ namespace HexGame
             {
                 if (unit == null) continue;
                 // Standard +15 Fatigue recovery per round in Battle Brothers
-                int currentFat = unit.GetStat("FAT");
-                unit.SetStat("FAT", Mathf.Max(0, currentFat - 15));
+                int currentFat = unit.GetStat("CFAT");
+                unit.SetStat("CFAT", Mathf.Max(0, currentFat - 15));
             }
         }
 
@@ -99,7 +100,7 @@ namespace HexGame
                 if (targetHex != null && targetHex.Data.Unit != null && targetHex.Data.Unit.teamId != unit.teamId)
                 {
                     int ap = unit.GetStat("AP");
-                    int fat = unit.GetStat("FAT");
+                    int fat = unit.GetStat("CFAT");
                     int mfat = unit.GetBaseStat("FAT", 100);
                     int attackCost = 4;
 
@@ -107,7 +108,7 @@ namespace HexGame
                     {
                         PerformAttack(unit, targetHex.Data.Unit);
                         if (!ignoreAPs) unit.SetStat("AP", ap - attackCost);
-                        if (!ignoreFatigue) unit.SetStat("FAT", fat + unit.GetStat("AFAT", 10));
+                        if (!ignoreFatigue) unit.SetStat("CFAT", fat + unit.GetStat("AFAT", 10));
                     }
                 }
                 onComplete?.Invoke();
@@ -211,7 +212,7 @@ namespace HexGame
 
             if (!ignoreFatigue)
             {
-                int fat = unit.GetStat("FAT");
+                int fat = unit.GetStat("CFAT");
                 int mfat = unit.GetBaseStat("FAT", 100);
                 if (fat + cost > mfat) return MoveVerification.Failure("Too much fatigue.");
             }
@@ -272,7 +273,7 @@ namespace HexGame
             if (!float.IsInfinity(cost))
             {
                 if (!ignoreAPs) unit.SetStat("AP", unit.GetStat("AP") - Mathf.RoundToInt(cost));
-                if (!ignoreFatigue) unit.SetStat("FAT", unit.GetStat("FAT") + Mathf.RoundToInt(cost));
+                if (!ignoreFatigue) unit.SetStat("CFAT", unit.GetStat("CFAT") + Mathf.RoundToInt(cost));
             }
 
             toHex.AddUnit(unit);

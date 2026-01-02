@@ -36,7 +36,7 @@ namespace HexGame
 
     public abstract class Ruleset : ScriptableObject 
     {
-        public string schema;
+        public string unitSchema;
 
         [Header("Flow Controls")]
         public bool ignoreAPs = false;
