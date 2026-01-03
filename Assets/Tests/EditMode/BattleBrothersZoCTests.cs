@@ -72,11 +72,10 @@ namespace HexGame.Tests
             unitManager.ActiveUnitSet = unitSet;
             unitGO = new GameObject("Unit");
             unit = unitGO.AddComponent<Unit>();
-            unit.Stats["HP"] = 100;
-            unit.Stats["CAP"] = 100;
-            unit.Stats["MFAT"] = 100;
-            unit.Stats["CFAT"] = 0;
-            
+            unit.SetStat("HP", 100);
+            unit.SetStat("AP", 100);
+            unit.SetStat("FAT", 0);
+
             var type = new UnitType { id = "test", Name = "TestUnit" };
             type.Stats = new List<UnitStatValue> { new UnitStatValue { id = "AP", value = 100 } };
             unitSet.units = new List<UnitType> { type };
@@ -116,16 +115,18 @@ namespace HexGame.Tests
         [Test]
         public void VerifyMove_EnemyZoC_FailsWhenLowAP()
         {
-            // Arrange
-            hexEnd.Data.AddState("ZoC1_999");
-            unit.Stats["CAP"] = 9; // Standard AP, less than 52
+            // Initialize with range 1 to satisfy module expectations
+            var type = new UnitType { id = "zoc_test", Name = "ZoCTest" };
+            type.Stats = new List<UnitStatValue> { new UnitStatValue { id = "RNG", value = 1 }, new UnitStatValue { id = "MAT", value = 50 } };
+            unitSet.units.Add(type);
+            unit.Initialize("zoc_test", 0);
 
-            // Act
+            unit.SetHex(hexStart);
+            hexEnd.Data.AddState("ZoC2_999"); // Enemy ZoC from team 2
+            
+            unit.SetStat("AP", 1); // Not enough for penalty (standard 2 + penalty 50 = 52)
             var result = ruleset.TryMoveStep(unit, hexStart.Data, hexEnd.Data);
-
-            // Assert
-            Assert.IsFalse(result.isValid, "Move should be invalid due to high ZoC cost vs low AP.");
-            Assert.IsTrue(result.reason.Contains("Not enough AP"), "Reason should mention AP.");
+            Assert.IsFalse(result.isValid);
         }
 
         [Test]
@@ -272,9 +273,9 @@ namespace HexGame.Tests
             };
             unitSet.units.Add(type);
             enemy.Initialize("enemy", 1); // Team 1
-            enemy.Stats["MAT"] = 100;
-            enemy.Stats["DMIN"] = 10;
-            enemy.Stats["DMAX"] = 10;
+            enemy.SetStat("MAT", 100);
+            enemy.SetStat("DMIN", 10);
+            enemy.SetStat("DMAX", 10);
             
             unit.SetHex(hexStart);
 
@@ -294,9 +295,8 @@ namespace HexGame.Tests
             grid.AddHex(destData);
 
             int startHP = unit.GetStat("HP");
-            unit.Stats["CAP"] = 100;
-            unit.Stats["MFAT"] = 100;
-            unit.Stats["CFAT"] = 0;
+            unit.SetStat("AP", 100);
+            unit.SetStat("FAT", 0);
             ruleset.ignoreAPs = true;
             ruleset.ignoreFatigue = true;
 

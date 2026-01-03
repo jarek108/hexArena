@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
+using System.Linq;
 using HexGame.Units;
 
 namespace HexGame
@@ -10,15 +11,21 @@ namespace HexGame
         public MovementModule movement;
         public CombatModule combat;
         public TacticalModule tactical;
-
-        public bool ignoreAPs = false;
-        public bool ignoreFatigue = false;
-        public bool ignoreMoveOrder = false;
+        public FlowModule flow;
 
         public float transitionSpeed = 5.0f;
         public float transitionPause = 0.1f;
 
         private Unit lastPathfindingUnit;
+
+        public override int RoundNumber => flow != null ? flow.roundNumber : 0;
+        public override Unit ActiveUnit => flow != null ? flow.activeUnit : null;
+        public override List<Unit> TurnQueue => flow != null ? flow.TurnQueue : new List<Unit>();
+
+        public override void StartCombat() => flow?.StartNewRound(this);
+        public override void AdvanceTurn() => flow?.AdvanceTurn(this);
+        public override void WaitTurn() => flow?.WaitCurrentTurn(this);
+        public override void StopCombat() => flow?.EndCombat();
 
         public override void OnStartPathfinding(HexData target, Unit unit)
         {
@@ -41,14 +48,46 @@ namespace HexGame
         public void EnsureResources(Unit unit)
         {
             if (unit == null) return;
-            if (!unit.Stats.ContainsKey("CAP")) unit.Stats["CAP"] = unit.GetStat("AP", 9);
-            if (!unit.Stats.ContainsKey("CFAT")) unit.Stats["CFAT"] = 0;
+            // No longer adding CAP/CFAT keys to dictionary.
+            // Stats are initialized from UnitType.
         }
 
         public override void OnUnitDeselected(Unit unit)
         {
             if (tactical != null) tactical.ClearAoA(unit);
         }
+
+        // --- Turn Flow Implementation ---
+
+        public override int GetTurnPriority(Unit unit)
+        {
+            if (unit == null) return 0;
+            // EffectiveINI = INI - AccumulatedFatigue (Max - Current)
+            int maxFat = unit.GetBaseStat("FAT", 100);
+            int currentFat = unit.GetStat("FAT");
+            return unit.GetBaseStat("INI", 100) - (maxFat - currentFat);
+        }
+
+        public override void OnRoundStart(IEnumerable<Unit> allUnits)
+        {
+            foreach (var unit in allUnits)
+            {
+                if (unit == null) continue;
+                // Recover 15 Fatigue (Energy) up to Max
+                int maxFat = unit.GetBaseStat("FAT", 100);
+                int currentFat = unit.GetStat("FAT");
+                unit.SetStat("FAT", Mathf.Min(maxFat, currentFat + 15));
+            }
+        }
+
+        public override void OnTurnStart(Unit unit)
+        {
+            if (unit == null) return;
+            // Restore AP to max at start of turn
+            unit.SetStat("AP", unit.GetBaseStat("AP", 9));
+        }
+
+        // --------------------------------
 
         public override List<PotentialHit> GetPotentialHits(Unit attacker, Unit target, HexData fromHex = null)
         {
@@ -63,16 +102,16 @@ namespace HexGame
             unit.MoveAlongPath(path, transitionSpeed, transitionPause, () => {
                 if (targetHex != null && targetHex.Data.Unit != null && targetHex.Data.Unit.teamId != unit.teamId)
                 {
-                    int cap = unit.GetStat("CAP");
-                    int cfat = unit.GetStat("CFAT");
-                    int mfat = unit.GetStat("FAT", 100);
-                    int attackCost = 4;
+                    int ap = unit.GetStat("AP");
+                    int fat = unit.GetStat("FAT");
+                    int attackApCost = 4;
+                    int attackFatCost = unit.GetStat("AFAT", 10);
 
-                    if ((ignoreAPs || cap >= attackCost) && (ignoreFatigue || cfat < mfat))
+                    if ((ignoreAPs || ap >= attackApCost) && (ignoreFatigue || fat >= attackFatCost))
                     {
                         PerformAttack(unit, targetHex.Data.Unit);
-                        if (!ignoreAPs) unit.Stats["CAP"] -= attackCost;
-                        if (!ignoreFatigue) unit.Stats["CFAT"] += unit.GetStat("AFAT", 10);
+                        if (!ignoreAPs) unit.SetStat("AP", ap - attackApCost);
+                        if (!ignoreFatigue) unit.SetStat("FAT", fat - attackFatCost);
                     }
                 }
                 onComplete?.Invoke();
@@ -95,14 +134,13 @@ namespace HexGame
             }
             else
             {
-                Debug.Log($"[Ruleset] MISS: Roll {roll:P1} > Chance {chance:P1}");
+                Debug.Log($"[Combat] {attacker.UnitName} MISSES {target.UnitName} (Roll: {roll:P1} > Chance: {chance:P1})");
             }
         }
 
         public override void OnAttacked(Unit attacker, Unit target)
         {
             if (attacker == null || target == null) return;
-            Debug.Log($"[Ruleset] {attacker.UnitName} attacks {target.UnitName}");
             var attackerViz = attacker.GetComponent<HexGame.Units.UnitVisualization>();
             if (attackerViz != null) attackerViz.OnAttack(target);
         }
@@ -134,8 +172,10 @@ namespace HexGame
                 currentHP -= Mathf.RoundToInt(damage);
             }
             
-            target.Stats["HP"] = currentHP;
-            target.Stats["ARM"] = currentARM;
+            target.SetStat("HP", currentHP);
+            target.SetStat("ARM", currentARM);
+
+            Debug.Log($"[Combat] {attacker.UnitName} HITS {target.UnitName} for {damage:F0} damage. Remaining HP: {currentHP}");
 
             var targetViz = target.GetComponent<HexGame.Units.UnitVisualization>();
             if (targetViz != null) targetViz.OnTakeDamage(Mathf.RoundToInt(damage));
@@ -167,17 +207,31 @@ namespace HexGame
             float cost = movement.GetMoveCost(unit, fromHex, toHex, this);
             if (float.IsInfinity(cost)) return MoveVerification.Failure("Unreachable.");
 
+            int apCost = 2; // Const as requested
+            int fatCost = 4; // Const as requested
+
             if (!ignoreAPs)
             {
-                int cap = unit.GetStat("CAP");
-                if (cap < cost) return MoveVerification.Failure("Not enough AP.");
+                int ap = unit.GetStat("AP");
+                int maxAp = unit.GetBaseStat("AP", 9);
+                if (ap < apCost) 
+                {
+                    string msg = $"Not enough APs: {ap}/{maxAp}, action requires {apCost}";
+                    Debug.Log($"[Ruleset] {msg}");
+                    return MoveVerification.Failure(msg);
+                }
             }
 
             if (!ignoreFatigue)
             {
-                int cfat = unit.GetStat("CFAT");
-                int mfat = unit.GetStat("FAT", 100);
-                if (cfat + cost > mfat) return MoveVerification.Failure("Too much fatigue.");
+                int fat = unit.GetStat("FAT");
+                int maxFat = unit.GetBaseStat("FAT", 100);
+                if (fat < fatCost) 
+                {
+                    string msg = $"Not enough Fatigue: {fat}/{maxFat}, action requires {fatCost}";
+                    Debug.Log($"[Ruleset] {msg}");
+                    return MoveVerification.Failure(msg);
+                }
             }
 
             // 2. Attack of Opportunity (AoO)
@@ -235,8 +289,11 @@ namespace HexGame
             float cost = fromHex != null ? movement.GetMoveCost(unit, fromHex, toHex, this) : 0f;
             if (!float.IsInfinity(cost))
             {
-                if (!ignoreAPs) unit.Stats["CAP"] -= Mathf.RoundToInt(cost);
-                if (!ignoreFatigue) unit.Stats["CFAT"] += Mathf.RoundToInt(cost);
+                int apCost = 2;
+                int fatCost = 4;
+
+                if (!ignoreAPs) unit.SetStat("AP", unit.GetStat("AP") - apCost);
+                if (!ignoreFatigue) unit.SetStat("FAT", unit.GetStat("FAT") - fatCost);
             }
 
             toHex.AddUnit(unit);
@@ -290,7 +347,7 @@ namespace HexGame
                 for (int i = 1; i < path.Count; i++)
                 {
                     float stepCost = movement.GetMoveCost(unit, path[i - 1], path[i], this);
-                    if (runningCost + stepCost > unit.GetStat("CAP")) break;
+                    if (runningCost + stepCost > unit.GetStat("AP")) break;
                     runningCost += stepCost;
                     maxReachableIndex = i;
                 }

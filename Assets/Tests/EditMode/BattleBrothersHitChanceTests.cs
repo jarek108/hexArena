@@ -165,7 +165,7 @@ namespace HexGame.Tests
         public void HitChance_LongWeaponProximityPenalty_AppliesAtRangeOne()
         {
             attacker = CreateUnit("Polearm", "polearm", 1, 60, 0);
-            attacker.Stats["RNG"] = 2;
+            attacker.SetStat("RNG", 2);
             ruleset.combat.longWeaponProximityPenalty = 15f;
             SetupHex(0, 0, 0, attacker);
             SetupHex(1, 0, 0, target);
@@ -177,7 +177,7 @@ namespace HexGame.Tests
         {
             attacker = CreateUnit("Melee", "melee", 1, 60, 0);
             Unit rangedAlly = CreateUnit("Archer", "archer", 1, 0, 0); // No MAT
-            rangedAlly.Stats["RAT"] = 50;
+            rangedAlly.SetStat("RAT", 50);
             SetupHex(0, 0, 0, attacker);
             SetupHex(1, 0, 0, target);
             SetupHex(2, -1, 0, rangedAlly);
@@ -189,9 +189,9 @@ namespace HexGame.Tests
         public void HitChance_RangedBaseCalculation_IsCorrect()
         {
             Unit archer = CreateUnit("Archer", "archer", 1, 0, 0); // No MAT
-            archer.Stats["RAT"] = 60; archer.Stats["RNG"] = 5;
+            archer.SetStat("RAT", 60); archer.SetStat("RNG", 5);
             Unit rDefTarget = CreateUnit("Target", "target_rdef", 2, 50, 0);
-            rDefTarget.Stats["RDF"] = 10;
+            rDefTarget.SetStat("RDF", 10);
             SetupHex(0, 0, 0, archer);
             SetupHex(2, 0, 0, rDefTarget);
             Assert.AreEqual(0.46f, GetTotalHitChance(archer, rDefTarget), 0.001f);
@@ -203,9 +203,9 @@ namespace HexGame.Tests
         public void HitChance_RangedHighGround_AddsBonus()
         {
             Unit archer = CreateUnit("Archer", "archer", 1, 0, 0); // No MAT
-            archer.Stats["RAT"] = 60; archer.Stats["RNG"] = 5;
+            archer.SetStat("RAT", 60); archer.SetStat("RNG", 5);
             Unit rDefTarget = CreateUnit("Target", "target_rdef", 2, 50, 0);
-            rDefTarget.Stats["RDF"] = 10;
+            rDefTarget.SetStat("RDF", 10);
             Hex hAttacker = SetupHex(0, 0, 1.0f, archer);
             Hex hTarget = SetupHex(2, 0, 0.0f, rDefTarget);
             Assert.AreEqual(0.56f, GetTotalHitChance(archer, rDefTarget), 0.001f);
@@ -217,7 +217,7 @@ namespace HexGame.Tests
         public void HitChance_RangedCover_AppliesReduction()
         {
             Unit archer = CreateUnit("Archer", "archer", 1, 0, 0); // No MAT
-            archer.Stats["RAT"] = 60; archer.Stats["RNG"] = 5;
+            archer.SetStat("RAT", 60); archer.SetStat("RNG", 5);
             Unit blocker = CreateUnit("Blocker", "blocker", 2, 50, 0);
             Hex hAttacker = SetupHex(0, 0, 0, archer);
             Hex hBlocker = SetupHex(2, 0, 0, blocker);

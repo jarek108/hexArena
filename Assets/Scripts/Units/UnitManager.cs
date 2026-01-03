@@ -24,9 +24,9 @@ namespace HexGame
                 
                 // Override schema from Ruleset if available
                 var ruleset = GameMaster.Instance?.ruleset;
-                if (_activeSet != null && ruleset != null && !string.IsNullOrEmpty(ruleset.schema))
+                if (_activeSet != null && ruleset != null && !string.IsNullOrEmpty(ruleset.unitSchema))
                 {
-                    _activeSet.schemaId = ruleset.schema;
+                    _activeSet.schemaId = ruleset.unitSchema;
                     _activeSet.schemaDefinitions = null; // Force reload
                 }
                 

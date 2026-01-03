@@ -72,15 +72,12 @@ namespace HexGame.Tests
             var unit = go.AddComponent<Unit>();
             // unit.Id = name; // REMOVED: Id is read-only GetInstanceID()
             unit.teamId = teamId;
-            unit.Stats = new Dictionary<string, int>
-            {
-                { "MAT", 50 },
-                { "MDF", 0 },
-                { "RAT", 0 },
-                { "RDF", 0 },
-                { "RNG", 1 }, // Default
-                { "HP", 100 }
-            };
+            unit.SetStat("MAT", 50);
+            unit.SetStat("MDF", 0);
+            unit.SetStat("RAT", 0);
+            unit.SetStat("RDF", 0);
+            unit.SetStat("RNG", 1);
+            unit.SetStat("HP", 100);
             return unit;
         }
 
@@ -110,13 +107,12 @@ namespace HexGame.Tests
 
         private void SetUnitStats(Unit unit, int mat, int rng)
         {
-            if (unit.Stats == null) unit.Stats = new Dictionary<string, int>();
-            unit.Stats["MAT"] = mat;
-            unit.Stats["RNG"] = rng;
-            unit.Stats["MDF"] = 0;
-            unit.Stats["RAT"] = 0;
-            unit.Stats["RDF"] = 0;
-            unit.Stats["HP"] = 100;
+            unit.SetStat("MAT", mat);
+            unit.SetStat("RNG", rng);
+            unit.SetStat("MDF", 0);
+            unit.SetStat("RAT", 0);
+            unit.SetStat("RDF", 0);
+            unit.SetStat("HP", 100);
         }
 
         [Test]

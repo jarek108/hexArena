@@ -41,26 +41,35 @@ namespace HexGame.Editor
 
             EditorGUILayout.BeginHorizontal();
             
+            // Using a more flexible approach for columns
             if (prop1 != null)
             {
-                EditorGUILayout.BeginHorizontal(GUILayout.MinWidth(100));
+                EditorGUILayout.BeginVertical(GUILayout.MinWidth(150));
                 float originalLabelWidth = EditorGUIUtility.labelWidth;
-                EditorGUIUtility.labelWidth = 80;
-                EditorGUILayout.PropertyField(prop1, new GUIContent(label1));
+                EditorGUIUtility.labelWidth = 120;
+                
+                EditorGUI.BeginChangeCheck();
+                float val = EditorGUILayout.FloatField(label1, prop1.floatValue);
+                if (EditorGUI.EndChangeCheck()) prop1.floatValue = val;
+
                 EditorGUIUtility.labelWidth = originalLabelWidth;
-                EditorGUILayout.EndHorizontal();
+                EditorGUILayout.EndVertical();
             }
 
             GUILayout.Space(10);
 
             if (prop2 != null)
             {
-                EditorGUILayout.BeginHorizontal(GUILayout.MinWidth(100));
+                EditorGUILayout.BeginVertical(GUILayout.MinWidth(150));
                 float originalLabelWidth = EditorGUIUtility.labelWidth;
-                EditorGUIUtility.labelWidth = 80;
-                EditorGUILayout.PropertyField(prop2, new GUIContent(label2));
+                EditorGUIUtility.labelWidth = 120;
+                
+                EditorGUI.BeginChangeCheck();
+                float val = EditorGUILayout.FloatField(label2, prop2.floatValue);
+                if (EditorGUI.EndChangeCheck()) prop2.floatValue = val;
+
                 EditorGUIUtility.labelWidth = originalLabelWidth;
-                EditorGUILayout.EndHorizontal();
+                EditorGUILayout.EndVertical();
             }
 
             EditorGUILayout.EndHorizontal();

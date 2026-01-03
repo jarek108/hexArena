@@ -66,8 +66,8 @@ namespace HexGame.Tests
             // We need a way to link the unit to the type. 
             // In the real app, UnitManager handles this.
             // For now, let's manually initialize stats since it's a logic test.
-            attacker.Stats["RNG"] = 6;
-            attacker.Stats["MAT"] = 0;
+            attacker.SetStat("RNG", 6);
+            attacker.SetStat("MAT", 0);
             attacker.teamId = 0;
 
             // Target

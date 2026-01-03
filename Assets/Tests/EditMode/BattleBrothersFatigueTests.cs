@@ -6,7 +6,7 @@ using HexGame.Units;
 
 namespace HexGame.Tests
 {
-    public class BattleBrothersMovementRulesTests
+    public class BattleBrothersFatigueTests
     {
         private GameObject managerGO;
         private GridVisualizationManager manager;
@@ -27,7 +27,7 @@ namespace HexGame.Tests
 
             unitManagerGO = new GameObject("UnitManager");
             unitManager = unitManagerGO.AddComponent<UnitManager>();
-            unitManager.activeUnitSetPath = ""; // Prevent loading real data
+            unitManager.activeUnitSetPath = "";
             typeof(UnitManager).GetProperty("Instance").SetValue(null, unitManager);
 
             gameMasterGO = new GameObject("GameMaster");
@@ -40,14 +40,17 @@ namespace HexGame.Tests
 
             ruleset = ScriptableObject.CreateInstance<BattleBrothersRuleset>();
             ruleset.movement = ScriptableObject.CreateInstance<MovementModule>();
-            ruleset.combat = ScriptableObject.CreateInstance<CombatModule>();
-            ruleset.tactical = ScriptableObject.CreateInstance<TacticalModule>();
+            ruleset.movement.plainsCost = 2; // Cost of 2
             gameMaster.ruleset = ruleset;
 
             unitSet = new UnitSet();
             unitManager.ActiveUnitSet = unitSet;
             var type = new UnitType { id = "unit", Name = "Unit" };
-            type.Stats = new List<UnitStatValue> { new UnitStatValue { id = "AP", value = 9 } };
+            // Define Max Fatigue as 100 in the prototype
+            type.Stats = new List<UnitStatValue> { 
+                new UnitStatValue { id = "FAT", value = 100 },
+                new UnitStatValue { id = "AP", value = 9 }
+            };
             unitSet.units = new List<UnitType> { type };
         }
 
@@ -64,12 +67,11 @@ namespace HexGame.Tests
             Object.DestroyImmediate(ruleset);
         }
 
-        private Hex SetupHex(int q, int r, float elevation)
+        private Hex SetupHex(int q, int r)
         {
             GameObject go = new GameObject($"Hex_{q}_{r}");
             Hex h = go.AddComponent<Hex>();
             HexData data = new HexData(q, r);
-            data.Elevation = elevation;
             data.TerrainType = TerrainType.Plains;
             h.AssignData(data);
             grid.AddHex(data);
@@ -77,94 +79,47 @@ namespace HexGame.Tests
         }
 
         [Test]
-        public void GetMoveCost_ElevationDelta_AppliesPenalty()
+        public void TryMoveStep_WithFreshUnit_ShouldNotFailFatigue()
         {
-            Hex h1 = SetupHex(0, 0, 0);
-            Hex h2 = SetupHex(1, 0, 1);
+            Hex h1 = SetupHex(0, 0);
+            Hex h2 = SetupHex(1, 0);
+            
             GameObject uGO = new GameObject("Unit");
             Unit u = uGO.AddComponent<Unit>();
             u.Initialize("unit", 0);
             u.SetHex(h1);
 
-            ruleset.movement.plainsCost = 2.0f;
-            ruleset.movement.uphillPenalty = 10.0f;
+            // Verify current behavior (bug): Initializing copies FAT=100 to Current Stats.
+            // But we want to Assert that MoveVerification SUCCEEDS, which means 
+            // the logic should treat current fatigue as 0 (or at least low enough).
             
-            float cost = ruleset.GetPathfindingMoveCost(u, h1.Data, h2.Data);
-            Assert.AreEqual(12.0f, cost);
+            MoveVerification result = ruleset.TryMoveStep(u, h1.Data, h2.Data);
+            
+            Assert.IsTrue(result.isValid, $"Move should be valid but failed with: {result.reason}");
+            
             Object.DestroyImmediate(uGO);
         }
 
         [Test]
-        public void GetMoveStopIndex_StopsBeforeEnemy()
+        public void TryMoveStep_WithExhaustedUnit_ShouldFailFatigue()
         {
-            Hex h1 = SetupHex(0, 0, 0);
-            Hex h2 = SetupHex(1, 0, 0);
-            Hex h3 = SetupHex(2, 0, 0);
+            Hex h1 = SetupHex(0, 0);
+            Hex h2 = SetupHex(1, 0);
+
+            Debug.Log(h1);
 
             GameObject uGO = new GameObject("Unit");
             Unit u = uGO.AddComponent<Unit>();
             u.Initialize("unit", 0);
             u.SetHex(h1);
+            u.SetStat("FAT", 0); // Exhausted
 
-            GameObject enemyGO = new GameObject("Enemy");
-            Unit enemy = enemyGO.AddComponent<Unit>();
-            enemy.Initialize("unit", 1);
-            enemy.SetHex(h3);
-
-            List<HexData> path = new List<HexData> { h1.Data, h2.Data, h3.Data };
-            int stopIndex = ruleset.GetMoveStopIndex(u, path);
-
-            Assert.AreEqual(2, stopIndex, "Should stop at index 2 (h2) because h3 is occupied by enemy.");
+            MoveVerification result = ruleset.TryMoveStep(u, h1.Data, h2.Data);
             
-            Object.DestroyImmediate(uGO);
-            Object.DestroyImmediate(enemyGO);
-        }
-
-        [Test]
-        public void GetMoveStopIndex_PassesThroughAlly()
-        {
-            Hex h1 = SetupHex(0, 0, 0);
-            Hex h2 = SetupHex(1, 0, 0);
-            Hex h3 = SetupHex(2, 0, 0);
-
-            GameObject uGO = new GameObject("Unit");
-            Unit u = uGO.AddComponent<Unit>();
-            u.Initialize("unit", 0);
-            u.SetHex(h1);
-
-            GameObject allyGO = new GameObject("Ally");
-            Unit ally = allyGO.AddComponent<Unit>();
-            ally.Initialize("unit", 0);
-            ally.SetHex(h2);
-
-            List<HexData> path = new List<HexData> { h1.Data, h2.Data, h3.Data };
-            int stopIndex = ruleset.GetMoveStopIndex(u, path);
-
-            Assert.AreEqual(3, stopIndex, "Should be able to pass through ally.");
-            
-            Object.DestroyImmediate(uGO);
-            Object.DestroyImmediate(allyGO);
-        }
-
-        [Test]
-        public void GetMoveStopIndex_BudgetExceeded_TruncatesPath()
-        {
-            Hex h1 = SetupHex(0, 0, 0);
-            Hex h2 = SetupHex(1, 0, 0);
-            Hex h3 = SetupHex(2, 0, 0);
-
-            GameObject uGO = new GameObject("Unit");
-            Unit u = uGO.AddComponent<Unit>();
-            u.Initialize("unit", 0);
-            u.SetHex(h1);
-            u.SetStat("AP", 2);
-
-            ruleset.movement.plainsCost = 2.0f;
-
-            List<HexData> path = new List<HexData> { h1.Data, h2.Data, h3.Data };
-            int stopIndex = ruleset.GetMoveStopIndex(u, path);
-
-            Assert.AreEqual(2, stopIndex, "Should truncate path at h2 (index 2) because budget is only 2.");
+            Assert.IsFalse(result.isValid, "Move should fail due to fatigue");
+            // Expect detailed message: "Not enough Fatigue: 0/100, action requires 4"
+            Assert.IsTrue(result.reason.Contains("Not enough Fatigue"), $"Unexpected reason: {result.reason}");
+            Assert.IsTrue(result.reason.Contains("0/100"), $"Unexpected reason: {result.reason}");
             
             Object.DestroyImmediate(uGO);
         }

@@ -19,18 +19,16 @@ namespace HexGame.Editor
             GameMaster gm = (GameMaster)target;
             serializedObject.Update();
 
-            // Draw the GameMaster properties (like the ruleset field itself)
+            // Draw the GameMaster properties (primarily the ruleset field)
             DrawPropertiesExcluding(serializedObject, "m_Script");
 
             if (gm.ruleset != null)
             {
                 EditorGUILayout.Space();
-                EditorGUILayout.LabelField("Active Ruleset Settings", EditorStyles.boldLabel);
+                EditorGUILayout.LabelField("Active Ruleset Configuration", EditorStyles.boldLabel);
                 
-                // Use a help box or specialized background to distinguish the Ruleset's area
                 EditorGUILayout.BeginVertical(EditorStyles.helpBox);
                 
-                // Cache/Update the Ruleset editor
                 if (rulesetEditor == null || lastRuleset != gm.ruleset)
                 {
                     if (rulesetEditor != null) DestroyImmediate(rulesetEditor);
@@ -38,7 +36,6 @@ namespace HexGame.Editor
                     lastRuleset = gm.ruleset;
                 }
 
-                // Draw the Ruleset's custom UI (dropdowns, foldouts, etc.)
                 if (rulesetEditor != null)
                 {
                     rulesetEditor.OnInspectorGUI();

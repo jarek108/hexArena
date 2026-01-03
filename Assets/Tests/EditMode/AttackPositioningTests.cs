@@ -62,15 +62,13 @@ namespace HexGame.Tests
             go.transform.SetParent(mockRoot.transform);
             var unit = go.AddComponent<Unit>();
             unit.teamId = teamId;
-            unit.Stats = new Dictionary<string, int>
-            {
-                { "MAT", 50 },
-                { "RNG", 1 },
-                { "HP", 100 },
-                { "CAP", 100 },
-                { "MFAT", 100 },
-                { "CFAT", 0 }
-            };
+            unit.SetStat("MAT", 50);
+            unit.SetStat("MDF", 0);
+            unit.SetStat("RAT", 0);
+            unit.SetStat("RDF", 0);
+            unit.SetStat("RNG", 1);
+            unit.SetStat("HP", 100);
+            unit.SetStat("AP", 100);
             return unit;
         }
 
@@ -120,8 +118,11 @@ namespace HexGame.Tests
         [Test]
         public void AttackPositioning_Respects_Reach_Weapon_Range()
         {
-            // Scenario: Pike user (Range 2)
-            attacker.Stats["RNG"] = 2;
+            // Target at (0, 2)
+            // Range 2 attacker at (0, 0)
+            attacker.SetStat("RNG", 2);
+            PlaceUnit(target, 0, 2);
+            PlaceUnit(attacker, 0, 0);
             
             PlaceUnit(target, 5, 5);
             // Block all adjacent hexes with allies

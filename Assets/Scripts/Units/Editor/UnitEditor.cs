@@ -52,15 +52,21 @@ namespace HexGame.Editor
             EditorGUILayout.ObjectField("Current Hex", unit.CurrentHex, typeof(Hex), true);
             GUI.enabled = true;
 
-            // 3. Stats Dictionary (Manual Loop)
-            if (unit.Stats != null && unit.Stats.Count > 0)
+            // 3. Current Stats (ReadOnly in this view)
+            var currentStatsProp = serializedObject.FindProperty("currentStats");
+            if (currentStatsProp != null && currentStatsProp.arraySize > 0)
             {
                 EditorGUILayout.Space();
-                EditorGUILayout.LabelField("Calculated Stats", EditorStyles.boldLabel);
+                EditorGUILayout.LabelField("Live Stats (Current / Base)", EditorStyles.boldLabel);
                 GUI.enabled = false;
-                foreach (var stat in unit.Stats)
+                for (int i = 0; i < currentStatsProp.arraySize; i++)
                 {
-                    EditorGUILayout.IntField(stat.Key, stat.Value);
+                    var statProp = currentStatsProp.GetArrayElementAtIndex(i);
+                    string id = statProp.FindPropertyRelative("id").stringValue;
+                    int val = statProp.FindPropertyRelative("value").intValue;
+                    int baseVal = unit.GetBaseStat(id);
+
+                    EditorGUILayout.TextField(id, $"{val} / {baseVal}");
                 }
                 GUI.enabled = true;
             }

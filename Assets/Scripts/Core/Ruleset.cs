@@ -36,7 +36,12 @@ namespace HexGame
 
     public abstract class Ruleset : ScriptableObject 
     {
-        public string schema;
+        public string unitSchema;
+
+        [Header("Flow Controls")]
+        public bool ignoreAPs = false;
+        public bool ignoreFatigue = false;
+        public bool ignoreMoveOrder = false;
 
         [HideInInspector] public HexData currentSearchTarget;
         [HideInInspector] public List<HexData> currentSearchTargets = new List<HexData>();
@@ -50,6 +55,7 @@ namespace HexGame
 
         public virtual void OnStartPathfinding(IEnumerable<HexData> targets, Unit unit)
         {
+            Debug.Log("pathing");
             currentSearchTargets = new List<HexData>(targets);
             currentSearchTarget = currentSearchTargets.Count > 0 ? currentSearchTargets[0] : null;
         }
@@ -80,6 +86,22 @@ namespace HexGame
 
         public virtual void OnUnitSelected(Unit unit) { }
         public virtual void OnUnitDeselected(Unit unit) { }
+
+        // Turn Flow Hooks
+        public virtual void OnRoundStart(IEnumerable<Unit> allUnits) { }
+        public virtual void OnTurnStart(Unit unit) { }
+        public virtual void OnTurnEnd(Unit unit) { }
+        public virtual int GetTurnPriority(Unit unit) { return 0; }
+
+        // Turn Flow Interface for GameMaster
+        public virtual int RoundNumber => 0;
+        public virtual Unit ActiveUnit => null;
+        public virtual List<Unit> TurnQueue => new List<Unit>();
+
+        public virtual void StartCombat() { }
+        public virtual void AdvanceTurn() { }
+        public virtual void WaitTurn() { }
+        public virtual void StopCombat() { }
 
         public virtual List<PotentialHit> GetPotentialHits(Unit attacker, Unit target, HexData fromHex = null) 
         { 

@@ -12,11 +12,22 @@ namespace HexGame.Editor
         private string[] toolNames;
         private ITool[] attachedTools;
 
+        private UnityEditor.Editor activeToolEditor;
+        private ITool lastActiveTool;
+
         private void OnEnable()
         {
             toolManager = (ToolManager)target;
             toolManager.Initialize(); 
             UpdateToolList();
+        }
+
+        private void OnDisable()
+        {
+            if (activeToolEditor != null)
+            {
+                DestroyImmediate(activeToolEditor);
+            }
         }
 
         private void UpdateToolList()
@@ -31,7 +42,7 @@ namespace HexGame.Editor
 
             UpdateToolList(); 
 
-            if (toolNames.Length == 0)
+            if (toolNames == null || toolNames.Length == 0)
             {
                 EditorGUILayout.HelpBox("No ITool components found on this GameObject.", MessageType.Warning);
                 serializedObject.ApplyModifiedProperties();
@@ -49,17 +60,43 @@ namespace HexGame.Editor
             int newSelectedToolIndex = EditorGUILayout.Popup("Switch Tool", selectedToolIndex, toolNames);
             if (EditorGUI.EndChangeCheck())
             {
-                toolManager.SetActiveTool(attachedTools[newSelectedToolIndex]);
-                // If it was a toggle tool, ActiveTool won't change, 
-                // so the index will naturally revert on the next layout pass.
+                if (newSelectedToolIndex >= 0 && newSelectedToolIndex < attachedTools.Length)
+                {
+                    toolManager.SetActiveTool(attachedTools[newSelectedToolIndex]);
+                }
             }
             
-            EditorGUILayout.BeginVertical("box");
-            EditorGUILayout.LabelField("Current Active Tool", EditorStyles.miniBoldLabel);
-            GUI.enabled = false;
-            EditorGUILayout.TextField(toolManager.ActiveTool != null ? toolManager.ActiveTool.GetType().Name : "None");
-            GUI.enabled = true;
-            EditorGUILayout.EndVertical();
+            // Draw the active tool's own inspector
+            if (toolManager.ActiveTool != null)
+            {
+                if (lastActiveTool != toolManager.ActiveTool)
+                {
+                    if (activeToolEditor != null) DestroyImmediate(activeToolEditor);
+                    
+                    UnityEngine.Object toolObj = toolManager.ActiveTool as UnityEngine.Object;
+                    if (toolObj != null)
+                    {
+                        activeToolEditor = UnityEditor.Editor.CreateEditor(toolObj);
+                    }
+                    lastActiveTool = toolManager.ActiveTool;
+                }
+
+                if (activeToolEditor != null)
+                {
+                    EditorGUILayout.Space();
+                    EditorGUILayout.LabelField($"{toolManager.ActiveTool.GetType().Name} Settings", EditorStyles.boldLabel);
+                    
+                    EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+                    activeToolEditor.OnInspectorGUI();
+                    EditorGUILayout.EndVertical();
+                }
+            }
+            else
+            {
+                if (activeToolEditor != null) DestroyImmediate(activeToolEditor);
+                activeToolEditor = null;
+                lastActiveTool = null;
+            }
 
             if (GUILayout.Button("Force Re-Initialize"))
             {
