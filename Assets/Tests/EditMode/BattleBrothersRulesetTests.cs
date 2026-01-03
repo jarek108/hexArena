@@ -71,7 +71,7 @@ namespace HexGame.Tests
             unit = unitGO.AddComponent<Unit>();
             unit.SetStat("HP", 100);
             unit.SetStat("AP", 100);
-            unit.SetStat("FAT", 0);
+            unit.SetStat("FAT", 100); // 100 = Fresh (Fuel Tank)
         }
 
         [TearDown]
@@ -199,14 +199,13 @@ namespace HexGame.Tests
             ruleset.ignoreAPs = true;
             ruleset.ignoreFatigue = true;
             ruleset.movement.plainsCost = 10f;
-            unit.SetStat("FAT", 100);
             
             // Set max fatigue via prototype for GetBaseStat
             var type = new UnitType { id = "fatigue_test", Name = "FatigueTest" };
             type.Stats.Add(new UnitStatValue { id = "FAT", value = 100 });
             unitSet.units.Add(type);
             unit.Initialize("fatigue_test", 1);
-            unit.SetStat("FAT", 100); // Current fatigue at max
+            unit.SetStat("FAT", 0); // Exhausted (Fuel Tank)
 
             var result = ruleset.TryMoveStep(unit, hex1.Data, hex2.Data);
             Assert.IsTrue(result.isValid, "Move should be valid because ignoreFatigue is true.");

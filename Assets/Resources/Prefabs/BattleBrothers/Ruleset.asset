@@ -12,15 +12,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 40706ac3d6a96c44e88aa272603d2500, type: 3}
   m_Name: Ruleset
   m_EditorClassIdentifier: HexGame::HexGame.BattleBrothersRuleset
-  unitSchema: 
-  ignoreAPs: 1
-  ignoreFatigue: 1
-  ignoreMoveOrder: 1
+  unitSchema: BattleBrothers
+  ignoreAPs: 0
+  ignoreFatigue: 0
+  ignoreMoveOrder: 0
   currentSearchTarget:
-    Q: 0
-    R: 0
-    S: 0
-  currentSearchTargets: []
+    Q: 6
+    R: 5
+    S: -11
+  currentSearchTargets:
+  - Q: 6
+    R: 5
+    S: -11
   movement: {fileID: 11400000, guid: 6f18682b192704d47ba13375748bc148, type: 2}
   combat: {fileID: 11400000, guid: 86d03f73bfbddd142a2098231d1d8968, type: 2}
   tactical: {fileID: 11400000, guid: a23ff9eee5ee08941ac93ff513637eaa, type: 2}

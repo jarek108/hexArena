@@ -55,6 +55,7 @@ namespace HexGame
 
         public virtual void OnStartPathfinding(IEnumerable<HexData> targets, Unit unit)
         {
+            Debug.Log("pathing");
             currentSearchTargets = new List<HexData>(targets);
             currentSearchTarget = currentSearchTargets.Count > 0 ? currentSearchTargets[0] : null;
         }

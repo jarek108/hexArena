@@ -98,6 +98,28 @@ namespace HexGame.Tests
             Assert.IsTrue(result.isValid, $"Move should be valid but failed with: {result.reason}");
             
             Object.DestroyImmediate(uGO);
+        }
+
+        [Test]
+        public void TryMoveStep_WithExhaustedUnit_ShouldFailFatigue()
+        {
+            Hex h1 = SetupHex(0, 0);
+            Hex h2 = SetupHex(1, 0);
+
+            Debug.Log(h1);
+
+            GameObject uGO = new GameObject("Unit");
+            Unit u = uGO.AddComponent<Unit>();
+            u.Initialize("unit", 0);
+            u.SetHex(h1);
+            u.SetStat("FAT", 0); // Exhausted
+
+            MoveVerification result = ruleset.TryMoveStep(u, h1.Data, h2.Data);
+            
+            Assert.IsFalse(result.isValid, "Move should fail due to fatigue");
+            // Expect detailed message: "Not enough Fatigue: 0/100, action requires 4"
+            Assert.IsTrue(result.reason.Contains("Not enough Fatigue"), $"Unexpected reason: {result.reason}");
+            Assert.IsTrue(result.reason.Contains("0/100"), $"Unexpected reason: {result.reason}");
             
             Object.DestroyImmediate(uGO);
         }

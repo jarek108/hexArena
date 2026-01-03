@@ -62,8 +62,10 @@ namespace HexGame
         public override int GetTurnPriority(Unit unit)
         {
             if (unit == null) return 0;
-            // EffectiveINI = INI - CFAT
-            return unit.GetBaseStat("INI", 100) - unit.GetStat("CFAT");
+            // EffectiveINI = INI - AccumulatedFatigue (Max - Current)
+            int maxFat = unit.GetBaseStat("FAT", 100);
+            int currentFat = unit.GetStat("FAT");
+            return unit.GetBaseStat("INI", 100) - (maxFat - currentFat);
         }
 
         public override void OnRoundStart(IEnumerable<Unit> allUnits)
@@ -71,9 +73,10 @@ namespace HexGame
             foreach (var unit in allUnits)
             {
                 if (unit == null) continue;
-                // Standard +15 Fatigue recovery per round in Battle Brothers
-                int currentFat = unit.GetStat("CFAT");
-                unit.SetStat("CFAT", Mathf.Max(0, currentFat - 15));
+                // Recover 15 Fatigue (Energy) up to Max
+                int maxFat = unit.GetBaseStat("FAT", 100);
+                int currentFat = unit.GetStat("FAT");
+                unit.SetStat("FAT", Mathf.Min(maxFat, currentFat + 15));
             }
         }
 
@@ -100,15 +103,15 @@ namespace HexGame
                 if (targetHex != null && targetHex.Data.Unit != null && targetHex.Data.Unit.teamId != unit.teamId)
                 {
                     int ap = unit.GetStat("AP");
-                    int fat = unit.GetStat("CFAT");
-                    int mfat = unit.GetBaseStat("FAT", 100);
-                    int attackCost = 4;
+                    int fat = unit.GetStat("FAT");
+                    int attackApCost = 4;
+                    int attackFatCost = unit.GetStat("AFAT", 10);
 
-                    if ((ignoreAPs || ap >= attackCost) && (ignoreFatigue || fat < mfat))
+                    if ((ignoreAPs || ap >= attackApCost) && (ignoreFatigue || fat >= attackFatCost))
                     {
                         PerformAttack(unit, targetHex.Data.Unit);
-                        if (!ignoreAPs) unit.SetStat("AP", ap - attackCost);
-                        if (!ignoreFatigue) unit.SetStat("CFAT", fat + unit.GetStat("AFAT", 10));
+                        if (!ignoreAPs) unit.SetStat("AP", ap - attackApCost);
+                        if (!ignoreFatigue) unit.SetStat("FAT", fat - attackFatCost);
                     }
                 }
                 onComplete?.Invoke();
@@ -204,17 +207,31 @@ namespace HexGame
             float cost = movement.GetMoveCost(unit, fromHex, toHex, this);
             if (float.IsInfinity(cost)) return MoveVerification.Failure("Unreachable.");
 
+            int apCost = 2; // Const as requested
+            int fatCost = 4; // Const as requested
+
             if (!ignoreAPs)
             {
                 int ap = unit.GetStat("AP");
-                if (ap < cost) return MoveVerification.Failure("Not enough AP.");
+                int maxAp = unit.GetBaseStat("AP", 9);
+                if (ap < apCost) 
+                {
+                    string msg = $"Not enough APs: {ap}/{maxAp}, action requires {apCost}";
+                    Debug.Log($"[Ruleset] {msg}");
+                    return MoveVerification.Failure(msg);
+                }
             }
 
             if (!ignoreFatigue)
             {
-                int fat = unit.GetStat("CFAT");
-                int mfat = unit.GetBaseStat("FAT", 100);
-                if (fat + cost > mfat) return MoveVerification.Failure("Too much fatigue.");
+                int fat = unit.GetStat("FAT");
+                int maxFat = unit.GetBaseStat("FAT", 100);
+                if (fat < fatCost) 
+                {
+                    string msg = $"Not enough Fatigue: {fat}/{maxFat}, action requires {fatCost}";
+                    Debug.Log($"[Ruleset] {msg}");
+                    return MoveVerification.Failure(msg);
+                }
             }
 
             // 2. Attack of Opportunity (AoO)
@@ -272,8 +289,11 @@ namespace HexGame
             float cost = fromHex != null ? movement.GetMoveCost(unit, fromHex, toHex, this) : 0f;
             if (!float.IsInfinity(cost))
             {
-                if (!ignoreAPs) unit.SetStat("AP", unit.GetStat("AP") - Mathf.RoundToInt(cost));
-                if (!ignoreFatigue) unit.SetStat("CFAT", unit.GetStat("CFAT") + Mathf.RoundToInt(cost));
+                int apCost = 2;
+                int fatCost = 4;
+
+                if (!ignoreAPs) unit.SetStat("AP", unit.GetStat("AP") - apCost);
+                if (!ignoreFatigue) unit.SetStat("FAT", unit.GetStat("FAT") - fatCost);
             }
 
             toHex.AddUnit(unit);

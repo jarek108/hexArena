@@ -115,11 +115,11 @@ namespace HexGame.Tests
         public void RoundStart_RecoversFatigue()
         {
             var u = CreateUnit("Unit", 100);
-            u.SetStat("CFAT", 50);
+            u.SetStat("FAT", 50); // Set current energy to 50/100
 
             gm.StartNewRound();
 
-            Assert.AreEqual(35, u.GetStat("CFAT"), "Fatigue should recover by 15 on round start.");
+            Assert.AreEqual(65, u.GetStat("FAT"), "Fatigue should recover by 15 on round start.");
         }
 
         [Test]

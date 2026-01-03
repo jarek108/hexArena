@@ -44,8 +44,8 @@ We follow a **Data-Driven Architecture** prioritizing strict Logic/View separati
 2.  **Plan:** Develop a concise plan and proposed tests for the selected approach.
 3.  **Write tests:** Write a complete list of tests covering the new feature
 4.  **Implement:** Write/correct game code
-5.  **Testing** Run the tests. MAKE SURE to inspect console errors
-6.  **Correction loop** Go to 4 till tests pass, and you MADE SURE there is no console errors. Confirm with user you are done
+5.  **Testing**: Run `python tools/diagnose_unity.py`. This is the only acceptable way to verify your changes.
+6.  **Correction loop**: Repeat steps 4 and 5 until `diagnose_unity.py` reports "Verification Successful!" with zero console errors and all tests passing. Confirm with the user once this state is reached.
 7.  **Verification & finalization:** Once user confirms feature is done, update documentation, PROPOSE committing.
 8.  **Test Persistence:** Always store created tests as permanent artifacts in the codebase as long as they remain relevant and the feature they test exists. Never delete tests after verification unless explicitly requested.
 
@@ -62,11 +62,11 @@ We follow a **Data-Driven Architecture** prioritizing strict Logic/View separati
 # Tool Usage
 0. **Shell Commands**: NEVER use `&&` to chain multiple shell commands. Execute each independently.
 1. **Screenshots & Visual Inspection** - NEVER use MCP for screenshots. ALWAYS use `python tools/capture_unity.py "<purpose>"` to capture the Unity window.
-2. **Testing & Diagnostics** -  NEVER use MCP's  `read_console`, `run_tests`, or manual window activation tools. ALWAYS use `python tools/test_unity.py`. The diagnostic script automatically:
-    1. Checks for console errors/exceptions.
-    2. Saves the active scene.
-    3. Runs all EditMode tests and reports results.
-    If the script fails (exit code 1), fix the reported errors before proceeding.
+2. **Testing & Diagnostics** - NEVER use MCP's `read_console`, `run_tests`, or `manage_scene (save)` directly. ALWAYS use `python tools/diagnose_unity.py`. This is the mandatory "Quality Gate" for the project. It ensures stability by:
+    1. **Monitoring Compilation**: Intelligently waits for background compilation to stabilize (polling DLL vs CS timestamps) so tests never run on stale code.
+    2. **Auditing Console**: Performs a deep scan for errors/exceptions while filtering out infrastructure noise.
+    3. **Unified Verification**: Handles scene saving and test execution in a single atomic pass.
+    If the script fails (exit code 1), you MUST fix the reported errors before proceeding.
 3. **Git Usage**: 
     * **CRITICAL**: NEVER commit or push without explicit confirmation.
     * Propose commit messages first, listing all modified files.
