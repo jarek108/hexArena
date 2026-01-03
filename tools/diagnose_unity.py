@@ -236,10 +236,10 @@ class UnityDiagnostics:
 
     async def execute(self):
         os.system('') # Enable ANSI
-        await self.wait_for_compilation()
         async with self.mcp:
             await self.mcp.connect()
             await self.check_console_errors()
+            await self.wait_for_compilation()
             if not self.skip_tests:
                 await self.run_tests()
             else:
