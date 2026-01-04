@@ -52,6 +52,9 @@ We follow a **Data-Driven Architecture** prioritizing strict Logic/View separati
 ## Python coding
 1. When writing Python, be very concise and prefer brevity over handling all errors etc.
 
+## C# Coding Standards
+*   **Flattening & Guard Clauses**: Always prioritize flat code structures. Use guard clauses (`if (!condition) return;`) and early exits to minimize nesting and improve readability. Refactor deeply nested blocks into a series of top-level checks followed by the "happy path" logic.
+
 ## Unity Editor Coding
 *   **ScrollViews**: In custom editors, never use `GUILayout.Height` inside `EditorGUILayout.BeginScrollView`. It restricts the layout unnecessarily and often looks poor.
 *   **Headers**: Never use `[Header("...")]` attributes in MonoBehaviours. All section labeling and organization must be handled within the custom editor.

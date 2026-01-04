@@ -12,7 +12,6 @@ namespace HexGame.Tools
 
         public Hex SourceHex { get; private set; }
         public Hex TargetHex { get; private set; }
-        public List<PotentialHit> PotentialHits { get; private set; } = new List<PotentialHit>();
 
         [SerializeField] private bool continuous = true;
 
@@ -112,7 +111,7 @@ namespace HexGame.Tools
             }
 
             // Immediately show path visuals (zero-length path + AoA)
-            CalculateAndShowPath(SourceHex);
+            ShowPath(GetPath(SourceHex), SourceHex);
         }
 
         public void SetTarget(Hex hex)
@@ -126,58 +125,46 @@ namespace HexGame.Tools
             }
 
             // Pathfinding to target
-            var manager = GridVisualizationManager.Instance ?? FindFirstObjectByType<GridVisualizationManager>();
-            
+            PathResult result = GetPath(hex);
+
+            if (!result.Success)
+            {
+                return;
+            }
+
             var ruleset = GameMaster.Instance?.ruleset;
+            if (SourceHex.Data.Unit != null && ruleset != null)
+            {
+                Unit movingUnit = SourceHex.Data.Unit;
 
-            PathResult result;
-            if (SourceHex.Data.Unit != null && hex.Data.Unit != null && hex.Data.Unit.teamId != SourceHex.Data.Unit.teamId && ruleset != null)
-            {
-                // Multi-target search for attack positions
-                var attackPositions = ruleset.GetValidAttackPositions(SourceHex.Data.Unit, hex.Data.Unit);
-                ruleset.OnStartPathfinding(attackPositions, SourceHex.Data.Unit);
-                result = Pathfinder.FindPath(manager.Grid, SourceHex.Data.Unit, SourceHex.Data, attackPositions.ToArray());
-            }
-            else
-            {
-                if (ruleset != null) ruleset.OnStartPathfinding(hex.Data, SourceHex.Data.Unit);
-                result = Pathfinder.FindPath(manager.Grid, SourceHex.Data.Unit, SourceHex.Data, hex.Data);
-            }
-
-            if (result.Success)
-            {
-                if (SourceHex.Data.Unit != null && ruleset != null)
+                // Deselect the old hex visually
+                if (SourceHex != null)
                 {
-                    Unit movingUnit = SourceHex.Data.Unit;
+                    SourceHex.Data.RemoveState("Selected");
+                    SourceHex = null;
+                }
+                ClearTarget();
+                ruleset.OnClearPathfindingVisuals();
 
-                    // Deselect the old hex visually
-                    if (SourceHex != null)
+                // Let the ruleset handle how the unit follows the path
+                ruleset.ExecutePath(movingUnit, result.Path, hex, () => 
+                {
+                    // On complete: re-select the unit at its new location
+                    if (movingUnit != null && movingUnit.CurrentHex != null)
                     {
-                        SourceHex.Data.RemoveState("Selected");
-                        SourceHex = null;
+                        SetSource(movingUnit.CurrentHex);
                     }
-                    ClearTarget();
-                    ruleset.OnClearPathfindingVisuals();
-
-                    // Let the ruleset handle how the unit follows the path
-                    ruleset.ExecutePath(movingUnit, result.Path, hex, () => 
-                    {
-                        // On complete: re-select the unit at its new location
-                        if (movingUnit != null && movingUnit.CurrentHex != null)
-                        {
-                            SetSource(movingUnit.CurrentHex);
-                        }
-                    });
-                }
-                else if (SourceHex.Data.Unit == null)
-                {
-                    // Fallback visual highlight if no unit
-                    if (TargetHex != null) TargetHex.Data.RemoveState("Target");
-                    TargetHex = hex;
-                    TargetHex.Data.AddState("Target");
-                    CalculateAndShowPath(TargetHex);
-                }
+                });
             }
+            else if (SourceHex.Data.Unit == null)
+            {
+                // Fallback visual highlight if no unit
+                if (TargetHex != null) TargetHex.Data.RemoveState("Target");
+                TargetHex = hex;
+                TargetHex.Data.AddState("Target");
+                ShowPath(result, TargetHex);
+            }
+            
         }
 
         private void ClearAll()
@@ -221,11 +208,6 @@ namespace HexGame.Tools
             }
         }
 
-        private void ClearPath() // Legacy helper for OnDeactivate
-        {
-            ClearAll();
-        }
-
         public void HandleHighlighting(Hex oldHex, Hex newHex)
         {
             if (!IsEnabled) return;
@@ -241,7 +223,7 @@ namespace HexGame.Tools
                 // Continuous pathfinding logic
                 if (continuous && SourceHex != null && TargetHex == null)
                 {
-                    CalculateAndShowPath(newHex);
+                    ShowPath(GetPath(newHex), newHex);
                 }
             }
             else
@@ -251,68 +233,43 @@ namespace HexGame.Tools
             }
         }
 
-        private void CalculateAndShowPath(Hex target)
+        private PathResult GetPath(Hex target)
         {
-            if (SourceHex == null || target == null) return;
+            if (SourceHex == null || target == null) return new PathResult { Success = false };
 
             var manager = GridVisualizationManager.Instance ?? FindFirstObjectByType<GridVisualizationManager>();
-            if (manager == null || manager.Grid == null) return;
-
-            ClearPathVisuals();
-            PotentialHits.Clear();
+            if (manager == null || manager.Grid == null) return new PathResult { Success = false };
 
             var ruleset = GameMaster.Instance?.ruleset;
 
-            PathResult result;
             if (SourceHex.Data.Unit != null && target.Data.Unit != null && target.Data.Unit.teamId != SourceHex.Data.Unit.teamId && ruleset != null)
             {
                 var attackPositions = ruleset.GetValidAttackPositions(SourceHex.Data.Unit, target.Data.Unit);
                 ruleset.OnStartPathfinding(attackPositions, SourceHex.Data.Unit);
-                result = Pathfinder.FindPath(manager.Grid, SourceHex.Data.Unit, SourceHex.Data, attackPositions.ToArray());
+                return Pathfinder.FindPath(manager.Grid, SourceHex.Data.Unit, SourceHex.Data, attackPositions.ToArray());
             }
             else
             {
                 if (ruleset != null && SourceHex.Data.Unit != null) ruleset.OnStartPathfinding(target.Data, SourceHex.Data.Unit);
-                result = Pathfinder.FindPath(manager.Grid, SourceHex.Data.Unit, SourceHex.Data, target.Data);
+                return Pathfinder.FindPath(manager.Grid, SourceHex.Data.Unit, SourceHex.Data, target.Data);
             }
+        }
 
-            if (result.Success)
+        private void ShowPath(PathResult result, Hex target)
+        {
+            if (SourceHex == null || target == null || !result.Success) return;
+
+            ClearPathVisuals();
+
+            // Draw the entire path without truncation
+            foreach (var hexData in result.Path)
             {
-                // Draw the entire path without truncation
-                foreach (var hexData in result.Path)
-                {
-                    if (hexData == SourceHex.Data) continue;
+                if (hexData == SourceHex.Data) continue;
 
-                    // Only skip if this is the actual target hex and it has a unit
-                    if (hexData == target.Data && target.Data.Unit != null) continue;
+                // Only skip if this is the actual target hex and it has a unit
+                if (hexData == target.Data && target.Data.Unit != null) continue;
 
-                    hexData.AddState("Path");
-                }
-
-                // If targeting an enemy, show hit chance preview
-                if (SourceHex.Data.Unit != null && target.Data.Unit != null && target.Data.Unit.teamId != SourceHex.Data.Unit.teamId && ruleset != null && result.Path != null && result.Path.Count > 0)
-                {
-                    // For hit preview, we still use the stop index logic to find where the unit WOULD stop to attack
-                    int stopIndex = (ruleset != null && SourceHex.Data.Unit != null) ? 
-                        ruleset.GetMoveStopIndex(SourceHex.Data.Unit, result.Path) : 
-                        result.Path.Count;
-
-                    HexData stopHexData = result.Path[stopIndex - 1];
-                    PotentialHits = ruleset.GetPotentialHits(SourceHex.Data.Unit, target.Data.Unit, stopHexData) ?? new List<PotentialHit>();
-
-                    // Condensed single-line log
-                    if (PotentialHits.Count > 0)
-                    {
-                        string logMsg = "[Preview] ";
-                        for (int i = 0; i < PotentialHits.Count; i++)
-                        {
-                            var h = PotentialHits[i];
-                            logMsg += $"{h.logInfo}#{h.target.Id} ({(h.max - h.min):P0})";
-                            if (i < PotentialHits.Count - 1) logMsg += ", ";
-                        }
-                        Debug.Log(logMsg);
-                    }
-                }
+                hexData.AddState("Path");
             }
         }
     }

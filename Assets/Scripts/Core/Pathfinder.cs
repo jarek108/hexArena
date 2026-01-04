@@ -7,6 +7,8 @@ namespace HexGame
 {
     public struct PathResult
     {
+        public HexData Source;
+        public HexData Target;
         public List<HexData> Path;
         public float TotalCost;
         public bool Success;
@@ -37,12 +39,14 @@ namespace HexGame
             //Debug.Log("start path profiling");
             Profiler.BeginSample("Pathfinder.FindPath");
 
+            HexData primaryTarget = (targets != null && targets.Length > 0) ? targets[0] : null;
+
             if (grid == null || start == null || targets == null || targets.Length == 0)
             {
                 Profiler.EndSample();
                 //Debug.Log("end path profiling");
 
-                return new PathResult { Success = false };
+                return new PathResult { Source = start, Target = primaryTarget, Success = false };
             }
 
             HashSet<HexData> targetSet = new HashSet<HexData>(targets);
@@ -52,7 +56,7 @@ namespace HexGame
                 Profiler.EndSample();
                 //Debug.Log("end profiling");
 
-                return new PathResult { Path = new List<HexData> { start }, TotalCost = 0, Success = true };
+                return new PathResult { Source = start, Target = start, Path = new List<HexData> { start }, TotalCost = 0, Success = true };
             }
 
             Ruleset ruleset = GameMaster.Instance != null ? GameMaster.Instance.ruleset : 
@@ -61,7 +65,8 @@ namespace HexGame
             var openSet = new List<Node>();
             var closedSet = new HashSet<HexData>();
 
-            openSet.Add(new Node(start, null, 0, GetHeuristic(start, targetSet)));
+            Node startNode = new Node(start, null, 0, GetHeuristic(start, targetSet));
+            openSet.Add(startNode);
 
             while (openSet.Count > 0)
             {
@@ -70,7 +75,7 @@ namespace HexGame
 
                 if (targetSet.Contains(current.Data))
                 {
-                    var path = RetracePath(current);
+                    var path = RetracePath(startNode, current);
 
                     Profiler.EndSample();
                     //Debug.Log("end path profiling");
@@ -117,7 +122,7 @@ namespace HexGame
 
             Profiler.EndSample();
             //Debug.Log("end path profiling");
-            return new PathResult { Success = false };
+            return new PathResult { Source = start, Target = primaryTarget, Success = false };
         }
 
         private static float GetHeuristic(HexData current, HashSet<HexData> targets)
@@ -131,7 +136,7 @@ namespace HexGame
             return min;
         }
 
-        private static PathResult RetracePath(Node targetNode)
+        private static PathResult RetracePath(Node startNode, Node targetNode)
         {
             List<HexData> path = new List<HexData>();
             float totalCost = targetNode.G;
@@ -144,7 +149,13 @@ namespace HexGame
             }
 
             path.Reverse();
-            return new PathResult { Path = path, TotalCost = totalCost, Success = true };
+            return new PathResult { 
+                Source = startNode.Data, 
+                Target = targetNode.Data, 
+                Path = path, 
+                TotalCost = totalCost, 
+                Success = true 
+            };
         }
     }
 }
