@@ -255,10 +255,18 @@ class MCPClient:
         if self.client: await self.client.aclose()
 
     async def connect(self):
-        resp = await self.client.get(self.base_url, headers={"Accept": "application/json"})
-        self.sid = resp.headers.get("mcp-session-id") or resp.json().get("sessionId")
-        await self.rpc("initialize", {"protocolVersion": "2024-11-05", "capabilities": {}, "clientInfo": {"name": "unity-diag", "version": "1.0"}}, msg_id=1)
-        await self.rpc("notifications/initialized")
+        try:
+            resp = await self.client.get(self.base_url, headers={"Accept": "application/json"})
+            self.sid = resp.headers.get("mcp-session-id") or resp.json().get("sessionId")
+            await self.rpc("initialize", {"protocolVersion": "2024-11-05", "capabilities": {}, "clientInfo": {"name": "unity-diag", "version": "1.0"}}, msg_id=1)
+            await self.rpc("notifications/initialized")
+        except httpx.RequestError:
+            print(f"{Style.RED}{Style.BOLD}[!] ERROR: Could not connect to MCP server at {self.base_url}.{Style.RESET}")
+            print(f"{Style.YELLOW}    Make sure the Unity project is open and the MCP server is running.{Style.RESET}")
+            sys.exit(1)
+        except Exception as e:
+            print(f"{Style.RED}{Style.BOLD}[!] ERROR: Connection failed: {e}{Style.RESET}")
+            sys.exit(1)
 
     async def rpc(self, method: str, params: Optional[Dict] = None, msg_id: Optional[int] = None):
         payload = {"jsonrpc": "2.0", "method": method}
