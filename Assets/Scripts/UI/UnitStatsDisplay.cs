@@ -11,19 +11,32 @@ namespace HexGame.UI
     {
         public enum SelectionMode { Hover, LClick, RClick, AnyClick }
 
+        public Unit displayedUnit;
+
         [Header("UI References")]
         public RectTransform panel;
         public Text unitNameText;
+        public Text unitStatsText;
+
+        [Header("Font Settings")]
+        public Font nameFont;
+        public int nameFontSize = 20;
+        public Color nameColor = Color.white;
+        public TextAnchor nameAlignment = TextAnchor.UpperLeft;
+
+        public Font statsFont;
+        public int statsFontSize = 14;
+        public Color statsColor = new Color(0.8f, 0.8f, 0.8f);
+        public TextAnchor statsAlignment = TextAnchor.UpperLeft;
 
         [Header("Settings")]
         public SelectionMode chooseUnitOn = SelectionMode.Hover;
         public bool continuouslyVisible = false;
         public bool keepShowingLastUnit = false;
         public Color backgroundColor = new Color(0, 0, 0, 0.7f);
-        public Vector2 panelSize = new Vector2(250, 60);
+        public Vector2 panelSize = new Vector2(250, 200);
         public Vector2 panelPosition = new Vector2(20, -20); // Top left
 
-        public Unit displayedUnit;
         private HexRaycaster raycaster;
 
         private void Start()
@@ -48,7 +61,11 @@ namespace HexGame.UI
                 // Delay call to ensure we don't modify hierarchy during OnValidate
                 #if UNITY_EDITOR
                 UnityEditor.EditorApplication.delayCall += () => {
-                    if (this != null) EnsureUI();
+                    if (this != null)
+                    {
+                        EnsureUI();
+                        UpdateUI();
+                    }
                 };
                 #endif
             }
@@ -101,15 +118,57 @@ namespace HexGame.UI
 
             if (shouldShow)
             {
+                ApplyFontSettings();
+
                 if (displayedUnit != null)
                 {
                     if (unitNameText != null) unitNameText.text = displayedUnit.UnitName;
+                    
+                    if (unitStatsText != null)
+                    {
+                        var schema = displayedUnit.unitSet?.schemaDefinitions;
+                        if (schema != null && schema.Count > 0)
+                        {
+                            System.Text.StringBuilder sb = new System.Text.StringBuilder();
+                            foreach (var def in schema)
+                            {
+                                int val = displayedUnit.GetStat(def.id);
+                                sb.AppendLine($"{def.name}: {val}");
+                            }
+                            unitStatsText.text = sb.ToString().TrimEnd();
+                        }
+                        else
+                        {
+                            unitStatsText.text = "No stats available";
+                        }
+                    }
                 }
                 else
                 {
                     if (unitNameText != null) 
                         unitNameText.text = Application.isPlaying ? "No Unit Selected" : "Unit Name";
+                    if (unitStatsText != null)
+                        unitStatsText.text = Application.isPlaying ? "" : "Stats list...";
                 }
+            }
+        }
+
+        private void ApplyFontSettings()
+        {
+            if (unitNameText != null)
+            {
+                if (nameFont != null) unitNameText.font = nameFont;
+                unitNameText.fontSize = nameFontSize;
+                unitNameText.color = nameColor;
+                unitNameText.alignment = nameAlignment;
+            }
+
+            if (unitStatsText != null)
+            {
+                if (statsFont != null) unitStatsText.font = statsFont;
+                unitStatsText.fontSize = statsFontSize;
+                unitStatsText.color = statsColor;
+                unitStatsText.alignment = statsAlignment;
             }
         }
 
@@ -133,61 +192,54 @@ namespace HexGame.UI
                 if (existing != null)
                 {
                     panel = existing.GetComponent<RectTransform>();
-                    // Also try to link the text if it exists
-                    if (unitNameText == null)
-                    {
-                        Transform t = existing.Find("UnitNameText");
-                        if (t != null) unitNameText = t.GetComponent<Text>();
-                    }
                 }
             }
 
-            if (panel != null) 
+            if (panel == null)
             {
-                // Ensure text exists if panel was found but text wasn't linked
-                if (unitNameText == null) CreateText(panel);
-                return;
+                // Create Panel
+                GameObject panelGo = new GameObject("UnitStatsPanel");
+                panelGo.transform.SetParent(canvas.transform, false);
+                panel = panelGo.AddComponent<RectTransform>();
+
+                // Anchor to top-left
+                panel.anchorMin = new Vector2(0, 1);
+                panel.anchorMax = new Vector2(0, 1);
+                panel.pivot = new Vector2(0, 1);
+                
+                Image bg = panelGo.AddComponent<Image>();
+                bg.color = backgroundColor;
             }
 
-            // Create Panel
-            GameObject panelGo = new GameObject("UnitStatsPanel");
-            panelGo.transform.SetParent(canvas.transform, false);
-            panel = panelGo.AddComponent<RectTransform>();
-
-            // Anchor to top-left
-            panel.anchorMin = new Vector2(0, 1);
-            panel.anchorMax = new Vector2(0, 1);
-            panel.pivot = new Vector2(0, 1);
             panel.sizeDelta = panelSize;
             panel.anchoredPosition = panelPosition;
+            if (panel.GetComponent<Image>() != null) panel.GetComponent<Image>().color = backgroundColor;
 
-            Image bg = panelGo.AddComponent<Image>();
-            bg.color = backgroundColor;
-
-            CreateText(panel);
+            EnsureTextElement(ref unitNameText, "UnitNameText", 15, -15, 0.85f, 1.0f);
+            EnsureTextElement(ref unitStatsText, "UnitStatsText", 15, -15, 0.0f, 0.85f);
         }
 
-        private void CreateText(RectTransform parent)
+        private void EnsureTextElement(ref Text textField, string name, float left, float right, float minV, float maxV)
         {
-            if (unitNameText != null) return;
+            if (textField == null)
+            {
+                Transform t = panel.Find(name);
+                if (t != null) textField = t.GetComponent<Text>();
+            }
 
-            GameObject textGo = new GameObject("UnitNameText");
-            textGo.transform.SetParent(parent.transform, false);
-            unitNameText = textGo.AddComponent<Text>();
-            
-            // Try to find a font
-            unitNameText.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            if (textField == null)
+            {
+                GameObject textGo = new GameObject(name);
+                textGo.transform.SetParent(panel, false);
+                textField = textGo.AddComponent<Text>();
+                textField.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            }
 
-            unitNameText.fontSize = 24;
-            unitNameText.color = Color.white;
-            unitNameText.alignment = TextAnchor.MiddleLeft;
-
-            RectTransform textRT = textGo.GetComponent<RectTransform>();
-            textRT.anchorMin = new Vector2(0, 0);
-            textRT.anchorMax = new Vector2(1, 1);
-            textRT.pivot = new Vector2(0, 1);
-            textRT.offsetMin = new Vector2(15, 0);
-            textRT.offsetMax = new Vector2(-15, 0);
+            RectTransform rt = textField.GetComponent<RectTransform>();
+            rt.anchorMin = new Vector2(0, minV);
+            rt.anchorMax = new Vector2(1, maxV);
+            rt.offsetMin = new Vector2(left, 5);
+            rt.offsetMax = new Vector2(right, -5);
         }
     }
 }
