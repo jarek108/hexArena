@@ -34,7 +34,9 @@ namespace HexGame.UI
         public bool continuouslyVisible = false;
         public bool keepShowingLastUnit = false;
         public Color backgroundColor = new Color(0, 0, 0, 0.7f);
-        public Vector2 panelSize = new Vector2(250, 200);
+        public float paddingX = 15f;
+        public float paddingY = 10f;
+        public float spacing = 5f;
         public Vector2 panelPosition = new Vector2(20, -20); // Top left
 
         private HexRaycaster raycaster;
@@ -119,10 +121,19 @@ namespace HexGame.UI
             if (shouldShow)
             {
                 // Force layout updates
-                panel.sizeDelta = panelSize;
                 panel.anchoredPosition = panelPosition;
                 var bg = panel.GetComponent<Image>();
                 if (bg != null) bg.color = backgroundColor;
+
+                var vlg = panel.GetComponent<VerticalLayoutGroup>();
+                if (vlg != null)
+                {
+                    vlg.padding.left = (int)paddingX;
+                    vlg.padding.right = (int)paddingX;
+                    vlg.padding.top = (int)paddingY;
+                    vlg.padding.bottom = (int)paddingY;
+                    vlg.spacing = spacing;
+                }
 
                 ApplyFontSettings();
 
@@ -234,12 +245,25 @@ namespace HexGame.UI
                 panel.SetParent(canvas.transform, false);
             }
 
+            // Ensure Layout Components
+            VerticalLayoutGroup vlg = panel.GetComponent<VerticalLayoutGroup>();
+            if (vlg == null) vlg = panel.gameObject.AddComponent<VerticalLayoutGroup>();
+            vlg.childControlHeight = true;
+            vlg.childControlWidth = true;
+            vlg.childForceExpandHeight = false;
+            vlg.childForceExpandWidth = true;
+
+            ContentSizeFitter csf = panel.GetComponent<ContentSizeFitter>();
+            if (csf == null) csf = panel.gameObject.AddComponent<ContentSizeFitter>();
+            csf.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
+            csf.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
             // Ensure text references are linked
-            if (unitNameText == null) EnsureTextElement(ref unitNameText, "UnitNameText", 15, -15, 0.85f, 1.0f);
-            if (unitStatsText == null) EnsureTextElement(ref unitStatsText, "UnitStatsText", 15, -15, 0.0f, 0.85f);
+            if (unitNameText == null) EnsureTextElement(ref unitNameText, "UnitNameText");
+            if (unitStatsText == null) EnsureTextElement(ref unitStatsText, "UnitStatsText");
         }
 
-        private void EnsureTextElement(ref Text textField, string name, float left, float right, float minV, float maxV)
+        private void EnsureTextElement(ref Text textField, string name)
         {
             if (textField == null)
             {
@@ -254,12 +278,6 @@ namespace HexGame.UI
                 textField = textGo.AddComponent<Text>();
                 textField.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
             }
-
-            RectTransform rt = textField.GetComponent<RectTransform>();
-            rt.anchorMin = new Vector2(0, minV);
-            rt.anchorMax = new Vector2(1, maxV);
-            rt.offsetMin = new Vector2(left, 5);
-            rt.offsetMax = new Vector2(right, -5);
         }
     }
 }
