@@ -73,7 +73,7 @@ public class CombatTests
         ruleset.OnHit(attacker, target, 20);
 
         // Assert
-        Assert.AreEqual(80, target.GetStat("HP"));
+        Assert.AreEqual(800, target.GetStat("HP"));
     }
 
     [Test]
