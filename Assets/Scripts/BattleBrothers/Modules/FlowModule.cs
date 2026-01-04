@@ -78,11 +78,6 @@ namespace HexGame
 
             ruleset?.OnTurnStart(activeUnit);
 
-            if (activeUnit != null && activeUnit.CurrentHex != null)
-            {
-                ruleset?.PerformMove(activeUnit, null, activeUnit.CurrentHex.Data);
-            }
-
             Debug.Log($"[FlowModule] Round {roundNumber} - Starting turn for: {activeUnit.UnitName}");
         }
 
