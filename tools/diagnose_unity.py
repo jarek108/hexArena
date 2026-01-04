@@ -105,7 +105,7 @@ class UnityDiagnostics:
         await self.mcp.call_tool("manage_scene", {"action": "save"})
         
         print(f"[*] Starting EditMode tests (Async)...")
-        res = await self.mcp.call_tool("run_tests_async", {"mode": "EditMode"})
+        res = await self.mcp.call_tool("run_tests_async", {"mode": "EditMode", "include_details": True})
         
         if not res or "result" not in res:
             print(f"{Style.RED}Failed to start async tests. Raw response: {res}{Style.RESET}")
@@ -128,7 +128,7 @@ class UnityDiagnostics:
         
         while True:
             await asyncio.sleep(2)
-            res = await self.mcp.call_tool("get_test_job", {"job_id": job_id})
+            res = await self.mcp.call_tool("get_test_job", {"job_id": job_id, "include_details": True})
             
             if not res or "result" not in res:
                 continue
@@ -157,8 +157,23 @@ class UnityDiagnostics:
                 result_data = job_data.get("result")
                 if result_data:
                     self.report_and_exit_async(result_data)
+                elif status == "failed":
+                    # Fallback if result is null but we have failures in progress
+                    failures = progress.get("failures_so_far", [])
+                    if failures:
+                        print(f"\n{Style.RED}{Style.BOLD}FAILED TESTS ({len(failures)}):{Style.RESET}")
+                        for fail in failures:
+                            print(f"  {Style.RED}[FAIL]{Style.RESET} {fail.get('full_name')}")
+                            if fail.get('message'):
+                                print(f"    {Style.DIM}{fail.get('message').strip()}{Style.RESET}")
+                        sys.exit(1)
+                    else:
+                        print(f"{Style.RED}Job failed but no result data or failures found.{Style.RESET}")
+                        print(f"{Style.DIM}Job Data: {json.dumps(job_data, indent=2)}{Style.RESET}")
+                        sys.exit(1)
                 else:
                     print(f"{Style.RED}Job finished but no result data found.{Style.RESET}")
+                    print(f"{Style.DIM}Job Data: {json.dumps(job_data, indent=2)}{Style.RESET}")
                     sys.exit(1)
                 break
             elif status == "error":
@@ -179,7 +194,14 @@ class UnityDiagnostics:
             sys.exit(1)
 
         if failed > 0:
-            print(f"{Style.RED}{Style.BOLD}FAILED TESTS: {failed}{Style.RESET}")
+            print(f"\n{Style.RED}{Style.BOLD}FAILED TESTS ({failed}):{Style.RESET}")
+            details = result_data.get("details", [])
+            for test in details:
+                if test.get("state") == "Failed":
+                    print(f"  {Style.RED}[FAIL]{Style.RESET} {test.get('fullName')}")
+                    if test.get("message"):
+                        msg = test.get("message").strip()
+                        print(f"    {Style.DIM}{msg}{Style.RESET}")
             sys.exit(1)
         
         print(f"{Style.GREEN}{Style.BOLD}Verification Successful!{Style.RESET}")
