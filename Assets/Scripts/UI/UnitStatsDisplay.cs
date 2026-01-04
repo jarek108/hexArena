@@ -118,6 +118,12 @@ namespace HexGame.UI
 
             if (shouldShow)
             {
+                // Force layout updates
+                panel.sizeDelta = panelSize;
+                panel.anchoredPosition = panelPosition;
+                var bg = panel.GetComponent<Image>();
+                if (bg != null) bg.color = backgroundColor;
+
                 ApplyFontSettings();
 
                 if (displayedUnit != null)
@@ -126,7 +132,8 @@ namespace HexGame.UI
                     
                     if (unitStatsText != null)
                     {
-                        var schema = displayedUnit.unitSet?.schemaDefinitions;
+                        var set = displayedUnit.unitSet;
+                        var schema = set != null ? set.schemaDefinitions : null;
                         if (schema != null && schema.Count > 0)
                         {
                             System.Text.StringBuilder sb = new System.Text.StringBuilder();
@@ -174,7 +181,22 @@ namespace HexGame.UI
 
         private void EnsureUI()
         {
-            // Find or create Canvas
+            // 1. Try to find panel in children of THIS object first (preferred structure)
+            if (panel == null)
+            {
+                panel = GetComponentInChildren<RectTransform>(true);
+                // Filter out if it's our own transform
+                if (panel != null && panel.gameObject == this.gameObject) panel = null;
+                
+                // If still null, check by name under this transform
+                if (panel == null)
+                {
+                    Transform t = transform.Find("UnitStatsPanel");
+                    if (t != null) panel = t.GetComponent<RectTransform>();
+                }
+            }
+
+            // 2. Fallback to finding or creating Canvas
             Canvas canvas = FindFirstObjectByType<Canvas>();
             if (canvas == null)
             {
@@ -185,22 +207,19 @@ namespace HexGame.UI
                 canvasGo.AddComponent<GraphicRaycaster>();
             }
 
-            // Check if panel already exists under this canvas to prevent duplicates
             if (panel == null)
             {
-                Transform existing = canvas.transform.Find("UnitStatsPanel");
-                if (existing != null)
-                {
-                    panel = existing.GetComponent<RectTransform>();
-                }
+                // Check globally if it exists somewhere else
+                GameObject existing = GameObject.Find("UnitStatsPanel");
+                if (existing != null) panel = existing.GetComponent<RectTransform>();
             }
 
             if (panel == null)
             {
                 // Create Panel
                 GameObject panelGo = new GameObject("UnitStatsPanel");
-                panelGo.transform.SetParent(canvas.transform, false);
                 panel = panelGo.AddComponent<RectTransform>();
+                panel.transform.SetParent(canvas.transform, false); // Parent to Canvas directly
 
                 // Anchor to top-left
                 panel.anchorMin = new Vector2(0, 1);
@@ -210,13 +229,14 @@ namespace HexGame.UI
                 Image bg = panelGo.AddComponent<Image>();
                 bg.color = backgroundColor;
             }
+            else if (panel.parent != canvas.transform)
+            {
+                panel.SetParent(canvas.transform, false);
+            }
 
-            panel.sizeDelta = panelSize;
-            panel.anchoredPosition = panelPosition;
-            if (panel.GetComponent<Image>() != null) panel.GetComponent<Image>().color = backgroundColor;
-
-            EnsureTextElement(ref unitNameText, "UnitNameText", 15, -15, 0.85f, 1.0f);
-            EnsureTextElement(ref unitStatsText, "UnitStatsText", 15, -15, 0.0f, 0.85f);
+            // Ensure text references are linked
+            if (unitNameText == null) EnsureTextElement(ref unitNameText, "UnitNameText", 15, -15, 0.85f, 1.0f);
+            if (unitStatsText == null) EnsureTextElement(ref unitStatsText, "UnitStatsText", 15, -15, 0.0f, 0.85f);
         }
 
         private void EnsureTextElement(ref Text textField, string name, float left, float right, float minV, float maxV)
