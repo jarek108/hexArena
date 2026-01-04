@@ -15,7 +15,6 @@ namespace HexGame.Tools
         public List<PotentialHit> PotentialHits { get; private set; } = new List<PotentialHit>();
 
         [SerializeField] private bool continuous = true;
-        [SerializeField] private bool showGhost = true;
 
         public virtual bool CheckRequirements(out string reason)
         {
@@ -277,23 +276,11 @@ namespace HexGame.Tools
                 result = Pathfinder.FindPath(manager.Grid, SourceHex.Data.Unit, SourceHex.Data, target.Data);
             }
 
-            if (ruleset != null && SourceHex.Data.Unit != null)
-            {
-                // Ruleset handles ghost drawing
-                if (showGhost) ruleset.OnFinishPathfinding(SourceHex.Data.Unit, result.Path, result.Success);
-                else ruleset.OnClearPathfindingVisuals();
-            }
-
             if (result.Success)
             {
-                // Truncate visualization if ruleset dictates
-                int stopIndex = (ruleset != null && SourceHex.Data.Unit != null) ? 
-                    ruleset.GetMoveStopIndex(SourceHex.Data.Unit, result.Path) : 
-                    result.Path.Count;
-
-                for (int i = 0; i < stopIndex; i++)
+                // Draw the entire path without truncation
+                foreach (var hexData in result.Path)
                 {
-                    var hexData = result.Path[i];
                     if (hexData == SourceHex.Data) continue;
 
                     // Only skip if this is the actual target hex and it has a unit
@@ -305,6 +292,11 @@ namespace HexGame.Tools
                 // If targeting an enemy, show hit chance preview
                 if (SourceHex.Data.Unit != null && target.Data.Unit != null && target.Data.Unit.teamId != SourceHex.Data.Unit.teamId && ruleset != null && result.Path != null && result.Path.Count > 0)
                 {
+                    // For hit preview, we still use the stop index logic to find where the unit WOULD stop to attack
+                    int stopIndex = (ruleset != null && SourceHex.Data.Unit != null) ? 
+                        ruleset.GetMoveStopIndex(SourceHex.Data.Unit, result.Path) : 
+                        result.Path.Count;
+
                     HexData stopHexData = result.Path[stopIndex - 1];
                     PotentialHits = ruleset.GetPotentialHits(SourceHex.Data.Unit, target.Data.Unit, stopHexData) ?? new List<PotentialHit>();
 

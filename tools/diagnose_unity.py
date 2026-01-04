@@ -2,13 +2,12 @@
 Unity Dynamic Diagnostics Tool
 ------------------------------
 Automates the Unity development feedback loop by:
-1. Waiting for background compilation (polling DLL vs CS timestamps).
-2. Auditing the Unity Console for critical errors/exceptions.
-3. (Optional) Saving the scene and running all EditMode tests.
+1. Auditing the Unity Console for critical errors/exceptions.
+2. Waiting for background compilation (polling DLL vs CS timestamps).
+3. Saving the scene and running all EditMode tests.
 
 Usage:
-    python diagnose_unity.py                # Full run: Wait -> Console -> Tests
-    python diagnose_unity.py --skip-tests   # Fast run: Wait -> Console only
+    python diagnose_unity.py                # Full run: Console -> Wait -> Tests
 """
 
 import asyncio
@@ -46,9 +45,8 @@ class Style:
 
 class UnityDiagnostics:
 
-    def __init__(self, skip_tests: bool = False):
+    def __init__(self):
         self.mcp = MCPClient(MCP_URL)
-        self.skip_tests = skip_tests
 
     def get_file_timestamps(self, path: str, extension: str) -> Dict[str, float]:
         timestamps = {}
@@ -133,6 +131,7 @@ class UnityDiagnostics:
                 msg = str(e.get("message", ""))
                 if "WebSocket" in msg and "Connection failed" in msg: return False
                 if "Undo after editor test run" in msg: return False
+                if "UnityConnectWebRequestException" in msg: return False
                 if etype == "EXCEPTION" and "Saving results to" in msg: return False
                 return etype in ["ERROR", "EXCEPTION", "ASSERT"]
 
@@ -240,10 +239,7 @@ class UnityDiagnostics:
             await self.mcp.connect()
             await self.check_console_errors()
             await self.wait_for_compilation()
-            if not self.skip_tests:
-                await self.run_tests()
-            else:
-                print(f"{Style.CYAN}[SKIP] Tests skipped as requested.{Style.RESET}")
+            await self.run_tests()
 
 # --- Utility Classes (MCPClient & Formatters unchanged logic, just moved) ---
 class MCPClient:
@@ -301,7 +297,6 @@ class DiagnosticsFormatter:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Unity Dynamic Diagnostics Tool")
-    parser.add_argument("--skip-tests", action="store_true", help="Skip running Unity tests")
     args = parser.parse_args()
 
-    asyncio.run(UnityDiagnostics(skip_tests=args.skip_tests).execute())
+    asyncio.run(UnityDiagnostics().execute())

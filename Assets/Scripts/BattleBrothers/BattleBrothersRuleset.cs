@@ -363,19 +363,6 @@ namespace HexGame
             return 1;
         }
 
-        public override void OnFinishPathfinding(Unit unit, List<HexData> path, bool success)
-        {
-            lastPathfindingUnit = unit;
-            if (!success || unit == null || path == null || tactical == null)
-            {
-                if (tactical != null) tactical.ClearAoA(unit);
-                return;
-            }
-
-            int stopIndex = GetMoveStopIndex(unit, path);
-            if (stopIndex > 0) tactical.ShowAoA(unit, path[stopIndex - 1], movement.maxElevationDelta);
-        }
-
         public override void OnClearPathfindingVisuals()
         {
             if (lastPathfindingUnit != null && tactical != null) tactical.ClearAoA(lastPathfindingUnit);

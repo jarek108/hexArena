@@ -1,6 +1,7 @@
-using UnityEngine;
-using System.Collections.Generic;
 using HexGame.Units;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.Profiling;
 
 namespace HexGame
 {
@@ -55,7 +56,6 @@ namespace HexGame
 
         public virtual void OnStartPathfinding(IEnumerable<HexData> targets, Unit unit)
         {
-            Debug.Log("pathing");
             currentSearchTargets = new List<HexData>(targets);
             currentSearchTarget = currentSearchTargets.Count > 0 ? currentSearchTargets[0] : null;
         }
@@ -108,7 +108,9 @@ namespace HexGame
             return new List<PotentialHit>(); 
         }
 
-        public virtual void OnFinishPathfinding(Unit unit, List<HexData> path, bool success) { }
+        public virtual void OnFinishPathfinding(Unit unit, List<HexData> path, bool success) 
+        {
+        }
         public virtual void OnClearPathfindingVisuals() { }
 
         public virtual int GetMoveStopIndex(Unit unit, List<HexData> path)

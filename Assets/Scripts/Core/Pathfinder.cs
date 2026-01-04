@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.Profiling;
 
 namespace HexGame
 {
@@ -32,13 +33,27 @@ namespace HexGame
 
         public static PathResult FindPath(Grid grid, Unit unit, HexData start, params HexData[] targets)
         {
+
+            //Debug.Log("start path profiling");
+            Profiler.BeginSample("Pathfinder.FindPath");
+
             if (grid == null || start == null || targets == null || targets.Length == 0)
+            {
+                Profiler.EndSample();
+                //Debug.Log("end path profiling");
+
                 return new PathResult { Success = false };
+            }
 
             HashSet<HexData> targetSet = new HashSet<HexData>(targets);
 
             if (targetSet.Contains(start))
+            {
+                Profiler.EndSample();
+                //Debug.Log("end profiling");
+
                 return new PathResult { Path = new List<HexData> { start }, TotalCost = 0, Success = true };
+            }
 
             Ruleset ruleset = GameMaster.Instance != null ? GameMaster.Instance.ruleset : 
                 Object.FindFirstObjectByType<GameMaster>()?.ruleset;
@@ -55,7 +70,12 @@ namespace HexGame
 
                 if (targetSet.Contains(current.Data))
                 {
-                    return RetracePath(current);
+                    var path = RetracePath(current);
+
+                    Profiler.EndSample();
+                    //Debug.Log("end path profiling");
+
+                    return path;
                 }
 
                 openSet.Remove(current);
@@ -95,6 +115,8 @@ namespace HexGame
                 }
             }
 
+            Profiler.EndSample();
+            //Debug.Log("end path profiling");
             return new PathResult { Success = false };
         }
 

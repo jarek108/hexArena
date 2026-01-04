@@ -44,7 +44,7 @@ We follow a **Data-Driven Architecture** prioritizing strict Logic/View separati
 2.  **Plan:** Develop a concise plan and proposed tests for the selected approach.
 3.  **Write tests:** Write a complete list of tests covering the new feature
 4.  **Implement:** Write/correct game code
-5.  **Testing**: Run `python tools/diagnose_unity.py`. This is the only acceptable way to verify your changes.
+5.  **Testing**: Run `python tools/diagnose_unity.py`. This is the ONLY acceptable way to verify your changes. Full diagnostics (including tests) must always be run.
 6.  **Correction loop**: Repeat steps 4 and 5 until `diagnose_unity.py` reports "Verification Successful!" with zero console errors and all tests passing. Confirm with the user once this state is reached.
 7.  **Verification & finalization:** Once user confirms feature is done, update documentation, PROPOSE committing.
 8.  **Test Persistence:** Always store created tests as permanent artifacts in the codebase as long as they remain relevant and the feature they test exists. Never delete tests after verification unless explicitly requested.
@@ -62,7 +62,7 @@ We follow a **Data-Driven Architecture** prioritizing strict Logic/View separati
 # Tool Usage
 0. **Shell Commands**: NEVER use `&&` to chain multiple shell commands. Execute each independently.
 1. **Screenshots & Visual Inspection** - NEVER use MCP for screenshots. ALWAYS use `python tools/capture_unity.py "<purpose>"` to capture the Unity window.
-2. **Testing & Diagnostics** - NEVER use MCP's `read_console`, `run_tests`, or `manage_scene (save)` directly. ALWAYS use `python tools/diagnose_unity.py`. This is the mandatory "Quality Gate" for the project. It ensures stability by:
+2. **Testing & Diagnostics** - NEVER use MCP's `read_console`, `run_tests`, or `manage_scene (save)` directly. ALWAYS use `python tools/diagnose_unity.py`. This is the mandatory "Quality Gate" for the project. Full diagnostics (including tests) are mandatory and MUST always be run. It ensures stability by:
     1. **Monitoring Compilation**: Intelligently waits for background compilation to stabilize (polling DLL vs CS timestamps) so tests never run on stale code.
     2. **Auditing Console**: Performs a deep scan for errors/exceptions while filtering out infrastructure noise.
     3. **Unified Verification**: Handles scene saving and test execution in a single atomic pass.
