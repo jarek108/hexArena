@@ -126,6 +126,10 @@ class UnityDiagnostics:
 
         print(f"[*] Test job started: {job_id}")
         
+        start_time = datetime.now()
+        last_retry_time = start_time
+        STUCK_TIMEOUT = 10.0 # seconds
+        
         while True:
             await asyncio.sleep(2)
             res = await self.mcp.call_tool("get_test_job", {"job_id": job_id, "include_details": True})
@@ -151,6 +155,14 @@ class UnityDiagnostics:
             total = progress.get("total", "?")
             
             print(f"{Style.CYAN}      Progress: {completed}/{total} tests completed...{Style.RESET}", end="\r")
+
+            # Stuck detection: if still at 0 after STUCK_TIMEOUT, redo save scene
+            if completed == 0 and status not in ["succeeded", "failed", "error"]:
+                elapsed = (datetime.now() - last_retry_time).total_seconds()
+                if elapsed >= STUCK_TIMEOUT:
+                    print(f"\n{Style.YELLOW}[!] Job stuck at 0 for {elapsed:.1f}s. Redoing save scene...{Style.RESET}")
+                    await self.mcp.call_tool("manage_scene", {"action": "save"})
+                    last_retry_time = datetime.now()
             
             if status in ["succeeded", "failed"]:
                 print() # New line after progress

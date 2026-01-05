@@ -3,6 +3,7 @@ using UnityEngine.UI;
 using UnityEngine.InputSystem;
 using HexGame;
 using System.Linq;
+using TMPro;
 
 namespace HexGame.UI
 {
@@ -13,30 +14,39 @@ namespace HexGame.UI
 
         public Unit displayedUnit;
 
-        [Header("UI References")]
         public RectTransform panel;
-        public Text unitNameText;
-        public Text unitStatsText;
+        public Image dividerLine;
+        public TextMeshProUGUI unitNameText;
+        public TextMeshProUGUI unitStatsText;
 
-        [Header("Font Settings")]
-        public Font nameFont;
+        public TMP_FontAsset nameFont;
         public int nameFontSize = 20;
         public Color nameColor = Color.white;
-        public TextAnchor nameAlignment = TextAnchor.UpperLeft;
+        public TextAlignmentOptions nameAlignment = TextAlignmentOptions.TopLeft;
 
-        public Font statsFont;
+        public TMP_FontAsset statsFont;
         public int statsFontSize = 14;
         public Color statsColor = new Color(0.8f, 0.8f, 0.8f);
-        public TextAnchor statsAlignment = TextAnchor.UpperLeft;
+        public TextAlignmentOptions statsAlignment = TextAlignmentOptions.TopLeft;
 
-        [Header("Settings")]
         public SelectionMode chooseUnitOn = SelectionMode.Hover;
         public bool continuouslyVisible = false;
         public bool keepShowingLastUnit = false;
+        public bool multilineUnitNames = false;
+        
         public Color backgroundColor = new Color(0, 0, 0, 0.7f);
+        public Sprite backgroundSprite;
+        public bool useGradient = true;
+        public Color gradientColorBottom = new Color(0, 0, 0, 0.9f);
+        
+        public bool useDividerLine = true;
+        public Color dividerColor = new Color(1, 1, 1, 0.3f);
+        public float dividerHeight = 1f;
+
         public float paddingX = 15f;
         public float paddingY = 10f;
-        public float spacing = 5f;
+        public float nameToStatsSpacing = 5f;
+        public float statIdToValueSpacing = 80f;
         public Vector2 panelPosition = new Vector2(20, -20); // Top left
 
         private HexRaycaster raycaster;
@@ -123,23 +133,58 @@ namespace HexGame.UI
                 // Force layout updates
                 panel.anchoredPosition = panelPosition;
                 var bg = panel.GetComponent<Image>();
-                if (bg != null) bg.color = backgroundColor;
+                if (bg != null) 
+                {
+                    bg.color = backgroundColor;
+                    bg.sprite = backgroundSprite;
+                    bg.type = backgroundSprite != null ? Image.Type.Sliced : Image.Type.Simple;
+                }
+
+                // Gradient handling
+                var grad = panel.GetComponent<UIGradient>();
+                if (useGradient)
+                {
+                    if (grad == null) grad = panel.gameObject.AddComponent<UIGradient>();
+                    grad.enabled = true;
+                    grad.colorTop = backgroundColor;
+                    grad.colorBottom = gradientColorBottom;
+                }
+                else if (grad != null)
+                {
+                    grad.enabled = false;
+                }
+
+                if (dividerLine != null)
+                {
+                    dividerLine.gameObject.SetActive(useDividerLine);
+                    dividerLine.color = dividerColor;
+                    
+                    var le = dividerLine.GetComponent<LayoutElement>();
+                    if (le == null) le = dividerLine.gameObject.AddComponent<LayoutElement>();
+                    le.minHeight = dividerHeight;
+                    le.preferredHeight = dividerHeight;
+                }
 
                 var vlg = panel.GetComponent<VerticalLayoutGroup>();
                 if (vlg != null)
                 {
-                    vlg.padding.left = (int)paddingX;
-                    vlg.padding.right = (int)paddingX;
-                    vlg.padding.top = (int)paddingY;
-                    vlg.padding.bottom = (int)paddingY;
-                    vlg.spacing = spacing;
+                    vlg.padding = new RectOffset((int)paddingX, (int)paddingX, (int)paddingY, (int)paddingY);
+                    vlg.spacing = nameToStatsSpacing;
                 }
 
                 ApplyFontSettings();
 
+                // Force layout rebuild so ContentSizeFitter and VerticalLayoutGroup update immediately
+                LayoutRebuilder.ForceRebuildLayoutImmediate(panel);
+
                 if (displayedUnit != null)
                 {
-                    if (unitNameText != null) unitNameText.text = displayedUnit.UnitName;
+                    if (unitNameText != null) 
+                    {
+                        string name = displayedUnit.UnitName;
+                        if (multilineUnitNames) name = name.Replace(" ", "\n");
+                        unitNameText.text = name;
+                    }
                     
                     if (unitStatsText != null)
                     {
@@ -151,7 +196,9 @@ namespace HexGame.UI
                             foreach (var def in schema)
                             {
                                 int val = displayedUnit.GetStat(def.id);
-                                sb.AppendLine($"{def.name}: {val}");
+                                int max = displayedUnit.GetBaseStat(def.id);
+                                // Use TMP <noparse> to ensure IDs don't mess with tags, and <pos> for alignment
+                                sb.AppendLine($"{def.id}:<pos={statIdToValueSpacing}>{val}/{max}");
                             }
                             unitStatsText.text = sb.ToString().TrimEnd();
                         }
@@ -179,6 +226,7 @@ namespace HexGame.UI
                 unitNameText.fontSize = nameFontSize;
                 unitNameText.color = nameColor;
                 unitNameText.alignment = nameAlignment;
+                unitNameText.enableWordWrapping = true;
             }
 
             if (unitStatsText != null)
@@ -187,6 +235,7 @@ namespace HexGame.UI
                 unitStatsText.fontSize = statsFontSize;
                 unitStatsText.color = statsColor;
                 unitStatsText.alignment = statsAlignment;
+                unitStatsText.enableWordWrapping = false;
             }
         }
 
@@ -260,23 +309,44 @@ namespace HexGame.UI
 
             // Ensure text references are linked
             if (unitNameText == null) EnsureTextElement(ref unitNameText, "UnitNameText");
+            
+            if (dividerLine == null)
+            {
+                Transform t = panel.Find("DividerLine");
+                if (t != null) dividerLine = t.GetComponent<Image>();
+            }
+            if (dividerLine == null)
+            {
+                GameObject lineGo = new GameObject("DividerLine");
+                lineGo.transform.SetParent(panel, false);
+                dividerLine = lineGo.AddComponent<Image>();
+            }
+            // Ensure name is first, then divider, then stats
+            unitNameText.transform.SetAsFirstSibling();
+            dividerLine.transform.SetSiblingIndex(1);
+            
             if (unitStatsText == null) EnsureTextElement(ref unitStatsText, "UnitStatsText");
+            unitStatsText.transform.SetAsLastSibling();
         }
 
-        private void EnsureTextElement(ref Text textField, string name)
+        private void EnsureTextElement(ref TextMeshProUGUI textField, string name)
         {
             if (textField == null)
             {
                 Transform t = panel.Find(name);
-                if (t != null) textField = t.GetComponent<Text>();
+                if (t != null) textField = t.GetComponent<TextMeshProUGUI>();
             }
 
             if (textField == null)
             {
                 GameObject textGo = new GameObject(name);
                 textGo.transform.SetParent(panel, false);
-                textField = textGo.AddComponent<Text>();
-                textField.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+                textField = textGo.AddComponent<TextMeshProUGUI>();
+                textField.raycastTarget = false;
+                
+                // Try to load default font
+                var defaultFont = Resources.Load<TMP_FontAsset>("Fonts & Materials/LiberationSans SDF");
+                if (defaultFont != null) textField.font = defaultFont;
             }
         }
     }
