@@ -35,54 +35,79 @@ namespace HexGame.Tests
         }
 
         [Test]
-        public void ScrollUp_IncreasesBrushSize()
+        public void ScrollUp_WithCtrl_IncreasesBrushSize()
         {
             // Arrange
-            brushTool.SetMaxBrushSize(10);
-            brushTool.SetBrushSize(1);
+            brushTool.sizeControlKey = BrushTool.ModifierKey.Ctrl;
+            brushTool.maxBrushSize = 10;
+            brushTool.brushSize = 1;
             var mouse = InputSystem.AddDevice<Mouse>();
+            var keyboard = InputSystem.AddDevice<Keyboard>();
 
             // Act
+            Press(keyboard.ctrlKey);
             Set(mouse.scroll, new Vector2(0, 1));
             brushTool.HandleInput(null);
 
             // Assert
-            Assert.AreEqual(2, brushTool.GetBrushSize());
+            Assert.AreEqual(2, brushTool.brushSize);
         }
 
         [Test]
-        public void ScrollDown_DecreasesBrushSize()
+        public void ScrollUp_WithoutRequiredCtrl_DoesNotChangeSize()
         {
             // Arrange
-            brushTool.SetBrushSize(3);
+            brushTool.sizeControlKey = BrushTool.ModifierKey.Ctrl;
+            brushTool.brushSize = 1;
             var mouse = InputSystem.AddDevice<Mouse>();
+            var keyboard = InputSystem.AddDevice<Keyboard>();
 
             // Act
+            // Ctrl NOT pressed
+            Set(mouse.scroll, new Vector2(0, 1));
+            brushTool.HandleInput(null);
+
+            // Assert
+            Assert.AreEqual(1, brushTool.brushSize);
+        }
+
+        [Test]
+        public void ScrollDown_WithCtrl_DecreasesBrushSize()
+        {
+            // Arrange
+            brushTool.sizeControlKey = BrushTool.ModifierKey.Ctrl;
+            brushTool.brushSize = 3;
+            var mouse = InputSystem.AddDevice<Mouse>();
+            var keyboard = InputSystem.AddDevice<Keyboard>();
+
+            // Act
+            Press(keyboard.ctrlKey);
             Set(mouse.scroll, new Vector2(0, -1));
             brushTool.HandleInput(null);
 
             // Assert
-            Assert.AreEqual(2, brushTool.GetBrushSize());
+            Assert.AreEqual(2, brushTool.brushSize);
         }
 
         [Test]
         public void BrushSize_IsClamped_BetweenOneAndMax()
         {
             // Arrange
-            brushTool.SetMaxBrushSize(6);
-            brushTool.SetBrushSize(6);
+            brushTool.sizeControlKey = BrushTool.ModifierKey.None; // No modifier for simplicity
+            brushTool.maxBrushSize = 6;
+            brushTool.brushSize = 6;
             var mouse = InputSystem.AddDevice<Mouse>();
 
             // Act: Scroll Up at Max
             Set(mouse.scroll, new Vector2(0, 1));
             brushTool.HandleInput(null);
-            Assert.AreEqual(6, brushTool.GetBrushSize());
+            Assert.AreEqual(6, brushTool.brushSize);
 
             // Act: Scroll Down at Min
-            brushTool.SetBrushSize(1);
+            brushTool.brushSize = 1;
             Set(mouse.scroll, new Vector2(0, -1));
             brushTool.HandleInput(null);
-            Assert.AreEqual(1, brushTool.GetBrushSize());
+            Assert.AreEqual(1, brushTool.brushSize);
         }
     }
 }

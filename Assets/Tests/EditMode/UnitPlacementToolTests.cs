@@ -84,7 +84,8 @@ namespace HexGame.Tests
             Hex targetHex = manager.GetHexView(manager.Grid.GetHexAt(2, 2));
             
             // Set brush size to 2 (range 1) via reflection
-            var brushField = unitTool.GetType().BaseType.GetField("brushSize", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            // Set brush size to 2 (range 1) via reflection
+            var brushField = unitTool.GetType().BaseType.GetField("brushSize", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
             brushField.SetValue(unitTool, 2);
             
             unitTool.OnActivate();
@@ -104,7 +105,8 @@ namespace HexGame.Tests
         {
             // Arrange: Place some units first
             Hex targetHex = manager.GetHexView(manager.Grid.GetHexAt(2, 2));
-            var brushField = unitTool.GetType().BaseType.GetField("brushSize", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            // Set brush size to 2 (range 1) via reflection
+            var brushField = unitTool.GetType().BaseType.GetField("brushSize", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
             brushField.SetValue(unitTool, 2);
             
             unitTool.OnActivate();
