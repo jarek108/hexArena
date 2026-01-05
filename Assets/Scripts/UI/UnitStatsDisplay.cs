@@ -37,6 +37,7 @@ namespace HexGame.UI
         public Color backgroundColor = new Color(0, 0, 0, 0.7f);
         public Sprite backgroundSprite;
         public bool useGradient = true;
+        public Color gradientColorTop = new Color(0, 0, 0, 0.4f);
         public Color gradientColorBottom = new Color(0, 0, 0, 0.9f);
         
         public bool useDividerLine = true;
@@ -146,7 +147,7 @@ namespace HexGame.UI
                 {
                     if (grad == null) grad = panel.gameObject.AddComponent<UIGradient>();
                     grad.enabled = true;
-                    grad.colorTop = backgroundColor;
+                    grad.colorTop = gradientColorTop;
                     grad.colorBottom = gradientColorBottom;
                 }
                 else if (grad != null)

@@ -53,6 +53,7 @@ namespace HexGame.Editor
                 if (serializedObject.FindProperty("useGradient").boolValue)
                 {
                     EditorGUI.indentLevel++;
+                    EditorGUILayout.PropertyField(serializedObject.FindProperty("gradientColorTop"), new GUIContent("Gradient Top"));
                     EditorGUILayout.PropertyField(serializedObject.FindProperty("gradientColorBottom"), new GUIContent("Gradient Bottom"));
                     EditorGUI.indentLevel--;
                 }
