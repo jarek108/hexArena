@@ -28,6 +28,10 @@ namespace HexGame.Tests
             iconImageChild.transform.SetParent(iconPrefab.transform);
             iconImageChild.AddComponent<RectTransform>();
             iconImageChild.AddComponent<Image>();
+
+            GameObject shortcutTextChild = new GameObject("ShortcutText");
+            shortcutTextChild.transform.SetParent(iconPrefab.transform);
+            shortcutTextChild.AddComponent<RectTransform>();
             
             iconManager.iconPrefab = iconPrefab;
         }
@@ -122,6 +126,79 @@ namespace HexGame.Tests
             Assert.AreEqual(testSprite, img.sprite);
             
             Object.DestroyImmediate(testSprite);
+        }
+
+        [Test]
+        public void PopulateTools_DoesNotThrow_And_PopulatesIcons()
+        {
+            // Arrange
+            GameObject toolManagerGO = new GameObject("ToolManager");
+            var toolManager = toolManagerGO.AddComponent<HexGame.ToolManager>();
+            toolManagerGO.AddComponent<HexGame.Tools.GridTool>();
+            
+            // Replicate Editor-like state: manager might be in a prefab or have nulls
+            iconManager.icons.Clear();
+            
+            // Act & Assert
+            Assert.DoesNotThrow(() => iconManager.PopulateTools(), "PopulateTools should not throw errors.");
+            
+            Assert.Greater(iconManager.icons.Count, 0, "Icons list should be populated with at least one tool.");
+            Object.DestroyImmediate(toolManagerGO);
+        }
+
+        [Test]
+        public void RefreshUI_Handles_PartialPrefab_Robustly()
+        {
+            // Arrange
+            // Create a prefab that is MISSING some components expected by logic
+            GameObject badPrefab = new GameObject("BadPrefab");
+            // No IconImage, No ShortcutText
+            iconManager.iconPrefab = badPrefab;
+            iconManager.icons.Add(new IconData { iconName = "Test" });
+
+            // Act & Assert
+            Assert.DoesNotThrow(() => iconManager.RefreshUI(), "RefreshUI should handle prefabs with missing children safely.");
+            
+            Object.DestroyImmediate(badPrefab);
+        }
+
+        [Test]
+        public void PopulateTools_AssignsIcons_ForKnownTools()
+        {
+            // Arrange
+            GameObject toolManagerGO = new GameObject("ToolManager");
+            var toolManager = toolManagerGO.AddComponent<HexGame.ToolManager>();
+            
+            // Add several tools
+            toolManagerGO.AddComponent<HexGame.Tools.GridTool>();
+            toolManagerGO.AddComponent<HexGame.Tools.ZoCTool>();
+            toolManagerGO.AddComponent<HexGame.Tools.PathfindingTool>();
+            
+            // Set the icon folder to where we know sprites exist
+            iconManager.iconFolder = "Assets/Resources/Art/ToolIcons";
+
+            // Act
+            iconManager.PopulateTools();
+
+            // Assert
+            Assert.AreEqual(3, iconManager.icons.Count, "Should have 3 icons populated.");
+            
+            foreach(var icon in iconManager.icons)
+            {
+                // We don't necessarily REQUIRE an icon sprite if it's missing from disk, 
+                // but for our core tools in the repo, they should ideally be found.
+                // If they are null in the test environment, we at least check that the entry was created.
+                Assert.IsFalse(string.IsNullOrEmpty(icon.iconName), "Icon name should not be empty.");
+                Assert.IsFalse(string.IsNullOrEmpty(icon.hotkey), "Hotkey should be assigned.");
+                
+                // Specific check for core tools that MUST have icons
+                if(icon.iconName == "GridTool" || icon.iconName == "ZoCTool")
+                {
+                    Assert.IsNotNull(icon.iconSprite, $"Icon sprite for {icon.iconName} should not be null.");
+                }
+            }
+
+            Object.DestroyImmediate(toolManagerGO);
         }
     }
 }

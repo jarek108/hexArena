@@ -2,14 +2,6 @@
     "id": "BattleBrothers",
     "definitions": [
         {
-            "id": "MAT",
-            "name": "Melee Skill"
-        },
-        {
-            "id": "RAT",
-            "name": "Ranged Skill"
-        },
-        {
             "id": "HP",
             "name": "Hitpoints"
         },
@@ -18,12 +10,12 @@
             "name": "Armour"
         },
         {
-            "id": "FAT",
-            "name": "Fatigue (Max Stamina)"
+            "id": "AP",
+            "name": "Action Points"
         },
         {
-            "id": "INI",
-            "name": "Initiative (Turn Order)"
+            "id": "FAT",
+            "name": "Fatigue (Max Stamina)"
         },
         {
             "id": "DMIN",
@@ -34,8 +26,32 @@
             "name": "Max Damage"
         },
         {
+            "id": "MDF",
+            "name": "Melee Defense"
+        },
+        {
+            "id": "RDF",
+            "name": "Ranged Defense"
+        },
+        {
             "id": "RNG",
             "name": "Attack Range"
+        },
+        {
+            "id": "AFAT",
+            "name": "Attack fatigue"
+        },
+        {
+            "id": "MAT",
+            "name": "Melee Skill"
+        },
+        {
+            "id": "RAT",
+            "name": "Ranged Skill"
+        },
+        {
+            "id": "INI",
+            "name": "Initiative (Turn Order)"
         },
         {
             "id": "ABY",
@@ -46,24 +62,8 @@
             "name": "Armour damage"
         },
         {
-            "id": "MDF",
-            "name": "Melee Defense"
-        },
-        {
-            "id": "RDF",
-            "name": "Ranged Defense"
-        },
-        {
-            "id": "AP",
-            "name": "Action Points"
-        },
-        {
             "id": "RES",
             "name": "Resolve (Bravery)"
-        },
-        {
-            "id": "AFAT",
-            "name": "Attack fatigue"
         }
     ]
 }

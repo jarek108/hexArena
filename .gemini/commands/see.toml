@@ -1,0 +1,5 @@
+name = "plan"
+description = "Generate a concise commit message from staged changes"
+
+prompt = """ For now just talk and plan. You can inspect the code and documentations but take na actions and make no changes.
+"""
