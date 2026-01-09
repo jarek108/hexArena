@@ -49,7 +49,16 @@ class UnityDiagnostics:
     async def check_console_errors(self):
         print(f"[*] Checking Unity console...")
         
-        for attempt in range(11): # 0 to 10 seconds
+        errors = []
+        warnings = []
+        logs = []
+        all_entries = []
+
+        max_attempts = 10
+        for attempt in range(max_attempts):
+            # Check for blocking popups on every attempt to clear interruptions immediately
+            await self.check_for_blocking_popups()
+
             res = await self.mcp.call_tool("read_console", {"count": "500", "format": "json"})
             
             if not res:
@@ -75,19 +84,32 @@ class UnityDiagnostics:
                             elif isinstance(data, list):
                                 all_entries.extend(data)
 
-            def is_real_error(e):
-                etype = str(e.get("type", "")).upper()
-                msg = str(e.get("message", ""))
-                if "WebSocket" in msg and "Connection failed" in msg: return False
-                if "Undo after editor test run" in msg: return False
-                if "UnityConnectWebRequestException" in msg: return False
-                if etype == "EXCEPTION" and "Saving results to" in msg: return False
-                return etype in ["ERROR", "EXCEPTION", "ASSERT"]
+            if all_entries:
+                def is_real_error(e):
+                    etype = str(e.get("type", "")).upper()
+                    msg = str(e.get("message", ""))
+                    if "WebSocket" in msg and "Connection failed" in msg: return False
+                    if "Undo after editor test run" in msg: return False
+                    if "UnityConnectWebRequestException" in msg: return False
+                    if etype == "EXCEPTION" and "Saving results to" in msg: return False
+                    return etype in ["ERROR", "EXCEPTION", "ASSERT"]
 
-            errors = [e for e in all_entries if is_real_error(e)]
-            warnings = [e for e in all_entries if str(e.get("type", "")).upper() == "WARNING"]
-            logs = [e for e in all_entries if str(e.get("type", "")).upper() == "LOG"]
-            break
+                errors = [e for e in all_entries if is_real_error(e)]
+                warnings = [e for e in all_entries if str(e.get("type", "")).upper() == "WARNING"]
+                logs = [e for e in all_entries if str(e.get("type", "")).upper() == "LOG"]
+                break
+            
+            if attempt < max_attempts - 1:
+                print(f"      {Style.DIM}Console empty, retrying in 1s... ({attempt+1}/{max_attempts}){Style.RESET}", end="\r")
+                await asyncio.sleep(1)
+
+        if not all_entries:
+            # Last ditch attempt to see if a popup is the cause of the hang
+            await self.check_for_blocking_popups()
+            
+            print(f"\n{Style.RED}[!] Unity is hanging or unresponsive.{Style.RESET}")
+            print(f"{Style.YELLOW}No console entries were received after {max_attempts} seconds. Please check if Unity is frozen or a modal dialog is open.{Style.RESET}")
+            sys.exit(1)
 
         print(f"      Console Stats: {Style.RED}{len(errors)} Errors{Style.RESET} | "
               f"{Style.YELLOW}{len(warnings)} Warnings{Style.RESET} | "
@@ -117,7 +139,7 @@ class UnityDiagnostics:
             for item in content:
                 if item.get("type") == "text":
                     data = DiagnosticsFormatter.parse_complex_data(item["text"])
-                    if isinstance(data, dict) and "data" in data:
+                    if isinstance(data, dict) and data.get("data"):
                         job_id = data["data"].get("job_id")
         
         if not job_id:
@@ -126,8 +148,26 @@ class UnityDiagnostics:
 
         print(f"[*] Test job started: {job_id}")
         
+        last_retry_time = datetime.now()
+        STUCK_TIMEOUT = 10.0 # seconds
+        completed = 0
+        total = "?"
+        
         while True:
-            await asyncio.sleep(2)
+            elapsed = (datetime.now() - last_retry_time).total_seconds()
+            time_to_retry = max(0.0, STUCK_TIMEOUT - elapsed)
+            
+            # Show progress and countdown to retry
+            status_suffix = f" (Stuck? Retrying save in {time_to_retry:.1f}s)" if completed == 0 else ""
+            print(f"{Style.CYAN}      Progress: {completed}/{total} tests completed...{status_suffix}{Style.RESET}", end="\r")
+
+            if completed == 0 and elapsed >= STUCK_TIMEOUT:
+                print(f"\n{Style.YELLOW}[!] No progress detected for {elapsed:.1f}s. Redoing save scene...{Style.RESET}")
+                await self.mcp.call_tool("manage_scene", {"action": "save"})
+                last_retry_time = datetime.now()
+                continue
+
+            await asyncio.sleep(1)
             res = await self.mcp.call_tool("get_test_job", {"job_id": job_id, "include_details": True})
             
             if not res or "result" not in res:
@@ -149,8 +189,6 @@ class UnityDiagnostics:
             progress = job_data.get("progress", {})
             completed = progress.get("completed", 0)
             total = progress.get("total", "?")
-            
-            print(f"{Style.CYAN}      Progress: {completed}/{total} tests completed...{Style.RESET}", end="\r")
             
             if status in ["succeeded", "failed"]:
                 print() # New line after progress
@@ -206,8 +244,31 @@ class UnityDiagnostics:
         
         print(f"{Style.GREEN}{Style.BOLD}Verification Successful!{Style.RESET}")
 
+    async def check_for_blocking_popups(self):
+        popup_script = os.path.join("tools", "check_unity_popup.py")
+        if not os.path.exists(popup_script):
+            return
+
+        try:
+            # We check for the specific "Scene(s) Have Been Modified" popup
+            # The script now auto-clicks "Save" if found and exits with 0
+            proc = subprocess.run([sys.executable, popup_script], capture_output=True, text=True, check=False)
+            output = proc.stdout.strip()
+            
+            if "Clicked 'Save'" in output:
+                print(f"{Style.GREEN}[*] Auto-handled Unity popup: {output}{Style.RESET}")
+            elif proc.returncode != 0:
+                # If script failed for some other reason
+                print(f"{Style.YELLOW}[!] Popup check returned error: {output}{Style.RESET}")
+                
+        except Exception as e:
+            print(f"{Style.DIM}[DEBUG] Popup check failed: {e}{Style.RESET}")
+
     async def execute(self, debug_mode: bool = False):
         os.system('') # Enable ANSI
+
+        # Check for blocking popups first
+        await self.check_for_blocking_popups()
 
         # Focus Unity window
         activator_path = os.path.join("tools", "window_activator.py")
@@ -224,8 +285,16 @@ class UnityDiagnostics:
             print(f"[*] Establishing Handshake...")
             await self.mcp.connect()
             
+            # Check for popups before triggering refresh (critical for blocking dialogs)
+            await self.check_for_blocking_popups()
+            
             print(f"[*] Triggering Unity Refresh/Compilation...")
-            await self.mcp.call_tool("refresh_unity", {"compile": "request", "mode": "if_dirty", "scope": "all", "wait_for_ready": True})
+            refresh_res = await self.mcp.call_tool("refresh_unity", {"compile": "request", "mode": "if_dirty", "scope": "all", "wait_for_ready": True})
+            if refresh_res and "result" in refresh_res:
+                content = refresh_res["result"].get("content", [])
+                for item in content:
+                    if item.get("type") == "text":
+                        print(f"      [DEBUG] Refresh Output: {item.get('text')}")
             
             await self.check_console_errors()
             await self.wait_for_compilation()
@@ -244,7 +313,7 @@ class MCPClient:
         self.sid, self.client = None, None
 
     async def __aenter__(self):
-        self.client = httpx.AsyncClient(timeout=30000.0)
+        self.client = httpx.AsyncClient(timeout=120.0) # Increased to 120s for slow Unity compilation
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
@@ -283,7 +352,18 @@ class MCPClient:
         if self.sid:
             headers["mcp-session-id"] = self.sid
             
-        r = await self.client.post(url, json=payload, headers=headers)
+        # Debug: Log request start
+        if method == "tools/call" and params and params.get("name") != "get_test_job":
+            print(f"      {Style.DIM}[NET] Calling {params.get('name')}...{Style.RESET}", end="\r")
+
+        try:
+            r = await self.client.post(url, json=payload, headers=headers)
+        except httpx.ReadTimeout:
+            print(f"\n{Style.RED}[!] Network Timeout: The request to {method} took longer than 120s.{Style.RESET}")
+            sys.exit(1)
+        except Exception as e:
+            print(f"\n{Style.RED}[!] Network Error: {e}{Style.RESET}")
+            sys.exit(1)
         
         if not self.sid:
             self.sid = r.headers.get("mcp-session-id")
@@ -296,6 +376,8 @@ class MCPClient:
             is_polling = (method == "tools/call" and params and params.get("name") == "get_test_job")
             if not is_polling or r.status_code >= 400:
                 print(f"      [NET] POST {method} -> {r.status_code}")
+                if r.status_code >= 400:
+                    print(f"      {Style.RED}[DEBUG] Response Body: {r.text}{Style.RESET}")
             
         if msg_id is None: return None
         for line in r.text.splitlines():

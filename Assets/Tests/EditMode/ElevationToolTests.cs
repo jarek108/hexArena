@@ -93,7 +93,7 @@ namespace HexGame.Tests
             elevationTool.OnActivate();
             
             var field = elevationTool.GetType().BaseType.GetField("brushSize", 
-                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
             
             int initialSize = (int)field.GetValue(elevationTool);
             

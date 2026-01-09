@@ -1,0 +1,7 @@
+name = "plan"
+description = "Plan the next steps for the project"
+
+prompt = """ For now just talk and plan. 
+Inspect the issue in depth. If suitable, and propose several options to move forward with pros and cons. 
+You can inspect the code and documentations but take na actions and make no. changes.
+"""

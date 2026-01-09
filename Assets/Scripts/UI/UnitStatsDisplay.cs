@@ -3,6 +3,7 @@ using UnityEngine.UI;
 using UnityEngine.InputSystem;
 using HexGame;
 using System.Linq;
+using TMPro;
 
 namespace HexGame.UI
 {
@@ -11,19 +12,44 @@ namespace HexGame.UI
     {
         public enum SelectionMode { Hover, LClick, RClick, AnyClick }
 
-        [Header("UI References")]
-        public RectTransform panel;
-        public Text unitNameText;
+        public Unit displayedUnit;
 
-        [Header("Settings")]
+        public RectTransform panel;
+        public Image dividerLine;
+        public TextMeshProUGUI unitNameText;
+        public TextMeshProUGUI unitStatsText;
+
+        public TMP_FontAsset nameFont;
+        public int nameFontSize = 20;
+        public Color nameColor = Color.white;
+        public TextAlignmentOptions nameAlignment = TextAlignmentOptions.TopLeft;
+
+        public TMP_FontAsset statsFont;
+        public int statsFontSize = 14;
+        public Color statsColor = new Color(0.8f, 0.8f, 0.8f);
+        public TextAlignmentOptions statsAlignment = TextAlignmentOptions.TopLeft;
+
         public SelectionMode chooseUnitOn = SelectionMode.Hover;
         public bool continuouslyVisible = false;
         public bool keepShowingLastUnit = false;
+        public bool multilineUnitNames = false;
+        
         public Color backgroundColor = new Color(0, 0, 0, 0.7f);
-        public Vector2 panelSize = new Vector2(250, 60);
+        public Sprite backgroundSprite;
+        public bool useGradient = true;
+        public Color gradientColorTop = new Color(0, 0, 0, 0.4f);
+        public Color gradientColorBottom = new Color(0, 0, 0, 0.9f);
+        
+        public bool useDividerLine = true;
+        public Color dividerColor = new Color(1, 1, 1, 0.3f);
+        public float dividerHeight = 1f;
+
+        public float paddingX = 15f;
+        public float paddingY = 10f;
+        public float nameToStatsSpacing = 5f;
+        public float statIdToValueSpacing = 80f;
         public Vector2 panelPosition = new Vector2(20, -20); // Top left
 
-        public Unit displayedUnit;
         private HexRaycaster raycaster;
 
         private void Start()
@@ -48,7 +74,11 @@ namespace HexGame.UI
                 // Delay call to ensure we don't modify hierarchy during OnValidate
                 #if UNITY_EDITOR
                 UnityEditor.EditorApplication.delayCall += () => {
-                    if (this != null) EnsureUI();
+                    if (this != null)
+                    {
+                        EnsureUI();
+                        UpdateUI();
+                    }
                 };
                 #endif
             }
@@ -101,21 +131,133 @@ namespace HexGame.UI
 
             if (shouldShow)
             {
+                // Force layout updates
+                panel.anchoredPosition = panelPosition;
+                var bg = panel.GetComponent<Image>();
+                if (bg != null) 
+                {
+                    bg.color = backgroundColor;
+                    bg.sprite = backgroundSprite;
+                    bg.type = backgroundSprite != null ? Image.Type.Sliced : Image.Type.Simple;
+                }
+
+                // Gradient handling
+                var grad = panel.GetComponent<UIGradient>();
+                if (useGradient)
+                {
+                    if (grad == null) grad = panel.gameObject.AddComponent<UIGradient>();
+                    grad.enabled = true;
+                    grad.colorTop = gradientColorTop;
+                    grad.colorBottom = gradientColorBottom;
+                }
+                else if (grad != null)
+                {
+                    grad.enabled = false;
+                }
+
+                if (dividerLine != null)
+                {
+                    dividerLine.gameObject.SetActive(useDividerLine);
+                    dividerLine.color = dividerColor;
+                    
+                    var le = dividerLine.GetComponent<LayoutElement>();
+                    if (le == null) le = dividerLine.gameObject.AddComponent<LayoutElement>();
+                    le.minHeight = dividerHeight;
+                    le.preferredHeight = dividerHeight;
+                }
+
+                var vlg = panel.GetComponent<VerticalLayoutGroup>();
+                if (vlg != null)
+                {
+                    vlg.padding = new RectOffset((int)paddingX, (int)paddingX, (int)paddingY, (int)paddingY);
+                    vlg.spacing = nameToStatsSpacing;
+                }
+
+                ApplyFontSettings();
+
+                // Force layout rebuild so ContentSizeFitter and VerticalLayoutGroup update immediately
+                LayoutRebuilder.ForceRebuildLayoutImmediate(panel);
+
                 if (displayedUnit != null)
                 {
-                    if (unitNameText != null) unitNameText.text = displayedUnit.UnitName;
+                    if (unitNameText != null) 
+                    {
+                        string name = displayedUnit.UnitName;
+                        if (multilineUnitNames) name = name.Replace(" ", "\n");
+                        unitNameText.text = name;
+                    }
+                    
+                    if (unitStatsText != null)
+                    {
+                        var set = displayedUnit.unitSet;
+                        var schema = set != null ? set.schemaDefinitions : null;
+                        if (schema != null && schema.Count > 0)
+                        {
+                            System.Text.StringBuilder sb = new System.Text.StringBuilder();
+                            foreach (var def in schema)
+                            {
+                                int val = displayedUnit.GetStat(def.id);
+                                int max = displayedUnit.GetBaseStat(def.id);
+                                // Use TMP <noparse> to ensure IDs don't mess with tags, and <pos> for alignment
+                                sb.AppendLine($"{def.id}:<pos={statIdToValueSpacing}>{val}/{max}");
+                            }
+                            unitStatsText.text = sb.ToString().TrimEnd();
+                        }
+                        else
+                        {
+                            unitStatsText.text = "No stats available";
+                        }
+                    }
                 }
                 else
                 {
                     if (unitNameText != null) 
                         unitNameText.text = Application.isPlaying ? "No Unit Selected" : "Unit Name";
+                    if (unitStatsText != null)
+                        unitStatsText.text = Application.isPlaying ? "" : "Stats list...";
                 }
+            }
+        }
+
+        private void ApplyFontSettings()
+        {
+            if (unitNameText != null)
+            {
+                if (nameFont != null) unitNameText.font = nameFont;
+                unitNameText.fontSize = nameFontSize;
+                unitNameText.color = nameColor;
+                unitNameText.alignment = nameAlignment;
+                unitNameText.enableWordWrapping = true;
+            }
+
+            if (unitStatsText != null)
+            {
+                if (statsFont != null) unitStatsText.font = statsFont;
+                unitStatsText.fontSize = statsFontSize;
+                unitStatsText.color = statsColor;
+                unitStatsText.alignment = statsAlignment;
+                unitStatsText.enableWordWrapping = false;
             }
         }
 
         private void EnsureUI()
         {
-            // Find or create Canvas
+            // 1. Try to find panel in children of THIS object first (preferred structure)
+            if (panel == null)
+            {
+                panel = GetComponentInChildren<RectTransform>(true);
+                // Filter out if it's our own transform
+                if (panel != null && panel.gameObject == this.gameObject) panel = null;
+                
+                // If still null, check by name under this transform
+                if (panel == null)
+                {
+                    Transform t = transform.Find("UnitStatsPanel");
+                    if (t != null) panel = t.GetComponent<RectTransform>();
+                }
+            }
+
+            // 2. Fallback to finding or creating Canvas
             Canvas canvas = FindFirstObjectByType<Canvas>();
             if (canvas == null)
             {
@@ -126,68 +268,87 @@ namespace HexGame.UI
                 canvasGo.AddComponent<GraphicRaycaster>();
             }
 
-            // Check if panel already exists under this canvas to prevent duplicates
             if (panel == null)
             {
-                Transform existing = canvas.transform.Find("UnitStatsPanel");
-                if (existing != null)
-                {
-                    panel = existing.GetComponent<RectTransform>();
-                    // Also try to link the text if it exists
-                    if (unitNameText == null)
-                    {
-                        Transform t = existing.Find("UnitNameText");
-                        if (t != null) unitNameText = t.GetComponent<Text>();
-                    }
-                }
+                // Check globally if it exists somewhere else
+                GameObject existing = GameObject.Find("UnitStatsPanel");
+                if (existing != null) panel = existing.GetComponent<RectTransform>();
             }
 
-            if (panel != null) 
+            if (panel == null)
             {
-                // Ensure text exists if panel was found but text wasn't linked
-                if (unitNameText == null) CreateText(panel);
-                return;
+                // Create Panel
+                GameObject panelGo = new GameObject("UnitStatsPanel");
+                panel = panelGo.AddComponent<RectTransform>();
+                panel.transform.SetParent(canvas.transform, false); // Parent to Canvas directly
+
+                // Anchor to top-left
+                panel.anchorMin = new Vector2(0, 1);
+                panel.anchorMax = new Vector2(0, 1);
+                panel.pivot = new Vector2(0, 1);
+                
+                Image bg = panelGo.AddComponent<Image>();
+                bg.color = backgroundColor;
+            }
+            else if (panel.parent != canvas.transform)
+            {
+                panel.SetParent(canvas.transform, false);
             }
 
-            // Create Panel
-            GameObject panelGo = new GameObject("UnitStatsPanel");
-            panelGo.transform.SetParent(canvas.transform, false);
-            panel = panelGo.AddComponent<RectTransform>();
+            // Ensure Layout Components
+            VerticalLayoutGroup vlg = panel.GetComponent<VerticalLayoutGroup>();
+            if (vlg == null) vlg = panel.gameObject.AddComponent<VerticalLayoutGroup>();
+            vlg.childControlHeight = true;
+            vlg.childControlWidth = true;
+            vlg.childForceExpandHeight = false;
+            vlg.childForceExpandWidth = true;
 
-            // Anchor to top-left
-            panel.anchorMin = new Vector2(0, 1);
-            panel.anchorMax = new Vector2(0, 1);
-            panel.pivot = new Vector2(0, 1);
-            panel.sizeDelta = panelSize;
-            panel.anchoredPosition = panelPosition;
+            ContentSizeFitter csf = panel.GetComponent<ContentSizeFitter>();
+            if (csf == null) csf = panel.gameObject.AddComponent<ContentSizeFitter>();
+            csf.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
+            csf.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
-            Image bg = panelGo.AddComponent<Image>();
-            bg.color = backgroundColor;
-
-            CreateText(panel);
+            // Ensure text references are linked
+            if (unitNameText == null) EnsureTextElement(ref unitNameText, "UnitNameText");
+            
+            if (dividerLine == null)
+            {
+                Transform t = panel.Find("DividerLine");
+                if (t != null) dividerLine = t.GetComponent<Image>();
+            }
+            if (dividerLine == null)
+            {
+                GameObject lineGo = new GameObject("DividerLine");
+                lineGo.transform.SetParent(panel, false);
+                dividerLine = lineGo.AddComponent<Image>();
+            }
+            // Ensure name is first, then divider, then stats
+            unitNameText.transform.SetAsFirstSibling();
+            dividerLine.transform.SetSiblingIndex(1);
+            
+            if (unitStatsText == null) EnsureTextElement(ref unitStatsText, "UnitStatsText");
+            unitStatsText.transform.SetAsLastSibling();
         }
 
-        private void CreateText(RectTransform parent)
+        private void EnsureTextElement(ref TextMeshProUGUI textField, string name)
         {
-            if (unitNameText != null) return;
+            if (textField == null)
+            {
+                Transform t = panel.Find(name);
+                if (t != null) textField = t.GetComponent<TextMeshProUGUI>();
+            }
 
-            GameObject textGo = new GameObject("UnitNameText");
-            textGo.transform.SetParent(parent.transform, false);
-            unitNameText = textGo.AddComponent<Text>();
-            
-            // Try to find a font
-            unitNameText.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-
-            unitNameText.fontSize = 24;
-            unitNameText.color = Color.white;
-            unitNameText.alignment = TextAnchor.MiddleLeft;
-
-            RectTransform textRT = textGo.GetComponent<RectTransform>();
-            textRT.anchorMin = new Vector2(0, 0);
-            textRT.anchorMax = new Vector2(1, 1);
-            textRT.pivot = new Vector2(0, 1);
-            textRT.offsetMin = new Vector2(15, 0);
-            textRT.offsetMax = new Vector2(-15, 0);
+            if (textField == null)
+            {
+                GameObject textGo = new GameObject(name);
+                textGo.transform.SetParent(panel, false);
+                textField = textGo.AddComponent<TextMeshProUGUI>();
+                textField.raycastTarget = false;
+                
+                // Try to load default font
+                var defaultFont = Resources.Load<TMP_FontAsset>("Fonts & Materials/LiberationSans SDF");
+                if (defaultFont != null) textField.font = defaultFont;
+            }
         }
     }
 }

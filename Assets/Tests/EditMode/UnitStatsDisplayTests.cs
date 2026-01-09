@@ -5,6 +5,7 @@ using UnityEngine;
 using UnityEngine.TestTools;
 using HexGame.UI;
 using UnityEngine.UI;
+using TMPro;
 
 namespace HexGame.Tests
 {
@@ -49,21 +50,115 @@ namespace HexGame.Tests
         }
 
         [Test]
-        public void EnsureUI_Creates_Panel_And_Text()
+        public void EnsureUI_Creates_Panel_And_Texts()
         {
-            // Act
-            // Triggering via a private method check is hard, but we can call a public initialization if we had one.
-            // Since EnsureUI is private, we rely on the fact that it's called in Update/Start or we use reflection.
-            // For tests, let's make a public wrapper or just invoke it via reflection.
-            
             var method = typeof(UnitStatsDisplay).GetMethod("EnsureUI", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
             method.Invoke(display, null);
 
             // Assert
             Assert.IsNotNull(display.panel, "Panel should be created and assigned.");
-            Assert.IsNotNull(display.unitNameText, "Text should be created and assigned.");
+            Assert.IsNotNull(display.unitNameText, "Name text should be created and assigned.");
+            Assert.IsNotNull(display.unitStatsText, "Stats text should be created and assigned.");
             Assert.AreEqual("UnitStatsPanel", display.panel.name);
             Assert.AreEqual("UnitNameText", display.unitNameText.gameObject.name);
+            Assert.AreEqual("UnitStatsText", display.unitStatsText.gameObject.name);
+        }
+
+        [Test]
+        public void UpdateUI_Populates_Stats_From_Schema()
+        {
+            // Arrange
+            var methodEnsure = typeof(UnitStatsDisplay).GetMethod("EnsureUI", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            methodEnsure.Invoke(display, null);
+
+            GameObject unitGo = new GameObject("TestUnit");
+            Unit unit = unitGo.AddComponent<Unit>();
+            
+            // Mock a unit set with schema
+            var unitSet = new HexGame.Units.UnitSet();
+            unitSet.schemaDefinitions = new List<HexGame.Units.UnitStatDefinition> {
+                new HexGame.Units.UnitStatDefinition { id = "hp", name = "Health" },
+                new HexGame.Units.UnitStatDefinition { id = "atk", name = "Attack" }
+            };
+
+            // Setup UnitType for base stats
+            var unitType = new HexGame.Units.UnitType { id = "test_unit", Name = "Test Unit" };
+            unitType.Stats.Add(new HexGame.Units.UnitStatValue { id = "hp", value = 120 });
+            unitType.Stats.Add(new HexGame.Units.UnitStatValue { id = "atk", value = 20 });
+            unitSet.units.Add(unitType);
+
+            unit.unitSet = unitSet;
+            unit.UnitTypeId = "test_unit";
+            
+            unit.SetStat("hp", 100);
+            unit.SetStat("atk", 15);
+
+            display.displayedUnit = unit;
+            display.statIdToValueSpacing = 100;
+
+            // Act
+            var methodUpdate = typeof(UnitStatsDisplay).GetMethod("UpdateUI", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            methodUpdate.Invoke(display, null);
+
+            // Assert
+            string expectedStats = "hp:<pos=100>100/120\natk:<pos=100>15/20";
+            Assert.AreEqual(expectedStats, display.unitStatsText.text.Replace("\r\n", "\n"));
+            
+            Object.DestroyImmediate(unitGo);
+        }
+
+        [Test]
+        public void UpdateUI_Respects_MultilineUnitNames()
+        {
+            // Arrange
+            var methodEnsure = typeof(UnitStatsDisplay).GetMethod("EnsureUI", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            methodEnsure.Invoke(display, null);
+
+            GameObject unitGo = new GameObject("TestUnit");
+            Unit unit = unitGo.AddComponent<Unit>();
+            
+            var unitSet = new HexGame.Units.UnitSet();
+            var unitType = new HexGame.Units.UnitType { id = "long_name", Name = "Long Unit Name" };
+            unitSet.units.Add(unitType);
+            unit.unitSet = unitSet;
+            unit.UnitTypeId = "long_name";
+
+            display.displayedUnit = unit;
+            display.multilineUnitNames = true;
+
+            // Act
+            var methodUpdate = typeof(UnitStatsDisplay).GetMethod("UpdateUI", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            methodUpdate.Invoke(display, null);
+
+            // Assert
+            Assert.AreEqual("Long\nUnit\nName", display.unitNameText.text);
+            
+            Object.DestroyImmediate(unitGo);
+        }
+
+        [Test]
+        public void UpdateUI_Applies_Font_Settings()
+        {
+            // Arrange
+            var methodEnsure = typeof(UnitStatsDisplay).GetMethod("EnsureUI", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            methodEnsure.Invoke(display, null);
+
+            display.nameFontSize = 42;
+            display.nameColor = Color.red;
+            display.nameAlignment = TextAlignmentOptions.Center;
+            display.statsFontSize = 12;
+            display.statsColor = Color.green;
+
+            // Act
+            var methodUpdate = typeof(UnitStatsDisplay).GetMethod("UpdateUI", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            methodUpdate.Invoke(display, null);
+
+            // Assert
+            Assert.AreEqual(42, display.unitNameText.fontSize);
+            Assert.AreEqual(Color.red, display.unitNameText.color);
+            Assert.AreEqual(TextAlignmentOptions.Center, display.unitNameText.alignment);
+            Assert.AreEqual(12, display.unitStatsText.fontSize);
+            Assert.AreEqual(Color.green, display.unitStatsText.color);
         }
 
         [Test]
