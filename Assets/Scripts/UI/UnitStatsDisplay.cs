@@ -268,6 +268,16 @@ namespace HexGame.UI
                 canvasGo.AddComponent<GraphicRaycaster>();
             }
 
+            // Ensure consistent scaling across resolutions
+            CanvasScaler scaler = canvas.GetComponent<CanvasScaler>();
+            if (scaler != null)
+            {
+                scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+                scaler.referenceResolution = new Vector2(1920, 1080);
+                scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
+                scaler.matchWidthOrHeight = 0.5f;
+            }
+
             if (panel == null)
             {
                 // Check globally if it exists somewhere else
