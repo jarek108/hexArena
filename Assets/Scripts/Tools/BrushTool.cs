@@ -6,10 +6,13 @@ namespace HexGame.Tools
 {
     public abstract class BrushTool : MonoBehaviour, IActiveTool
     {
+        public enum ModifierKey { None, Ctrl, Shift, Alt }
+
         public bool IsEnabled { get; set; }
 
-        [SerializeField] [Range(1, 20)] protected int brushSize = 1;
-        [SerializeField] protected int maxBrushSize = 6;
+        public ModifierKey sizeControlKey = ModifierKey.Ctrl;
+        [Range(1, 20)] public int brushSize = 1;
+        public int maxBrushSize = 6;
 
         public virtual bool CheckRequirements(out string reason)
         {
@@ -36,17 +39,36 @@ namespace HexGame.Tools
                 float scroll = Mouse.current.scroll.ReadValue().y;
                 if (Mathf.Abs(scroll) > 0.1f)
                 {
-                    int oldSize = brushSize;
-                    
-                    // 1. Clear old highlight using current size
-                    if (hoveredHex != null) HandleHighlighting(hoveredHex, null);
+                    if (IsModifierPressed())
+                    {
+                        // 1. Clear old highlight using current size
+                        if (hoveredHex != null) HandleHighlighting(hoveredHex, null);
 
-                    // 2. Change size
-                    brushSize = Mathf.Clamp(brushSize + (scroll > 0 ? 1 : -1), 1, maxBrushSize);
-                    
-                    // 3. Re-apply highlight using new size
-                    if (hoveredHex != null) HandleHighlighting(null, hoveredHex);
+                        // 2. Change size
+                        brushSize = Mathf.Clamp(brushSize + (scroll > 0 ? 1 : -1), 1, maxBrushSize);
+                        
+                        // 3. Re-apply highlight using new size
+                        if (hoveredHex != null) HandleHighlighting(null, hoveredHex);
+                    }
                 }
+            }
+        }
+
+        private bool IsModifierPressed()
+        {
+            if (sizeControlKey == ModifierKey.None) return true;
+            if (Keyboard.current == null) return false;
+
+            switch (sizeControlKey)
+            {
+                case ModifierKey.Ctrl:
+                    return Keyboard.current.ctrlKey.isPressed;
+                case ModifierKey.Shift:
+                    return Keyboard.current.shiftKey.isPressed;
+                case ModifierKey.Alt:
+                    return Keyboard.current.altKey.isPressed;
+                default:
+                    return false;
             }
         }
 

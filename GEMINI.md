@@ -72,6 +72,8 @@ We follow a **Data-Driven Architecture** prioritizing strict Logic/View separati
     If the script fails (exit code 1), you MUST fix the reported errors before proceeding.
 3. **Git Usage**: 
     * **CRITICAL**: NEVER commit or push without explicit confirmation.
+    * **Mandate**: Always stage all changed files when preparing a commit (`git add .`).
+    * **Efficiency**: Avoid running `git diff` when preparing the commit message as it takes too long. Use the list of changed filenames and your conversation context to describe the changes.
     * Propose commit messages first, listing all modified files.
     * Run each git command independently.
 4. **Scene inspection/Management**: Use `manage_gameobject` or `manage_scene`.

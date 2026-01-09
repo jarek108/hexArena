@@ -1,0 +1,4 @@
+name = "push"
+description = "Stage all the changes, propose a commit msg and once confirmed commit and push it"
+
+prompt = """ Stage all the changes, propose a commit msg and once confirmed commit and push it"""

@@ -6,7 +6,8 @@
         "HexGame",
         "Unity.InputSystem",
         "Unity.InputSystem.TestFramework",
-        "HexGame.Tests.Common"
+        "HexGame.Tests.Common",
+        "Unity.TextMeshPro"
     ],
     "includePlatforms": [
         "Editor"
